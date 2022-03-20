@@ -8,6 +8,11 @@ module.exports = {
   // so we default back to the standard build output.
   server: process.env.NODE_ENV === "development" ? undefined : "./server.js",
   ignoredRouteFiles: [".*"],
+  serverDependenciesToBundle: [
+    ".*rdkit.*", 
+    "@rdkit/rdkit/Code/MinimalLib/dist/RDKit_minimal.wasm"
+    ]
+
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",
   // serverBuildPath: "api/index.js",

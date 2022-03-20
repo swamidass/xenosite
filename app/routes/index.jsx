@@ -4,7 +4,7 @@ import { useLoaderData } from 'remix'
 
 export async function loader() {
 	const rdkit = await initRDKitModule()
-	var svg = rdkit.get_mol("CCCC=O").get_svg()
+	var svg = rdkit.get_mol("C1CCCCC1=O").get_svg()
 	return {svg}
 }
 

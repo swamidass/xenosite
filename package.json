@@ -5,6 +5,7 @@
   "license": "",
   "sideEffects": false,
   "scripts": {
+    "clean": "rm -r public/build",
     "build:remix": "remix build",
     "dev:remix": "remix dev",
     "postinstall": "remix setup node",
