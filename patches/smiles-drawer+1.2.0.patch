@@ -1,0 +1,24 @@
+diff --git a/node_modules/smiles-drawer/src/SvgWrapper.js b/node_modules/smiles-drawer/src/SvgWrapper.js
+index adbc611..f9659fd 100644
+--- a/node_modules/smiles-drawer/src/SvgWrapper.js
++++ b/node_modules/smiles-drawer/src/SvgWrapper.js
+@@ -208,8 +208,8 @@ class SvgWrapper {
+     this.drawingWidth = maxX - minX;
+     this.drawingHeight = maxY - minY;
+ 
+-    let w = this.svg.clientWidth > 0 ? this.svg.clientWidth : this.svg.viewBox.baseVal.width;
+-    let h = this.svg.clientHeight > 0 ? this.svg.clientHeight : this.svg.viewBox.baseVal.height;
++    let w = this.drawingWidth
++    let h = this.drawingHeight
+ 
+     let scaleX = w / this.drawingWidth;
+     let scaleY = h / this.drawingHeight;
+@@ -217,7 +217,7 @@ class SvgWrapper {
+     let scale = (scaleX < scaleY) ? scaleX : scaleY;
+     let viewBoxDim = Math.round(this.drawingWidth > this.drawingHeight ? this.drawingWidth : this.drawingHeight);  
+ 
+-    this.svg.setAttributeNS(null, 'viewBox', `0 0 ${viewBoxDim} ${viewBoxDim}`);
++    this.svg.setAttributeNS(null, 'viewBox', `0 0 ${Math.round(w)} ${Math.round(h)}`);
+ 
+     this.offsetX = -minX;
+     this.offsetY = -minY;
