@@ -1,0 +1,11 @@
+{
+  "name": "rdkit-sls",
+  "version": "1.0.0",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless-python-requirements": "^5.4.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0"
+  }
+}

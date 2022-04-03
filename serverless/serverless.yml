@@ -1,0 +1,31 @@
+org: swamidass
+app: xenosite-lambda
+service: rdkit
+frameworkVersion: '3'
+configValidationMode: error
+
+provider:
+  name: aws
+  runtime: python3.8
+  region: us-east-1
+  ecr:
+    # In this section you can define images that will be built locally and uploaded to ECR
+    images:
+      rdkit:
+        path: ./rdkit
+      xenosite:
+        path: ./xenosite
+        
+functions:
+  rdkit:
+    memorySize: 128
+    image:
+      name: rdkit
+  xenosite:
+    timeout: 8
+    memorySize: 320
+    image:
+      name: xenosite
+#    events:
+#      - httpApi: "*"
+	
