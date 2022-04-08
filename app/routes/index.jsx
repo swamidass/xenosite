@@ -75,13 +75,11 @@ export default function Index({}) {
        <input className="hidden" type="submit" />
      </Form>
      <div className="h-8 text-blue-600 text-center  py-3">
-{cansmi ? 
-  
-   cansmi_split.map(c => 
-    (<Link reload to={`?search=${encodeURIComponent(c)}`} className="hover:underline inline-block mx-1">{c}</Link>)
-   ) 
-  : null}
- </div>
+       {cansmi ? 
+         cansmi_split.map(c => (<Link reload key={c} to={`?search=${encodeURIComponent(c)}`} 
+          className="hover:underline inline-block mx-1">{c}</Link>))  
+        : null}
+      </div>
 
      { !depict_smi ? 
          <div className="mx-auto w-full text-center mx-3"> Enter a SMILES string or a molecule name.</div> 
