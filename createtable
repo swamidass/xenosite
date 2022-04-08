@@ -1,0 +1,2 @@
+aws dynamodb create-table --table-name  XenositeCache --attribute-definitions AttributeName=Cid,AttributeType=S --key-schema AttributeName=Cid,KeyType=HASH   --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+

@@ -5,15 +5,24 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  json
 } from "remix";
+
+import React from "react" 
+import { cansmi } from '~/rdkit.server'
+import _ from "lodash"
+
 
 export function meta() {
   return {
     charset: "utf-8",
-    title: "New Remix App",
+    title: "Xenosite",
     viewport: "width=device-width,initial-scale=1",
   };
 }
+
+
+
 
 import styles from "./styles/app.css"
 
@@ -29,7 +38,11 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+
+    <div className="max-w-screen-xl mx-auto mt-10">
+      <Outlet />
+    </div>
+  
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

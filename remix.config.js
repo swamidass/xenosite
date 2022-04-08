@@ -9,10 +9,18 @@ module.exports = {
   server: process.env.NODE_ENV === "development" ? undefined : "./server.js",
   ignoredRouteFiles: [".*"],
   serverDependenciesToBundle: [
-    ".*rdkit.*", 
-    "@rdkit/rdkit/Code/MinimalLib/dist/RDKit_minimal.wasm"
-    ]
-
+    /^rehype.*/,
+    /^unified.*/,
+    /^bail.*/,
+    /^is-plain-obj.*/,
+    /^trough.*/,
+    /^vfile.*/,
+    /^unist.*/,
+    /^hast.*/,
+    /^property-information.*/,
+    /^.*separated-tokens.*/,
+    /^web-namespaces.*/,
+  ],
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",
   // serverBuildPath: "api/index.js",
