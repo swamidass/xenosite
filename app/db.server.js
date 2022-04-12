@@ -1,6 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import KeyvDynamoDb from "keyv-dynamodb";
-import Keyv from "keyv";
 const AWS = require("aws-sdk");
 
 const supabase = createClient(
@@ -22,30 +20,31 @@ const documentClient = new AWS.DynamoDB.DocumentClient({
 });
 
 async function getKey(key) {
-  return await documentClient.get({
-    TableName: "XenositeCache",
-    Key: { "Cid": key },
-  }).promise()
-   .then(x => x.Item?.value);
+  return await documentClient
+    .get({
+      TableName: "XenositeCache",
+      Key: { Cid: key },
+    })
+    .promise()
+    .then((x) => x.Item?.value);
 }
 
 async function putKey(key, value, ttl) {
   var expires = ttl ? Math.floor(Date.now() / 1000) + ttl : undefined;
-  return await documentClient.put({
-    Item: { "Cid": key, value, expires },
-    TableName: "XenositeCache",
-  }).promise();
+  return await documentClient
+    .put({
+      Item: { Cid: key, value, expires },
+      TableName: "XenositeCache",
+    })
+    .promise();
 }
 
-export function DBMemoize(
-  func,
-  prefix,
-  keyfunc = (prefix, args) => `${prefix}:${args[0]}`
-) {
-  return async function memoizedWrapped(...args) {
-    if (args[0] == null) return null
-    if (typeof args[0] !== "string") throw Error("First arg must be string." )
-    const key = keyfunc(prefix, args);
+export function DBMemoize(func, prefix, keyfunc = (args) => args[0]) {
+  return async (...args) => {
+    if (args[0] == null) return null;
+    const _key = keyfunc(args);
+    if (typeof _key !== "string") throw Error("Key arg must be string.");
+    const key = `${prefix}:${_key}`;
 
     const data = await getKey(key).catch(console.log);
 
