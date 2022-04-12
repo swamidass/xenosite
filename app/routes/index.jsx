@@ -46,7 +46,7 @@ export async function loader({ request }) {
   });
 }
 
-export default function Index({}) {
+export default function Index() {
   var { search, name, cansmi } = useLoaderData() || {};
 
   const submit = useSubmit();
@@ -104,7 +104,7 @@ export default function Index({}) {
       </div>
 
       {!depict_smi ? (
-        <div className="mx-auto w-full text-center mx-3">
+        <div className="mx-auto w-full text-center">
           Enter a SMILES string or a molecule name.
         </div>
       ) : (
