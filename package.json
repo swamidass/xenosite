@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "^1.33.3",
     "@types/react": "^17.0.43",
     "@vercel/node": "^1.8.3",
+    "aws-sdk": "^2.1112.0",
     "clean-css": "^5.2.4",
     "dotenv": "^16.0.0",
     "isomorphic-xml2js": "^0.1.3",
