@@ -10,7 +10,7 @@ function setColor(svg, color="black") {
 }
 
 export  function DrawSmilesSvg(smiles,  className = "", widthScale = 2, options = {compactDrawing: false}) {
-    var smilesDrawer = new SmilesDrawer.Drawer(options);
+//    var smilesDrawer = new SmilesDrawer.Drawer(options);
     var drawer = new SmilesDrawer.SvgDrawer(options);
 
    try {

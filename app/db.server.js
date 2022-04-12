@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_API,
   process.env.SUPABASE_API_KEY,
   {
-    fetch: fetch
+    fetch: fetch,
   }
 );
 
@@ -15,30 +15,31 @@ const credentials = {
   secretAccessKey: process.env.AWS_SDK_SECRET_ACCESS_KEY,
 };
 
-const KvDDb = new KeyvDynamoDb({
-  tableName: "XenositeCache",
-  clientOptions: {
-    region: process.env.AWS_SDK_REGION,
-    credentials: credentials,
-  },
-});
-
 export function DBMemoize(
   func,
   prefix,
   keyfunc = (prefix, args) => `${args[0]}`
 ) {
+  const KvDDb = new KeyvDynamoDb({
+    tableName: "XenositeCache",
+    clientOptions: {
+      region: process.env.AWS_SDK_REGION,
+      credentials: credentials,
+    },
+  });
   const cache = new Keyv({ store: KvDDb, namespace: prefix });
 
   return async function wrapped(...args) {
     const key = keyfunc(prefix, args);
 
     const data = await cache.get(key).catch((x) => undefined);
-    console.log(data);
+    // console.log("CACHE", prefix, key, data);
 
     if (data) {
-      console.log("HIT", key);
+      console.log("HIT", prefix, key);
       return data;
+    } else {
+      console.log("MISS", prefix, key);
     }
 
     const result = await func(...args);
