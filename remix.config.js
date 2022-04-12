@@ -9,6 +9,7 @@ module.exports = {
   server: process.env.NODE_ENV === "development" ? undefined : "./server.js",
   ignoredRouteFiles: [".*"],
   serverDependenciesToBundle: [
+    /.*storybook.*/,
     /^rehype.*/,
     /^unified.*/,
     /^bail.*/,

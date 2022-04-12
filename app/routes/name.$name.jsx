@@ -1,7 +1,7 @@
 
 import { useLoaderData, useOutletContext, redirect } from 'remix'
-import {MolDepict} from '~/smilesDrawer'
-import {cansmi} from '~/rdkit.server'
+import { MolDepict } from "~/MolDepict"
+import {cansmi} from '~/backend.server'
 import _ from "lodash"
 
 export const name2smiles = _.memoize( async (name) => {

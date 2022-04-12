@@ -8,9 +8,9 @@ import {
   json
 } from "remix";
 
-import React from "react" 
-import { cansmi } from '~/rdkit.server'
 import _ from "lodash"
+
+import styles from "./styles/app.css"
 
 
 export function meta() {
@@ -20,11 +20,6 @@ export function meta() {
     viewport: "width=device-width,initial-scale=1",
   };
 }
-
-
-
-
-import styles from "./styles/app.css"
 
 export function links() {
   return [{ rel: "stylesheet", href: styles }]

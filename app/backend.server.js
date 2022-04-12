@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import {LambdaClient, InvokeCommand} from '@aws-sdk/client-lambda'
-import { DBMemoize } from './db'
+import { DBMemoize } from './db.server'
 
 const _ = require("lodash"); 
 

@@ -1,10 +1,6 @@
-React.useLayoutEffect = React.useEffect 
-
 import { renderToString } from "react-dom/server";
-
 import { RemixServer } from "remix";
-import path from 'path'
-import fs from 'fs'
+
 
 export default function handleRequest(
   request,
