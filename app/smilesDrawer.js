@@ -3,11 +3,12 @@ import SmilesDrawer from 'smiles-drawer'
 // const window = createHTMLWindow()
 // const document = window.document
 
+/*
 function setColor(svg, color="black") {	
    svg.querySelectorAll("linearGradient").forEach(x => x.remove())
    svg.querySelectorAll("line").forEach(x => x.setAttribute("stroke", "black"))
    svg.querySelectorAll("text").forEach(x => x.setAttribute("fill", "black"))
-}
+}*/
 
 export  function DrawSmilesSvg(smiles,  className = "", widthScale = 2, options = {compactDrawing: false}) {
 //    var smilesDrawer = new SmilesDrawer.Drawer(options);

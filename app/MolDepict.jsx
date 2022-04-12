@@ -12,7 +12,7 @@ export const MolDepict = pure(
         const { svg } = DrawSmilesSvg(
           smi,
           document,
-          (className = "mx-auto max-w-full"),
+          "mx-auto max-w-full",
           widthScale
         );
         //  console.log(svg)
@@ -21,7 +21,7 @@ export const MolDepict = pure(
       } catch (e) {
         log.current.innerHTML = e.message;
       }
-    }, [smi, disp]);
+    }, [smi, disp, widthScale]);
 
     return (
       <div className="">

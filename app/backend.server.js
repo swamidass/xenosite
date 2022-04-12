@@ -2,8 +2,6 @@ import "dotenv/config";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { DBMemoize } from "./db.server";
 
-const _ = require("lodash");
-
 const credentials = {
   accessKeyId: process.env.AWS_SDK_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SDK_SECRET_ACCESS_KEY,
