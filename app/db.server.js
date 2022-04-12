@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import KeyvDynamoDb from "keyv-dynamodb";
 import Keyv from "keyv";
+const AWS = require("aws-sdk");
 
 const supabase = createClient(
   process.env.SUPABASE_API,
@@ -15,36 +16,49 @@ const credentials = {
   secretAccessKey: process.env.AWS_SDK_SECRET_ACCESS_KEY,
 };
 
+const documentClient = new AWS.DynamoDB.DocumentClient({
+  region: process.env.AWS_SDK_REGION,
+  credentials: credentials,
+});
+
+async function getKey(key) {
+  return await documentClient.get({
+    TableName: "XenositeCache",
+    Key: { "Cid": key },
+  }).promise()
+   .then(x => x.Item?.value);
+}
+
+async function putKey(key, value, ttl) {
+  var expires = ttl ? Math.floor(Date.now() / 1000) + ttl : undefined;
+  return await documentClient.put({
+    Item: { "Cid": key, value, expires },
+    TableName: "XenositeCache",
+  }).promise();
+}
+
 export function DBMemoize(
   func,
   prefix,
-  keyfunc = (prefix, args) => `${args[0]}`
+  keyfunc = (prefix, args) => `${prefix}:${args[0]}`
 ) {
-  const KvDDb = new KeyvDynamoDb({
-    tableName: "XenositeCache",
-    clientOptions: {
-      region: process.env.AWS_SDK_REGION,
-      credentials: credentials,
-    },
-  });
-  const cache = new Keyv({ store: KvDDb, namespace: prefix });
-
-  return async function wrapped(...args) {
+  return async function memoizedWrapped(...args) {
+    if (args[0] == null) return null
+    if (typeof args[0] !== "string") throw Error("First arg must be string." )
     const key = keyfunc(prefix, args);
 
-    const data = await cache.get(key).catch((x) => undefined);
-    // console.log("CACHE", prefix, key, data);
+    const data = await getKey(key).catch(console.log);
 
-    if (data) {
-      console.log("HIT", prefix, key);
+    if (typeof data !== "undefined") {
+      console.log("HIT", key, data);
       return data;
     } else {
-      console.log("MISS", prefix, key);
+      console.log("MISS", key);
     }
 
     const result = await func(...args);
 
-    await cache.set(key, result);
+    await putKey(key, result).catch(console.log);
 
     return result;
   };

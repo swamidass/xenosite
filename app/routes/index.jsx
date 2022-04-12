@@ -25,23 +25,17 @@ export async function loader({ request }) {
 
   if (response.search != "") {
     response.cansmi = await cansmi(response.search.trim())
-      .then((x) => x.smi)
-      .catch((e) => {
-        response.error = "Not a valid SMILES string.";
-      });
 
     if (!response.cansmi) {
       let name = response.search.trim();
-
+      
       response.cansmi = await name2smiles(name)
-        .then((smi) => cansmi(smi))
+        .then(cansmi)
         .then((x) => {
+          if (!x) return undefined
           response.name = name;
-          return x.smi;
+          return x
         })
-        .catch((e) => {
-          response.error = "Not a valid name or SMILES string";
-        });
     }
   }
 
@@ -99,7 +93,6 @@ export default function Index({}) {
         {cansmi
           ? cansmi_split.map((c) => (
               <Link
-                reload
                 key={c}
                 to={`?search=${encodeURIComponent(c)}`}
                 className="hover:underline inline-block mx-1"
