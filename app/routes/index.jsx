@@ -23,27 +23,32 @@ export async function loader({ request }) {
   var response = {};
   response.search = sparams.get("search") || "";
 
-  if (response.search != "") {
-    response.cansmi = await cansmi(response.search.trim())
-
-    if (!response.cansmi) {
-      let name = response.search.trim();
-      
-      response.cansmi = await name2smiles(name)
-        .then(cansmi)
-        .then((x) => {
-          if (!x) return undefined
-          response.name = name;
-          return x
-        })
-    }
-  }
+  await resolveSearch(response);
 
   return json(response, {
     headers: {
       "Cache-Control": "max-age=10, stale-while-revalidate, s-maxage=72000",
     },
   });
+}
+
+async function resolveSearch(response) {
+  if (response.search != "") {
+    response.cansmi = await cansmi(response.search.trim());
+
+    if (!response.cansmi) {
+      let name = response.search.trim();
+
+      response.cansmi = await name2smiles(name)
+        .then(cansmi)
+        .then((x) => {
+          if (!x)
+            return undefined;
+          response.name = name;
+          return x;
+        });
+    }
+  }
 }
 
 export default function Index() {
