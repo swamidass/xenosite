@@ -43,6 +43,7 @@
     "recompose": "^0.30.0",
     "remix": "^1.3.2",
     "smiles-drawer": "https://github.com/reymond-group/smilesDrawer",
+    "yarn": "1.22.19",
     "zora": "^5.0.3"
   },
   "devDependencies": {

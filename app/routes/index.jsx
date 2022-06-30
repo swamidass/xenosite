@@ -34,19 +34,18 @@ export async function loader({ request }) {
 
 async function resolveSearch(response) {
   if (response.search != "") {
-    response.cansmi = await cansmi(response.search.trim());
+    // response.cansmi = await cansmi(response.search.trim());
 
     if (!response.cansmi) {
       let name = response.search.trim();
 
-      response.cansmi = await name2smiles(name)
-        .then(cansmi)
-        .then((x) => {
-          if (!x)
-            return undefined;
-          response.name = name;
-          return x;
-        });
+      // response.cansmi = await name2smiles(name)
+      //   .then(cansmi)
+      //   .then((x) => {
+      //     if (!x) return undefined;
+      //     response.name = name;
+      //     return x;
+      //   });
     }
   }
 }

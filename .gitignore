@@ -10,3 +10,6 @@ app/styles/app.css
 build/
 public/build
 api/index.js
+yarn.lock
+package-lock.json
+index.js.map
