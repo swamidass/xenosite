@@ -8,6 +8,8 @@ import {
   json,
   useSubmit,
 } from "remix";
+import { useState } from "react";
+import ModelDataDisplay from "../ModelDataDisplay";
 
 export function headers() {
   return {
@@ -51,6 +53,7 @@ async function resolveSearch(response) {
 }
 
 export default function Index() {
+  const [modelData, setModelData] = useState({ model: null, smi: [] });
   var { search, name, cansmi } = useLoaderData() || {};
 
   const submit = useSubmit();
@@ -112,9 +115,41 @@ export default function Index() {
           Enter a SMILES string or a molecule name.
         </div>
       ) : (
-        depict_split.map((c) => (
-          <MolDepict key="c" className="mx-auto mt-5" smi={c} />
+        depict_split.map((c, Index) => (
+          <MolDepict
+            key={"c" + Index.toString()}
+            className="mx-auto mt-5"
+            smi={c}
+          />
         ))
+      )}
+
+      {!depict_smi ? (
+        <></>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-600 dark:focus:ring-blue-800"
+            onClick={() => {
+              console.log("Before click: ", modelData);
+              setModelData({ model: "epoxidation1", smi: depict_split });
+            }}
+          >
+            Epoxidation
+          </button>
+          <button
+            type="button"
+            className="text-orange-700 hover:text-white border border-orange-700 hover:bg-orange-800 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-orange-500 dark:text-orange-500 dark:hover:text-white dark:hover:bg-orange-600 dark:focus:ring-orange-800"
+            onClick={() => {
+              console.log("Before click: ", modelData);
+              setModelData({ model: "ugt1", smi: depict_split });
+            }}
+          >
+            Ugt
+          </button>
+          <ModelDataDisplay model={modelData.model} data={modelData.smi} />
+        </>
       )}
     </>
   );
