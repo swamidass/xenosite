@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const URL = "http://localhost:8080/api/";
-
 async function libridassRestCall(model, data) {
   switch (model) {
     case "epoxidation1":
@@ -11,10 +9,10 @@ async function libridassRestCall(model, data) {
         try {
           const promises = [];
           for (let i = 0; i < data.length; i++) {
-            const url = URL + model + "/" + data[i];
+            const url = window.ENV.LIBRIDASS_REST_URL + model + "/" + data[i];
             let p = axios.get(url, {
               headers: {
-                Authorization: "",
+                Authorization: window.ENV.LIBRIDASS_REST_AUTHORIZATION,
               },
             });
             promises.push(p);

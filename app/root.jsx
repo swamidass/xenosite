@@ -5,13 +5,22 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  json
+  json,
 } from "remix";
+import { useLoaderData } from "@remix-run/react";
 
-import _ from "lodash"
+import _ from "lodash";
 
-import styles from "./styles/app.css"
+import styles from "./styles/app.css";
 
+export async function loader() {
+  return json({
+    ENV: {
+      LIBRIDASS_REST_URL: process.env.LIBRIDASS_REST_URL,
+      LIBRIDASS_REST_AUTHORIZATION: process.env.LIBRIDASS_REST_AUTHORIZATION,
+    },
+  });
+}
 
 export function meta() {
   return {
@@ -22,10 +31,11 @@ export function meta() {
 }
 
 export function links() {
-  return [{ rel: "stylesheet", href: styles }]
+  return [{ rel: "stylesheet", href: styles }];
 }
 
 export default function App() {
+  const data = useLoaderData();
   return (
     <html lang="en">
       <head>
@@ -33,12 +43,16 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <div className="max-w-screen-xl mx-auto mt-10">
+          <Outlet />
+        </div>
 
-    <div className="max-w-screen-xl mx-auto mt-10">
-      <Outlet />
-    </div>
-  
         <ScrollRestoration />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+          }}
+        />
         <Scripts />
         <LiveReload />
       </body>
