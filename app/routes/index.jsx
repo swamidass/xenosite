@@ -62,6 +62,41 @@ export default function Index() {
 
   let depict_smi = name ? cansmi : search;
   let init_search = search || name || cansmi || "";
+  const models = [{
+    "name": "epoxidation1",
+    "displayName": "Epoxidation",
+    "color": "blue"
+  }, {
+    "name": "ugt1",
+    "displayName": "Ugt",
+    "color": "orange"
+  },
+  {
+    "name": "reactivity1",
+    "displayName": "Reactivity",
+    "color": "green"
+  },
+  {
+    "name": "quinone1",
+    "displayName": "Quinone",
+    "color": "purple"
+  },
+  {
+    "name": "ndealk1",
+    "displayName": "N-Dealkylation",
+    "color": "red"
+  },
+  {
+    "name": "metabolism1",
+    "displayName": "Metabolism",
+    "color": "fuchsia"
+  },
+  {
+    "name": "metabolite1",
+    "displayName": "Metabolite",
+    "color": "pink"
+  }]
+
 
   if (transition.state == "submitting") {
     // console.log(transition.submission)
@@ -128,7 +163,19 @@ export default function Index() {
         <></>
       ) : (
         <>
-          <button
+          {models.map((model) => {
+            return <button
+              type="button"
+              key={`button-${model.name}`}
+              className={`text-${model.color}-700 hover:text-white border border-${model.color}-700 hover:bg-${model.color}-800 focus:ring-4 focus:outline-none focus:ring-${model.color}-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-${model.color}-500 dark:text-${model.color}-500 dark:hover:text-white dark:hover:bg-${model.color}-600 dark:focus:ring-${model.color}-800`}
+              onClick={() => {
+                setModelData({ model: model.name, smi: depict_split });
+              }}
+            >
+              {model.displayName}
+            </button>
+          })}
+          {/* <button
             type="button"
             className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-600 dark:focus:ring-blue-800"
             onClick={() => {
@@ -147,7 +194,7 @@ export default function Index() {
             }}
           >
             Ugt
-          </button>
+          </button> */}
           <ModelDataDisplay model={modelData.model} data={modelData.smi} />
         </>
       )}
