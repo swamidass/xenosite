@@ -52,6 +52,20 @@ async function resolveSearch(response) {
   }
 }
 
+function generateTWButtonStyles(modelColor) {
+  return {
+    t: `text-${modelColor}-700`, 
+    b: `border-${modelColor}-700`, 
+    hbg: `hover:bg-${modelColor}-800`, 
+    fr: `focus:ring-${modelColor}-300`, 
+    db: `dark:border-${modelColor}-500`, 
+    dt: `dark:text-${modelColor}-500`, 
+    dhbg: `dark:hover:bg-${modelColor}-600`, 
+    dfr: `dark:focus:ring-${modelColor}-800`
+  }
+
+}
+
 export default function Index() {
   const [modelData, setModelData] = useState({ model: null, smi: [] });
   var { search, name, cansmi } = useLoaderData() || {};
@@ -65,36 +79,36 @@ export default function Index() {
   const models = [{
     "name": "epoxidation1",
     "displayName": "Epoxidation",
-    "color": "blue"
+    "color": generateTWButtonStyles("blue")
   }, {
     "name": "ugt1",
     "displayName": "Ugt",
-    "color": "orange"
+    "color": generateTWButtonStyles("orange")
   },
   {
     "name": "reactivity1",
     "displayName": "Reactivity",
-    "color": "green"
+    "color": generateTWButtonStyles("green")
   },
   {
     "name": "quinone1",
     "displayName": "Quinone",
-    "color": "purple"
+    "color": generateTWButtonStyles("purple")
   },
   {
     "name": "ndealk1",
     "displayName": "N-Dealkylation",
-    "color": "red"
+    "color": generateTWButtonStyles("red")
   },
   {
     "name": "metabolism1",
     "displayName": "Metabolism",
-    "color": "fuchsia"
+    "color": generateTWButtonStyles("fuchsia")
   },
   {
     "name": "metabolite1",
     "displayName": "Metabolite",
-    "color": "pink"
+    "color": generateTWButtonStyles("pink")
   }]
 
 
@@ -167,7 +181,7 @@ export default function Index() {
             return <button
               type="button"
               key={`button-${model.name}`}
-              className={`text-${model.color}-700 hover:text-white border border-${model.color}-700 hover:bg-${model.color}-800 focus:ring-4 focus:outline-none focus:ring-${model.color}-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-${model.color}-500 dark:text-${model.color}-500 dark:hover:text-white dark:hover:bg-${model.color}-600 dark:focus:ring-${model.color}-800`}
+              className={`${model.color.t} hover:text-white border ${model.color.b} ${model.color.hbg} focus:ring-4 focus:outline-none ${model.color.fr} font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 ${model.color.db} ${model.color.dt} dark:hover:text-white ${model.color.dhbg} ${model.color.dfr}`}
               onClick={() => {
                 setModelData({ model: model.name, smi: depict_split });
               }}
