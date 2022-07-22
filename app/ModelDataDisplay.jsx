@@ -5,6 +5,11 @@ async function libridassRestCall(model, data) {
   switch (model) {
     case "epoxidation1":
     case "ugt1":
+    case "reactivity1":
+    case "quinone1":
+    case "ndealk1":
+    case "metabolism1":
+    case "metabolite1":
       return new Promise(async (resolve, reject) => {
         try {
           const promises = [];

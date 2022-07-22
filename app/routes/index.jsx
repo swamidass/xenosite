@@ -54,16 +54,15 @@ async function resolveSearch(response) {
 
 function generateTWButtonStyles(modelColor) {
   return {
-    t: `text-${modelColor}-700`, 
-    b: `border-${modelColor}-700`, 
-    hbg: `hover:bg-${modelColor}-800`, 
-    fr: `focus:ring-${modelColor}-300`, 
-    db: `dark:border-${modelColor}-500`, 
-    dt: `dark:text-${modelColor}-500`, 
-    dhbg: `dark:hover:bg-${modelColor}-600`, 
-    dfr: `dark:focus:ring-${modelColor}-800`
-  }
-
+    t: `text-${modelColor}-700`,
+    b: `border-${modelColor}-700`,
+    hbg: `hover:bg-${modelColor}-800`,
+    fr: `focus:ring-${modelColor}-300`,
+    db: `dark:border-${modelColor}-500`,
+    dt: `dark:text-${modelColor}-500`,
+    dhbg: `dark:hover:bg-${modelColor}-600`,
+    dfr: `dark:focus:ring-${modelColor}-800`,
+  };
 }
 
 export default function Index() {
@@ -76,41 +75,43 @@ export default function Index() {
 
   let depict_smi = name ? cansmi : search;
   let init_search = search || name || cansmi || "";
-  const models = [{
-    "name": "epoxidation1",
-    "displayName": "Epoxidation",
-    "color": generateTWButtonStyles("blue")
-  }, {
-    "name": "ugt1",
-    "displayName": "Ugt",
-    "color": generateTWButtonStyles("orange")
-  },
-  {
-    "name": "reactivity1",
-    "displayName": "Reactivity",
-    "color": generateTWButtonStyles("green")
-  },
-  {
-    "name": "quinone1",
-    "displayName": "Quinone",
-    "color": generateTWButtonStyles("purple")
-  },
-  {
-    "name": "ndealk1",
-    "displayName": "N-Dealkylation",
-    "color": generateTWButtonStyles("red")
-  },
-  {
-    "name": "metabolism1",
-    "displayName": "Metabolism",
-    "color": generateTWButtonStyles("fuchsia")
-  },
-  {
-    "name": "metabolite1",
-    "displayName": "Metabolite",
-    "color": generateTWButtonStyles("pink")
-  }]
-
+  const models = [
+    {
+      name: "epoxidation1",
+      displayName: "Epoxidation",
+      color: generateTWButtonStyles("blue"),
+    },
+    {
+      name: "ugt1",
+      displayName: "Ugt",
+      color: generateTWButtonStyles("orange"),
+    },
+    {
+      name: "reactivity1",
+      displayName: "Reactivity",
+      color: generateTWButtonStyles("green"),
+    },
+    {
+      name: "quinone1",
+      displayName: "Quinone",
+      color: generateTWButtonStyles("purple"),
+    },
+    {
+      name: "ndealk1",
+      displayName: "N-Dealkylation",
+      color: generateTWButtonStyles("red"),
+    },
+    {
+      name: "metabolism1",
+      displayName: "Metabolism",
+      color: generateTWButtonStyles("fuchsia"),
+    },
+    {
+      name: "metabolite1",
+      displayName: "Metabolite",
+      color: generateTWButtonStyles("amber"),
+    },
+  ];
 
   if (transition.state == "submitting") {
     // console.log(transition.submission)
@@ -178,37 +179,19 @@ export default function Index() {
       ) : (
         <>
           {models.map((model) => {
-            return <button
-              type="button"
-              key={`button-${model.name}`}
-              className={`${model.color.t} hover:text-white border ${model.color.b} ${model.color.hbg} focus:ring-4 focus:outline-none ${model.color.fr} font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 ${model.color.db} ${model.color.dt} dark:hover:text-white ${model.color.dhbg} ${model.color.dfr}`}
-              onClick={() => {
-                setModelData({ model: model.name, smi: depict_split });
-              }}
-            >
-              {model.displayName}
-            </button>
+            return (
+              <button
+                type="button"
+                key={`button-${model.name}`}
+                className={`${model.color.t} hover:text-white border ${model.color.b} ${model.color.hbg} focus:ring-4 focus:outline-none ${model.color.fr} font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 ${model.color.db} ${model.color.dt} dark:hover:text-white ${model.color.dhbg} ${model.color.dfr}`}
+                onClick={() => {
+                  setModelData({ model: model.name, smi: depict_split });
+                }}
+              >
+                {model.displayName}
+              </button>
+            );
           })}
-          {/* <button
-            type="button"
-            className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-600 dark:focus:ring-blue-800"
-            onClick={() => {
-              console.log("Before click: ", modelData);
-              setModelData({ model: "epoxidation1", smi: depict_split });
-            }}
-          >
-            Epoxidation
-          </button>
-          <button
-            type="button"
-            className="text-orange-700 hover:text-white border border-orange-700 hover:bg-orange-800 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:border-orange-500 dark:text-orange-500 dark:hover:text-white dark:hover:bg-orange-600 dark:focus:ring-orange-800"
-            onClick={() => {
-              console.log("Before click: ", modelData);
-              setModelData({ model: "ugt1", smi: depict_split });
-            }}
-          >
-            Ugt
-          </button> */}
           <ModelDataDisplay model={modelData.model} data={modelData.smi} />
         </>
       )}
