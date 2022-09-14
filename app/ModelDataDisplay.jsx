@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import loadable from "@loadable/component";
+
+const ReactJson = loadable(
+  () =>
+    new Promise((r, c) =>
+      import("react-json-view").then((result) => r(result.default), c)
+    )
+);
 
 async function libridassRestCall(model, data) {
   switch (model) {
@@ -48,5 +56,25 @@ export default function ModelDataDisplay({ model, data }) {
     fetchData();
   }, [model, data]);
 
-  return <div>{JSON.stringify(modelData)}</div>;
+  return (
+    <>
+      {" "}
+      {!modelData ? (
+        <></>
+      ) : (
+        <div className={"h-screen"}>
+          <ReactJson
+            name="Libridass-Json-Display"
+            src={JSON.parse(JSON.stringify(modelData))}
+            quotesOnKeys={false}
+            displayDataTypes={false}
+            collapseStringsAfterLength={30}
+            indentWidth={2}
+            displayObjectSize={false}
+            groupArraysAfterLength={10}
+          />
+        </div>
+      )}
+    </>
+  );
 }
