@@ -2,6 +2,8 @@ import { useRef, useEffect } from "react";
 import { pure } from "recompose";
 import { DrawSmilesSvg } from "./smilesDrawer";
 
+
+
 export const MolDepict = pure(
   ({ smi, svg = "", widthScale, className, ...props }) => {
     const disp = useRef();
@@ -15,6 +17,14 @@ export const MolDepict = pure(
           "mx-auto max-w-full",
           widthScale
         );
+        
+        
+
+
+        var D = document.createElementNS('http://www.w3.org/2000/svg', "g")
+        D.setAttribute("class", "shading")
+        svg.prepend(D)
+
         //  console.log(svg)
         disp.current.innerHTML = svg.outerHTML;
         log.current.innerHTML = "";
