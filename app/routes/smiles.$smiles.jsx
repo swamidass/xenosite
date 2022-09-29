@@ -1,4 +1,3 @@
-import { useLoaderData } from "remix";
 import { MolDepict } from "~/MolDepict";
 import { redirect, useOutletContext } from "remix";
 import { cansmi } from "~/backend.server";

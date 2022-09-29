@@ -1,5 +1,6 @@
 import { MolDepict } from "~/MolDepict";
 import { cansmi, name2smiles } from "~/backend.server";
+import axios from "axios";
 import {
   Link,
   Form,
@@ -65,12 +66,45 @@ function generateTWButtonStyles(modelColor) {
   };
 }
 
+function libridassRestCall(model, data) {
+  switch (model) {
+    case "epoxidation1":
+    case "ugt1":
+    case "reactivity1":
+    case "quinone1":
+    case "ndealk1":
+    case "metabolism1":
+    case "metabolite1":
+      return new Promise(async (resolve, reject) => {
+        try {
+          const promises = [];
+          for (let i = 0; i < data.length; i++) {
+            const url = window.ENV.LIBRIDASS_REST_URL + model + "/" + data[i];
+            let p = axios.get(url, {
+              headers: {
+                Authorization: window.ENV.LIBRIDASS_REST_AUTHORIZATION,
+              },
+            });
+            promises.push(p);
+          }
+          const responses = await Promise.all(promises);
+          const results = responses.map((r) => r.data);
+          resolve(results);
+        } catch (error) {
+          console.log(error);
+          resolve([{}]);
+        }
+      });
+    default:
+      return [{}];
+  }
+}
+
 export default function Index() {
-  const [modelData, setModelData] = useState({ model: null, smi: [] });
+  const [modelData, setModelData] = useState({});
   var { search, name, cansmi } = useLoaderData() || {};
 
   const submit = useSubmit();
-
   const transition = useTransition();
 
   let depict_smi = name ? cansmi : search;
@@ -120,6 +154,11 @@ export default function Index() {
 
   function handleChange(e) {
     submit(e.currentTarget, { replace: true });
+  }
+
+  function modelClick(model, smi) {
+    const data = smi.split(".");
+    libridassRestCall(model, data).then((resp) => setModelData(resp));
   }
 
   let cansmi_split = cansmi
@@ -185,14 +224,14 @@ export default function Index() {
                 key={`button-${model.name}`}
                 className={`${model.color.t} hover:text-white border ${model.color.b} ${model.color.hbg} focus:ring-4 focus:outline-none ${model.color.fr} font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 ${model.color.db} ${model.color.dt} dark:hover:text-white ${model.color.dhbg} ${model.color.dfr}`}
                 onClick={() => {
-                  setModelData({ model: model.name, smi: depict_split });
+                  modelClick(model.name, depict_smi);
                 }}
               >
                 {model.displayName}
               </button>
             );
           })}
-          <ModelDataDisplay model={modelData.model} data={modelData.smi} />
+          <ModelDataDisplay data={modelData} />
         </>
       )}
     </>
