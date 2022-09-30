@@ -43,6 +43,7 @@
     "prettier": "^2.6.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-grid-layout": "1.3.4",
     "react-json-view": "1.21.3",
     "recompose": "^0.30.0",
     "remix": "^1.3.2",

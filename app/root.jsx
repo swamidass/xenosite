@@ -12,6 +12,8 @@ import { useLoaderData } from "@remix-run/react";
 import _ from "lodash";
 
 import styles from "./styles/app.css";
+import gridCss from "react-grid-layout/css/styles.css";
+import resizableCss from "react-resizable/css/styles.css";
 
 export async function loader() {
   return json({
@@ -31,7 +33,11 @@ export function meta() {
 }
 
 export function links() {
-  return [{ rel: "stylesheet", href: styles }];
+  return [
+    { rel: "stylesheet", href: styles },
+    { rel: "stylesheet", href: gridCss },
+    { rel: "stylesheet", href: resizableCss },
+  ];
 }
 
 export default function App() {

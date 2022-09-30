@@ -1,5 +1,4 @@
 import { MolDepict } from "~/MolDepict";
-import { cansmi, name2smiles } from "~/backend.server";
 import axios from "axios";
 import {
   Link,
@@ -11,6 +10,9 @@ import {
 } from "remix";
 import { useState } from "react";
 import ModelDataDisplay from "../ModelDataDisplay";
+import GridLayout from "react-grid-layout";
+
+// const ResponsiveGridLayout = WidthProvider(Responsive);
 
 export function headers() {
   return {
@@ -88,7 +90,10 @@ function libridassRestCall(model, data) {
             promises.push(p);
           }
           const responses = await Promise.all(promises);
-          const results = responses.map((r) => r.data);
+          let results = responses.map((r) => r.data);
+          for (let i = 0; i < results.length; i++) {
+            results[i]["raw-smi"] = data[i];
+          }
           resolve(results);
         } catch (error) {
           console.log(error);
@@ -102,6 +107,7 @@ function libridassRestCall(model, data) {
 
 export default function Index() {
   const [modelData, setModelData] = useState({});
+  const [depictData, setDepictData] = useState([]);
   var { search, name, cansmi } = useLoaderData() || {};
 
   const submit = useSubmit();
@@ -148,7 +154,6 @@ export default function Index() {
   ];
 
   if (transition.state == "submitting") {
-    // console.log(transition.submission)
     depict_smi = transition.submission.formData.get("search");
   }
 
@@ -156,9 +161,21 @@ export default function Index() {
     submit(e.currentTarget, { replace: true });
   }
 
-  function modelClick(model, smi) {
+  async function modelClick(model, smi) {
     const data = smi.split(".");
-    libridassRestCall(model, data).then((resp) => setModelData(resp));
+    libridassRestCall(model, data).then((resp) => {
+      switch (model) {
+        case "ugt1":
+          console.log("ugt");
+          setDepictData(resp);
+          break;
+        default:
+          console.log("do nothing");
+          setDepictData([]);
+      }
+
+      setModelData(resp);
+    });
   }
 
   let cansmi_split = cansmi
@@ -168,72 +185,96 @@ export default function Index() {
     ? depict_smi.split(".").sort((a, b) => b.length - a.length)
     : [];
 
+  const layout = [
+    { i: "a", x: 0, y: 0, w: 10, h: 2, static: true },
+    { i: "b", x: 0, y: 1, w: 10, h: 4 },
+    { i: "c", x: 0, y: 2, w: 10, h: 2 },
+    { i: "d", x: 0, y: 3, w: 10, h: 10 },
+  ];
+
   return (
-    <>
-      <Form
-        action="/"
-        replace
-        method="GET"
-        className="mt-10 pt-10 block w-full "
-        onChange={handleChange}
-      >
-        <input
-          type="text"
-          className=" text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
-          name="search"
-          defaultValue={init_search}
-        />
-        <input className="hidden" type="submit" />
-      </Form>
-      <div className="h-8 text-blue-600 text-center  py-3">
-        {cansmi
-          ? cansmi_split.map((c) => (
-              <Link
-                key={c}
-                to={`?search=${encodeURIComponent(c)}`}
-                className="hover:underline inline-block mx-1"
-              >
-                {c}
-              </Link>
-            ))
-          : null}
-      </div>
-
-      {!depict_smi ? (
-        <div className="mx-auto w-full text-center">
-          Enter a SMILES string or a molecule name.
-        </div>
-      ) : (
-        depict_split.map((c, Index) => (
-          <MolDepict
-            key={"c" + Index.toString()}
-            className="mx-auto mt-5"
-            smi={c}
+    <GridLayout
+      className="layout"
+      layout={layout}
+      cols={12}
+      rowHeight={30}
+      width={1200}
+    >
+      <div key="a">
+        <Form
+          action="/"
+          replace
+          method="GET"
+          className="block w-full "
+          onChange={handleChange}
+        >
+          <input
+            type="text"
+            className=" text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
+            name="search"
+            defaultValue={init_search}
           />
-        ))
-      )}
-
-      {!depict_smi ? (
-        <></>
-      ) : (
-        <>
-          {models.map((model) => {
-            return (
-              <button
-                type="button"
-                key={`button-${model.name}`}
-                className={`${model.color.t} hover:text-white border ${model.color.b} ${model.color.hbg} focus:ring-4 focus:outline-none ${model.color.fr} font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 ${model.color.db} ${model.color.dt} dark:hover:text-white ${model.color.dhbg} ${model.color.dfr}`}
-                onClick={() => {
-                  modelClick(model.name, depict_smi);
-                }}
-              >
-                {model.displayName}
-              </button>
-            );
-          })}
-          <ModelDataDisplay data={modelData} />
-        </>
-      )}
-    </>
+          <input className="hidden" type="submit" />
+        </Form>
+        <div className="h-8 text-blue-600 text-center  py-3">
+          {cansmi
+            ? cansmi_split.map((c) => (
+                <Link
+                  key={c}
+                  to={`?search=${encodeURIComponent(c)}`}
+                  className="hover:underline inline-block mx-1"
+                >
+                  {c}
+                </Link>
+              ))
+            : null}
+        </div>
+      </div>
+      <div key="b">
+        {!depict_smi ? (
+          <div className="mx-auto w-full text-center">
+            Enter a SMILES string or a molecule name.
+          </div>
+        ) : (
+          <div className="flex flex-row items-center">
+            {depict_split.map((c, Index) => (
+              <MolDepict
+                key={"c" + Index.toString()}
+                className={`basis-1/${depict_split.length} mx-auto mt-5`}
+                smi={c}
+                indexString={Index.toString()}
+                depictData={depictData}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      <div key="c">
+        {!depict_smi ? (
+          <></>
+        ) : (
+          <div className="flex flex-row justify-center items-center">
+            {models.map((model) => {
+              return (
+                <button
+                  type="button"
+                  key={`button-${model.name}`}
+                  className={`basis-1/${models.length} ${model.color.t} hover:text-white border ${model.color.b} ${model.color.hbg} focus:ring-4 focus:outline-none ${model.color.fr} font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 ${model.color.db} ${model.color.dt} dark:hover:text-white ${model.color.dhbg} ${model.color.dfr}`}
+                  onClick={() => {
+                    modelClick(model.name, depict_smi);
+                  }}
+                >
+                  {model.displayName}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div key="d">
+        {" "}
+        {!depict_smi ? <></> : <ModelDataDisplay data={modelData} />}
+      </div>
+    </GridLayout>
   );
 }
