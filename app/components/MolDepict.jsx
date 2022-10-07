@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { pure } from "recompose";
-import { DrawSmilesSvg } from "./smilesDrawer";
+import { DrawSmilesSvg } from "../smilesDrawer";
 
 export const MolDepict = pure(
   ({ smi, svg = "", widthScale, className, ...props }) => {
