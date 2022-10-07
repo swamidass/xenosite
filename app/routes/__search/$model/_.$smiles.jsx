@@ -3,7 +3,7 @@ import { useLoaderData, json, redirect } from "remix";
 
 export function headers() {
   return {
-    // "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
+    "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
   };
 }
 
@@ -19,10 +19,13 @@ export async function loader({ params }) {
 
   if (smiles & (params.smiles != smiles))
     return redirect(`/${params.model}/_/` + encodeURIComponent(smiles));
-  return json({
-    params,
-    response,
-  });
+  return json(
+    {
+      params,
+      response,
+    },
+    { headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=600" } }
+  );
 }
 
 export default function Model() {

@@ -12,7 +12,7 @@ import {
 
 export function headers() {
   return {
-    //    "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
+    "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
   };
 }
 
@@ -21,8 +21,6 @@ export async function loader({ params, request }) {
 
   const search = query.get("search");
   const model = query.get("model");
-
-  console.log(query);
 
   if (search) {
     if (model || smiles) {
@@ -36,7 +34,7 @@ export async function loader({ params, request }) {
   }
   return json(params, {
     headers: {
-      //    "Cache-Control": "max-age=10, stale-while-revalidate, s-maxage=72000",
+      "Cache-Control": "max-age=10, stale-while-revalidate, s-maxage=72000",
     },
   });
 }
