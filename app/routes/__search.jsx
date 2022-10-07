@@ -42,8 +42,11 @@ export async function loader({ params, request }) {
 export default function Search() {
   // const {  } = useLoaderData() || {};
   const matches = useMatches();
+
   const smiles = matches[matches.length - 1].params?.smiles;
   const model = matches[matches.length - 1].params?.model;
+  const name = matches[matches.length - 1].params?.smiles;
+  const description = matches[matches.length - 1].params?.description;
 
   const submit = useSubmit();
 
