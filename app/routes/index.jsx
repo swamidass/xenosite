@@ -70,18 +70,19 @@ function generateTWButtonStyles(modelColor) {
 
 function libridassRestCall(model, data) {
   switch (model) {
-    case "epoxidation1":
-    case "ugt1":
-    case "reactivity1":
-    case "quinone1":
-    case "ndealk1":
-    case "metabolism1":
-    case "metabolite1":
+    case "epoxidation":
+    case "ugt":
+    case "reactivity":
+    case "quinone":
+    case "ndealk":
+    case "metabolism":
+    case "metabolite":
       return new Promise(async (resolve, reject) => {
         try {
           const promises = [];
           for (let i = 0; i < data.length; i++) {
-            const url = window.ENV.LIBRIDASS_REST_URL + model + "/" + data[i];
+            const url =
+              window.ENV.LIBRIDASS_REST_URL + model + "?smiles=" + data[i];
             let p = axios.get(url, {
               headers: {
                 Authorization: window.ENV.LIBRIDASS_REST_AUTHORIZATION,
@@ -117,37 +118,37 @@ export default function Index() {
   let init_search = search || name || cansmi || "";
   const models = [
     {
-      name: "epoxidation1",
+      name: "epoxidation",
       displayName: "Epoxidation",
       color: generateTWButtonStyles("blue"),
     },
     {
-      name: "ugt1",
+      name: "ugt",
       displayName: "Ugt",
       color: generateTWButtonStyles("orange"),
     },
     {
-      name: "reactivity1",
+      name: "reactivity",
       displayName: "Reactivity",
       color: generateTWButtonStyles("green"),
     },
     {
-      name: "quinone1",
+      name: "quinone",
       displayName: "Quinone",
       color: generateTWButtonStyles("purple"),
     },
     {
-      name: "ndealk1",
+      name: "ndealk",
       displayName: "N-Dealkylation",
       color: generateTWButtonStyles("red"),
     },
     {
-      name: "metabolism1",
+      name: "metabolism",
       displayName: "Metabolism",
       color: generateTWButtonStyles("fuchsia"),
     },
     {
-      name: "metabolite1",
+      name: "metabolite",
       displayName: "Metabolite",
       color: generateTWButtonStyles("amber"),
     },
@@ -165,10 +166,10 @@ export default function Index() {
     const data = smi.split(".");
     libridassRestCall(model, data).then((resp) => {
       switch (model) {
-        case "ugt1":
-          console.log("ugt");
-          setDepictData(resp);
-          break;
+        // case "ugt":
+        //   console.log("ugt");
+        //   setDepictData(resp);
+        //   break;
         default:
           console.log("do nothing");
           setDepictData([]);
