@@ -23,7 +23,7 @@ export async function loader({ params, request }) {
   const model = query.get("model");
 
   if (search) {
-    if (model || smiles) {
+    if (model || search) {
       const url =
         "/" +
         (model ? model + "/" : "") +
