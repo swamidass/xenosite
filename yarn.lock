@@ -2020,7 +2020,7 @@
     set-cookie-parser "^2.4.8"
     source-map "^0.7.3"
 
-"@remix-run/vercel@^1.3.2":
+"@remix-run/vercel@^1.7.2":
   version "1.7.2"
   resolved "https://registry.yarnpkg.com/@remix-run/vercel/-/vercel-1.7.2.tgz#d88b3d88b786036a38956bea9d12f026b4dce4eb"
   integrity sha512-WoV15ig8QvWLksRO+i8Gpq3Og5PyJ7n/54Xg1MYrwfEIo7xRpmW6BzrYmu/HVN8HocQEs68ol4u2MVbOe/y4uA==
