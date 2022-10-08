@@ -42,6 +42,8 @@ export async function resolve_query_as_name(name, model) {
   const smiles = j1.PropertyTable?.Properties[0].CanonicalSMILES;
   const errmsg = j1.Fault?.Message;
 
+  console.log(name);
+
   if (cid && smiles) {
     const pubchem_url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
     console.log("FETCH", pubchem_url);

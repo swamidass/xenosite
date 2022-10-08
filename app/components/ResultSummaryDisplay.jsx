@@ -33,9 +33,9 @@ export function ResultSummaryDisplay() {
       </div>
 
       <div className="prose max-w-prose mx-auto">
-        {resolved_name.description ? (
+        {resolved_name?.description ? (
           <>
-            {resolved_name.name ? (
+            {resolved_name?.name ? (
               <div>
                 <h1 className="text-xl font-bold pb-3">{resolved_name.name}</h1>
               </div>

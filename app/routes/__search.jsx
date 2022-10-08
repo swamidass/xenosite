@@ -97,7 +97,7 @@ export default function Search() {
       </Form>
       <div className="h-8 text-center  py-3">
         {cansmi_split.length > 0
-          ? cansmi_split.map((c) => <div>{c}</div>)
+          ? cansmi_split.map((c, i) => <div key={i}>{c}</div>)
           : null}
       </div>
       <Outlet />
