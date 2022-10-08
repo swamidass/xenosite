@@ -31,7 +31,11 @@ export function meta() {
 }
 
 export function links() {
-  return [{ rel: "stylesheet", href: styles }];
+  return [
+    { rel: "stylesheet", href: styles },
+    { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+    { rel: "icon", type: "image/png", href: "/favicon.png" },
+  ];
 }
 
 export default function App() {
