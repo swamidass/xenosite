@@ -11,7 +11,7 @@ import {
 
 import { Fragment } from "react";
 import { Menu, Transition } from "@headlessui/react";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { ChevronDownIcon, ArrowLongLeftIcon } from "@heroicons/react/20/solid";
 import { MODELS } from "~/data";
 
 function classNames(...classes) {
@@ -102,6 +102,15 @@ export default function App() {
             </Transition>
           </Menu>
 
+          {model ? null : (
+            <div className="inline-block whitespace-nowrap px-3 align-bottom py-2 text-sm text-red-400">
+              <ArrowLongLeftIcon
+                className="mx-1 h-5 w-5 inline"
+                aria-hidden="true"
+              />
+              select model.
+            </div>
+          )}
           <Outlet />
         </div>
 

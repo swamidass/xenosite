@@ -97,6 +97,11 @@ export default function Search() {
         <input className="hidden" type="submit" />
       </Form>
       <div className="h-8 text-center  py-3">
+        {default_search ? null : (
+          <div className="text-red-400 text-sm">
+            Type in a molecule name or SMILES string.
+          </div>
+        )}
         {cansmi_split.length > 0
           ? cansmi_split.map((c, i) => <div key={i}>{c}</div>)
           : null}
