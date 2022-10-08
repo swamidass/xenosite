@@ -22,7 +22,7 @@ export async function resolve_query(query, model) {
 export async function resolve_query_as_smiles(smiles, model) {
   if (!smiles) return [null, null];
 
-  const url = smiles ? "/v0/" + model : "/v1/canonize";
+  const url = model ? "/v0/" + model : "/v1/canonize";
   const [response, name_resolve] = await Promise.all([
     backend_api(smiles, url),
     resolve_smiles_name(smiles),
