@@ -52,8 +52,7 @@ function backend_fetch(url) {
 }
 
 export const backend_api = async (smiles, url) => {
-  console.log;
-  const response_json = (
+  return (
     await backend_fetch(
       `${XENOSITE_BACKEND}${url}?` +
         new URLSearchParams({
@@ -61,22 +60,7 @@ export const backend_api = async (smiles, url) => {
           depict: true,
         })
     )
-  ).json();
-  return response_json;
+  )
+    .json()
+    .catch((e) => null);
 };
-
-// export const name2smiles = async (name) => {
-//   let pubchem = await fetch(
-//     `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(
-//       name
-//     )}/property/CanonicalSMILES,IsomericSMILES/json`
-//   );
-//   let j = await pubchem.json();
-//   let csmiles = j.PropertyTable?.Properties[0].CanonicalSMILES;
-//   let ismiles = j.PropertyTable?.Properties[0].IsomericSMILES;
-//   let smiles = ismiles || csmiles;
-//   // console.log(smiles);
-//   if (typeof smiles !== "undefined") return smiles;
-
-//   return null;
-// };

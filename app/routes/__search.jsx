@@ -1,8 +1,8 @@
-// import { MolDepict } from "~/MolDepict";
-import { backend_api } from "~/backend.server";
+import { resolve_query } from "~/search";
 import {
   Link,
   useMatches,
+  useLoaderData,
   Form,
   redirect,
   json,
@@ -16,46 +16,58 @@ export function headers() {
   };
 }
 
+const HEADERS = {
+  headers: {
+    "Cache-Control": "max-age=10, stale-while-revalidate, s-maxage=72000",
+  },
+};
+
 export async function loader({ params, request }) {
   const query = new URL(request.url).searchParams;
 
   const search = query.get("search");
   const model = query.get("model");
 
-  if (search) {
-    if (model || search) {
-      const url =
-        "/" +
-        (model ? model + "/" : "") +
-        (search ? `_/${encodeURIComponent(search)}` : "");
+  const { smiles, name } = await resolve_query(search);
 
-      return redirect(url);
-    }
+  if (name) {
+    const url =
+      "/" + (model ? model + "/" : "") + `n/${encodeURIComponent(name)}`;
+    return redirect(url, HEADERS);
   }
-  return json(params, {
-    headers: {
-      "Cache-Control": "max-age=10, stale-while-revalidate, s-maxage=72000",
-    },
-  });
+
+  if (smiles) {
+    const url =
+      "/" + (model ? model + "/" : "") + `_/${encodeURIComponent(smiles)}`;
+    return redirect(url, HEADERS);
+  }
+
+  if (model) {
+    const url = "/" + model;
+    return redirect(url, HEADERS);
+  }
+
+  return json(params, HEADERS);
 }
 
 export default function Search() {
-  // const {  } = useLoaderData() || {};
   const matches = useMatches();
+
+  const submit = useSubmit();
+
+  const response = matches[matches.length - 1].data?.response;
 
   const smiles = matches[matches.length - 1].params?.smiles;
   const model = matches[matches.length - 1].params?.model;
-  const name = matches[matches.length - 1].params?.smiles;
-  const description = matches[matches.length - 1].params?.description;
+  const name = matches[matches.length - 1].params?.name;
 
-  const submit = useSubmit();
+  const default_search = smiles || name || "";
 
   function handleChange(e) {
     submit(e.currentTarget);
   }
 
-  const cansmi = smiles || "";
-  const default_search = smiles || "";
+  const cansmi = smiles || response?.smiles || "";
 
   let cansmi_split = cansmi
     ? cansmi.split(".").sort((a, b) => b.length - a.length)
@@ -83,32 +95,11 @@ export default function Search() {
         />
         <input className="hidden" type="submit" />
       </Form>
-      <div className="h-8 text-blue-600 text-center  py-3">
-        {cansmi_split.length > 1
-          ? cansmi_split.map(
-              (c) => (
-                // <Link
-                //   key={c}
-                //   to={`./${encodeURIComponent(c)}`}
-                //   className="hover:underline inline-block mx-1"
-                // >
-                <div>{c}</div>
-              )
-
-              //  </Link>
-            )
+      <div className="h-8 text-center  py-3">
+        {cansmi_split.length > 0
+          ? cansmi_split.map((c) => <div>{c}</div>)
           : null}
       </div>
-
-      {/* {!depict_smi ? (
-        <div className="mx-auto w-full text-center">
-          Enter a SMILES string or a molecule name.
-        </div>
-      ) : (
-        depict_split.map((c) => (
-          <MolDepict key="c" className="mx-auto mt-5" smi={c} />
-        ))
-      )} */}
       <Outlet />
     </>
   );
