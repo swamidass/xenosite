@@ -55,10 +55,12 @@ export async function resolve_query_as_name(name, model) {
       fetch(pubchem_url),
     ]);
 
-    j2 = await pubchem2.json();
-    const description = j2.InformationList?.Information[1];
+    if (pubchem2) {
+      var j2 = await pubchem2.json();
+      const description = j2?.InformationList?.Information[1];
 
-    return [response, { name, description, smiles, cid, errmsg }];
+      return [response, { name, description, smiles, cid, errmsg }];
+    }
   }
 
   return [null, { name }];
@@ -78,12 +80,13 @@ async function resolve_smiles_name(smiles) {
   var out = { cid, errmsg };
 
   if (cid) {
-    pubchem2 = await fetch(
-      `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`
-    );
-    j2 = await pubchem2.json();
-    const name = j2.InformationList.Information[0].Title;
-    const description = j2.InformationList.Information[1];
+    url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
+    console.log(url);
+    var j2 = await fetch(url)
+      .then((x) => x.json())
+      .catch((x) => {});
+    const name = j2.InformationList?.Information[0].Title;
+    const description = j2.InformationList?.Information[1];
 
     out = { name, description, ...out };
   }

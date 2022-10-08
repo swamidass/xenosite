@@ -46,6 +46,7 @@ export async function loader({ params, request }) {
     const url = "/" + model;
     return redirect(url, HEADERS);
   }
+  return null;
 
   return json(params, HEADERS);
 }

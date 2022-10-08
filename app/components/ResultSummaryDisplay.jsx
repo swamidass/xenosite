@@ -6,8 +6,6 @@ function last_name(name) {
 }
 
 export function ResultSummaryDisplay() {
-  return <div></div>;
-
   const { response, resolved_name } = useLoaderData() || {};
   const results = response?.results || [];
 
