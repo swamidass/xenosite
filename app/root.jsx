@@ -5,11 +5,29 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  json,
   useMatches,
+  Link,
 } from "remix";
 
 import { Fragment } from "react";
+
+const XDot = (props) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    version="1.1"
+    xml:space="preserve"
+    width="60.0"
+    height="60.0"
+    viewBox="-10 -10 38.0 38.0"
+    {...props}
+  >
+    <circle r="18.0" cx="9" cy="9" style={{ fill: "rgb(23,90,254)" }}></circle>
+    <circle r="15.6" cx="9" cy="9" style={{ fill: "rgb(12,204,0)" }}></circle>
+    <circle r="12.7" cx="9" cy="9" style={{ fill: "rgb(205,202,0)" }}></circle>
+    <circle r="9.0" cx="9" cy="9" style={{ fill: "rgb(254,0,0)" }}></circle>
+  </svg>
+);
+
 import { Menu, Transition } from "@headlessui/react";
 import { ChevronDownIcon, ArrowLongLeftIcon } from "@heroicons/react/20/solid";
 import { MODELS } from "~/data";
@@ -25,7 +43,7 @@ import styles from "./styles/app.css";
 export function meta() {
   return {
     charset: "utf-8",
-    title: "Xenosite",
+    title: "XenoSite",
     viewport: "width=device-width,initial-scale=1",
   };
 }
@@ -53,10 +71,12 @@ export default function App() {
       </head>
       <body>
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
-          <h1 className="text-4xl inline font-bold pr-3">
-            <a href="/">XenoSite</a>
+          <h1 className="text-4xl inline font-bold pr-3 relative">
+            <div className="inset-0 absolute -top-2">
+              <XDot className="w-[4em] m-auto opacity-25" />
+            </div>
+            <Link to="/">XenoSite</Link>
           </h1>
-
           <Menu
             as="div"
             className="relative inline-block align-bottom w-50 text-left"
@@ -85,8 +105,8 @@ export default function App() {
                   {MODELS.map((x, i) => (
                     <Menu.Item key={i}>
                       {({ active }) => (
-                        <a
-                          href={`/${x.path}${
+                        <Link
+                          to={`/${x.path}${
                             smiles ? "/_/" + encodeURIComponent(smiles) : ""
                           }`}
                           className={classNames(
@@ -97,7 +117,7 @@ export default function App() {
                           )}
                         >
                           {x.model}
-                        </a>
+                        </Link>
                       )}
                     </Menu.Item>
                   ))}
