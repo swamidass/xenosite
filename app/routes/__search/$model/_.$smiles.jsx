@@ -68,26 +68,6 @@ export default function Model() {
 
   return (
     <div className="flex flex-wrap">
-      <div className="prose max-w-[20em]">
-        {resolved_name.description ? (
-          <>
-            {resolved_name.name ? (
-              <div>
-                <h1 className="text-xl font-bold pb-3">{resolved_name.name}</h1>
-              </div>
-            ) : null}
-            {resolved_name.description.Description} [
-            <a
-              className="underline"
-              href={resolved_name.description.DescriptionURL}
-            >
-              {resolved_name.description.DescriptionSourceName}
-            </a>
-            ]
-          </>
-        ) : null}
-      </div>
-
       <div className="flex mx-auto my-10 justify-center flex-wrap">
         {results.map((r, i) => (
           <div key={i}>
@@ -107,6 +87,26 @@ export default function Model() {
         >
           copy
         </a>
+      </div>
+
+      <div className="prose max-w-prose mx-auto">
+        {resolved_name.description ? (
+          <>
+            {resolved_name.name ? (
+              <div>
+                <h1 className="text-xl font-bold pb-3">{resolved_name.name}</h1>
+              </div>
+            ) : null}
+            {resolved_name.description.Description} [
+            <a
+              className="underline"
+              href={resolved_name.description.DescriptionURL}
+            >
+              {resolved_name.description.DescriptionSourceName}
+            </a>
+            ]
+          </>
+        ) : null}
       </div>
     </div>
   );
