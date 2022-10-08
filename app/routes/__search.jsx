@@ -102,9 +102,11 @@ export default function Search() {
             Type in a molecule name or SMILES string.
           </div>
         )}
-        {cansmi_split.length > 0
-          ? cansmi_split.map((c, i) => <div key={i}>{c}</div>)
-          : null}
+        <div className="text-xs text-gray-500">
+          {cansmi_split.length > 0
+            ? cansmi_split.map((c, i) => <div key={i}>{c}</div>)
+            : null}
+        </div>
       </div>
       <Outlet />
     </>
