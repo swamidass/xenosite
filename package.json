@@ -31,6 +31,7 @@
     "aws-sdk": "^2.1112.0",
     "clean-css": "^5.2.4",
     "dotenv": "^16.0.0",
+    "isbot": "^3.6.0",
     "opentype": "^0.1.2",
     "prettier": "^2.6.2",
     "react": "^18.2.0",
