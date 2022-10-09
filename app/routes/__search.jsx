@@ -1,15 +1,6 @@
 import { resolve_query } from "~/search";
 import { XDot } from "~/root";
-import {
-  Link,
-  useMatches,
-  useFetcher,
-  redirect,
-  Outlet,
-  useTransition,
-} from "remix";
-
-import { useEffect } from "react";
+import { useMatches, useFetcher, redirect, Outlet, useTransition } from "remix";
 
 export function headers() {
   return {
