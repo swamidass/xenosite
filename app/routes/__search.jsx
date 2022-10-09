@@ -1,14 +1,15 @@
 import { resolve_query } from "~/search";
+import { XDot } from "~/root";
 import {
   Link,
   useMatches,
-  useLoaderData,
-  Form,
+  useFetcher,
   redirect,
-  json,
-  useSubmit,
   Outlet,
+  useTransition,
 } from "remix";
+
+import { useEffect } from "react";
 
 export function headers() {
   return {
@@ -47,15 +48,13 @@ export async function loader({ params, request }) {
     return redirect(url, HEADERS);
   }
   return null;
-
-  return json(params, HEADERS);
 }
 
 export default function Search() {
   const matches = useMatches();
+  const fetcher = useFetcher();
 
-  const submit = useSubmit();
-
+  const transition = useTransition();
   const response = matches[matches.length - 1].data?.response;
 
   const smiles = matches[matches.length - 1].params?.smiles;
@@ -65,7 +64,8 @@ export default function Search() {
   const default_search = smiles || name || "";
 
   function handleChange(e) {
-    submit(e.currentTarget);
+    const formData = new FormData(e.target.form);
+    fetcher.submit(formData);
   }
 
   const cansmi = smiles || response?.smiles || "";
@@ -76,8 +76,7 @@ export default function Search() {
 
   return (
     <>
-      <Form
-        action="/"
+      <fetcher.Form
         method="GET"
         className="mt-10 pt-10 block w-full "
         onChange={handleChange}
@@ -88,14 +87,16 @@ export default function Search() {
           name="search"
           defaultValue={default_search}
         />
-        <input
-          type="text"
-          className="hidden"
-          name="model"
-          defaultValue={model}
-        />
+        {model ? (
+          <input
+            type="text"
+            className="hidden"
+            name="model"
+            defaultValue={model}
+          />
+        ) : null}
         <input className="hidden" type="submit" />
-      </Form>
+      </fetcher.Form>
       <div className="h-8 text-center  py-3">
         {default_search ? null : (
           <div className="text-red-400 text-sm">
@@ -108,7 +109,16 @@ export default function Search() {
             : null}
         </div>
       </div>
-      <Outlet />
+
+      {transition.state !== "idle" ? (
+        <div className="w-full pt-20 opacity-50">
+          <div className="mx-auto animate-ping block w-fit">
+            <XDot className="w-8" />
+          </div>
+        </div>
+      ) : (
+        <Outlet />
+      )}
     </>
   );
 }

@@ -11,11 +11,11 @@ import {
 
 import { Fragment } from "react";
 
-const XDot = (props) => (
+export const XDot = (props) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     version="1.1"
-    xml:space="preserve"
+    xmlSpace="preserve"
     width="60.0"
     height="60.0"
     viewBox="-10 -10 38.0 38.0"
