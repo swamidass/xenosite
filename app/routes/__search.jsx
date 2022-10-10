@@ -1,5 +1,5 @@
 import { resolve_query } from "~/search";
-import { XDot } from "~/root";
+import Spinner from "~/components/Spinner";
 import { useMatches, useFetcher, redirect, Outlet, useTransition } from "remix";
 
 export function headers() {
@@ -101,15 +101,7 @@ export default function Search() {
         </div>
       </div>
 
-      {transition.state !== "idle" ? (
-        <div className="w-full pt-20 opacity-50">
-          <div className="mx-auto animate-ping block w-fit">
-            <XDot className="w-8" />
-          </div>
-        </div>
-      ) : (
-        <Outlet />
-      )}
+      {transition.state !== "idle" ? <Spinner /> : <Outlet />}
     </>
   );
 }
