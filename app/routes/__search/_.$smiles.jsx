@@ -2,10 +2,10 @@ import { useLoaderData, json } from "remix";
 import { resolve_query_as_smiles } from "~/search";
 import { ResultSummaryDisplay } from "~/components/ResultSummaryDisplay";
 
+import HEADERS from "~/headers";
+
 export function headers() {
-  return {
-    "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
-  };
+  return HEADERS;
 }
 
 export async function loader({ params }) {
@@ -20,7 +20,7 @@ export async function loader({ params }) {
       response,
       resolved_name,
     },
-    { headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=600" } }
+    { headers: HEADERS }
   );
 }
 

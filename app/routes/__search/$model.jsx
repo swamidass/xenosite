@@ -1,5 +1,7 @@
-import { Outlet } from "remix";
+import { Outlet, json } from "remix";
 import { MODELS } from "~/data";
+
+import HEADERS from "~/headers";
 
 export async function loader({ params: { model } }) {
   const modelinfo = MODELS.find((x) => x.path == model);
@@ -9,7 +11,7 @@ export async function loader({ params: { model } }) {
       status: 404,
     });
   }
-  return {};
+  return json({}, { headers: HEADERS });
 }
 
 export default function Model() {

@@ -2,17 +2,11 @@ import { resolve_query } from "~/search";
 import Spinner from "~/components/Spinner";
 import { useMatches, useFetcher, redirect, Outlet, useTransition } from "remix";
 
-export function headers() {
-  return {
-    "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
-  };
-}
+import HEADERS from "~/headers";
 
-const HEADERS = {
-  headers: {
-    "Cache-Control": "max-age=10, stale-while-revalidate, s-maxage=72000",
-  },
-};
+export function headers() {
+  return HEADERS;
+}
 
 export async function loader({ params, request }) {
   const query = new URL(request.url).searchParams;

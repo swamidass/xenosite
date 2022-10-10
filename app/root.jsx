@@ -24,7 +24,11 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-import _ from "lodash";
+export function headers() {
+  return {
+    "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
+  };
+}
 
 import styles from "./styles/app.css";
 
