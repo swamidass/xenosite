@@ -25,5 +25,9 @@ export async function loader({ params }) {
 }
 
 export default function Model() {
-  return <ResultSummaryDisplay />;
+  const { response, resolved_name } = useLoaderData() || {};
+
+  return (
+    <ResultSummaryDisplay response={response} resolved_name={resolved_name} />
+  );
 }

@@ -1,17 +1,14 @@
-import { useLoaderData } from "remix";
-
 function last_name(name) {
   name = name.split(".");
   return name[name.length - 1];
 }
 
-export function ResultSummaryDisplay() {
-  const { response, resolved_name } = useLoaderData() || {};
+export function ResultSummaryDisplay({ response, resolved_name }) {
   const results = response?.results || [];
 
   return (
-    <div className="flex flex-wrap">
-      <div className="flex mx-auto my-10 justify-center flex-wrap">
+    <div className="w-fit mx-auto hover:border rounded  mt-10 relative p-10">
+      <div className="flex mx-auto mb-5 justify-center flex-wrap">
         {results.map((r, i) => (
           <div key={i}>
             <div dangerouslySetInnerHTML={{ __html: r.depiction }} />
@@ -21,17 +18,6 @@ export function ResultSummaryDisplay() {
           </div>
         ))}
       </div>
-      <div className="w-full pb-5">
-        <a
-          onClick={() => {
-            navigator.clipboard.writeText(JSON.stringify(response, null, 2));
-          }}
-          className="text-gray-300 w-fit hover:text-black  ml-auto block hover:underline cursor-pointer"
-        >
-          copy
-        </a>
-      </div>
-
       <div className="prose max-w-prose mx-auto">
         {resolved_name?.description ? (
           <>
@@ -40,9 +26,12 @@ export function ResultSummaryDisplay() {
                 <h1 className="text-xl font-bold pb-3">{resolved_name.name}</h1>
               </div>
             ) : null}
+            <div className="pb-3 text-xs  text-gray-500">{response.smiles}</div>
             {resolved_name.description.Description} [
             <a
               className="underline"
+              target="_blank"
+              rel="nofollow"
               href={resolved_name.description.DescriptionURL}
             >
               {resolved_name.description.DescriptionSourceName}
@@ -50,6 +39,17 @@ export function ResultSummaryDisplay() {
             ]
           </>
         ) : null}
+      </div>
+
+      <div className="print:hidden p-3 w-fit absolute bottom-0 right-0">
+        <a
+          onClick={() => {
+            navigator.clipboard.writeText(JSON.stringify(response, null, 2));
+          }}
+          className="print:hidden text-gray-300 w-fit hover:text-black  ml-auto block hover:underline cursor-copy"
+        >
+          copy{/* <ClipboardDocumentIcon alt="copy" className="w-6" /> */}
+        </a>
       </div>
     </div>
   );

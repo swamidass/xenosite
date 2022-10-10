@@ -56,7 +56,7 @@ export async function resolve_query_as_name(name, model) {
     ]);
 
     if (pubchem2) {
-      var j2 = await pubchem2.json();
+      const j2 = await pubchem2.json().catch(() => {});
       const description = j2?.InformationList?.Information[1];
 
       return [response, { name, description, smiles, cid, errmsg }];
