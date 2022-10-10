@@ -4,51 +4,70 @@ import { MODELS } from "~/data";
 
 export default function Model() {
   return (
-    <div className="prose max-w-prose py-20 mx-auto text-sm">
-      <p>
-        XenoSite predicts how small-molecules are metabolized by liver enzymes,
-        and if they are prone to covalently attach to biological molecules.
-      </p>
-      <p>
-        This website is free for all academic and evaluative use. Licenses are
-        available for secure commercial access and access to the programatic
-        API.
-      </p>
-      <p>
-        Tell us what you think. Post any comments, questions or problems on the{" "}
-        <a target="_blank" href="https://discourse.xenosite.org">
-          forum
-        </a>
-        .
-      </p>
+    <>
+      <div className="prose max-w-prose py-20 mx-auto text-sm">
+        <p className="text-lg font-bold">
+          <b>XenoSite</b> predicts how small-molecules become toxic after
+          metabolism by liver enzymes.
+        </p>
 
-      {MODELS.map((x) => (
-        <Fragment key={x.path}>
-          <h2>
-            <Link
-              className="no-underline hover:underline"
-              to={`/${x.path}`}
-              rel="prefetch"
-            >
-              {x.model}
-            </Link>
-          </h2>
+        <hr></hr>
+        <h2>More to Come</h2>
 
-          {x.info ? <x.info /> : null}
-        </Fragment>
-      ))}
+        <p>
+          This site is under active development. More models and features will
+          be available soon.{" "}
+          <a
+            target="_blank"
+            href={
+              "https://scholar.google.com/citations?user=oWGEj78AAAAJ&hl=en&oi=sra"
+            }
+          >
+            What
+          </a>{" "}
+          should we prioritize? Tell us on the{" "}
+          <a target="_blank" href="https://discourse.xenosite.org">
+            forum
+          </a>
+          .
+        </p>
 
-      <h2>Coming soon...</h2>
+        <h2> Getting Help </h2>
+        <p>
+          Post comments, questions or problems on the{" "}
+          <a target="_blank" href="https://discourse.xenosite.org">
+            forum
+          </a>
+          .
+        </p>
 
-      <p>
-        {" "}
-        This website is under active development. More models will be available
-        soon. Tell us what to prioritize on the{" "}
-        <a target="_blank" href="https://discourse.xenosite.org">
-          forum
-        </a>
-        .
-      </p>
-    </div>
+        <h2> Terms of Use </h2>
+        <p>
+          This website and the results it reports are free for all academic and
+          non-commercial use. Licenses are available for secure commercial
+          access and access to the programatic API.
+        </p>
+      </div>
+      <div className=" flex flex-wrap  justify-evenly items-start">
+        {MODELS.map((x) => (
+          <div
+            className="prose text-sm max-w-prose border p-3 rounded-lg align-top m-3  hover:shadow hover:bg-slate-50"
+            key={x.path}
+          >
+            <h2>
+              <Link
+                className="no-underline hover:underline"
+                to={`/${x.path}`}
+                rel="prefetch"
+              >
+                {x.model}
+              </Link>
+            </h2>
+
+            {x.info ? <x.info /> : null}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
