@@ -27,6 +27,8 @@ export default function handleRequest(
           let body = new PassThrough();
 
           responseHeaders.set("Content-Type", "text/html");
+
+          responseHeaders.set("Cache-Control", "public,s-maxage=600,stale-while-revalidate",);
           responseHeaders.set("Transfer-Encoding", "chunked");
           responseHeaders.set("Connection", "keep-alive");
 
