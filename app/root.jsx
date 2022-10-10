@@ -65,7 +65,7 @@ export default function App() {
             className="relative inline-block align-bottom w-50 text-left"
           >
             <div className="w-50">
-              <Menu.Button className="inline-flex w-50 text-left rounded-md border border-gray-300 bg-white px-4 py-2  font-medium shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 focus:ring-offset-gray-100">
+              <Menu.Button className="inline-flex w-50 text-left rounded-md border border-gray-300 bg-white px-4 py-2  font-medium shadow-sm hover:bg-gray-50 focus:outline-none ">
                 {modelinfo?.model}
                 <ChevronDownIcon
                   className="-mr-1 ml-auto h-5 w-5"
