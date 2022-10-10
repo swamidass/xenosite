@@ -2,17 +2,17 @@ import "dotenv/config";
 // import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 // import { DBMemoize } from "./db.server";
 
-const credentials = {
-  accessKeyId: process.env.AWS_SDK_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SDK_SECRET_ACCESS_KEY,
-};
+// const credentials = {
+//   accessKeyId: process.env.AWS_SDK_ACCESS_KEY_ID,
+//   secretAccessKey: process.env.AWS_SDK_SECRET_ACCESS_KEY,
+// };
 
-// const client = new LambdaClient({
-//   region: process.env.AWS_SDK_REGION,
-//   credentials: credentials,
-// });
+// // const client = new LambdaClient({
+// //   region: process.env.AWS_SDK_REGION,
+// //   credentials: credentials,
+// // });
 
-const asciiDecoder = new TextDecoder("ascii");
+// const asciiDecoder = new TextDecoder("ascii");
 
 // export const cansmi = DBMemoize(async (input) => {
 //   if (input === null) return null;
