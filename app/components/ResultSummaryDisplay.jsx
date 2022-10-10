@@ -11,7 +11,10 @@ export function ResultSummaryDisplay({ response, resolved_name }) {
       <div className="flex mx-auto mb-5 justify-center flex-wrap">
         {results.map((r, i) => (
           <div key={i}>
-            <div dangerouslySetInnerHTML={{ __html: r.depiction }} />
+            <img
+              className="max-w-full"
+              src={"data:image/svg+xml;utf8," + encodeURIComponent(r.depiction)}
+            />
             {results.length > 1 ? (
               <div className="text-center">{last_name(r.model)}</div>
             ) : null}
