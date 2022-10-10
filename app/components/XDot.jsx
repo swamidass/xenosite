@@ -1,5 +1,3 @@
-export default XDot;
-
 const XDot = (props) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -16,3 +14,5 @@ const XDot = (props) => (
     <circle r="9.0" cx="9" cy="9" style={{ fill: "rgb(254,0,0)" }}></circle>
   </svg>
 );
+
+export default XDot;
