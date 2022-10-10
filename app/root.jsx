@@ -7,15 +7,18 @@ import {
   ScrollRestoration,
   useMatches,
   Link,
+  useLoaderData,
+  useLocation,
+  json,
 } from "remix";
 
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import { Menu, Transition } from "@headlessui/react";
 import { ChevronDownIcon, ArrowLongLeftIcon } from "@heroicons/react/20/solid";
 import { MODELS } from "~/data";
 import XDot from "~/components/XDot";
 
-import * as gtag from "~/utils/gtags.client";
+import * as gtag from "~/gtags.client";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -24,7 +27,6 @@ function classNames(...classes) {
 import _ from "lodash";
 
 import styles from "./styles/app.css";
-import { useLoaderData } from "public/build/_shared/chunk-Z6NSUXTB";
 
 export function meta() {
   return {
