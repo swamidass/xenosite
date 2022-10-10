@@ -15,6 +15,8 @@ import { ChevronDownIcon, ArrowLongLeftIcon } from "@heroicons/react/20/solid";
 import { MODELS } from "~/data";
 import XDot from "~/components/XDot";
 
+import * as gtag from "~/utils/gtags.client";
+
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -22,6 +24,7 @@ function classNames(...classes) {
 import _ from "lodash";
 
 import styles from "./styles/app.css";
+import { useLoaderData } from "public/build/_shared/chunk-Z6NSUXTB";
 
 export function meta() {
   return {
@@ -39,10 +42,48 @@ export function links() {
   ];
 }
 
+export const loader = async () => {
+  return json({ gaTrackingId: process.env.GA_TRACKING_ID });
+};
+
+function Gtag({ gaTrackingId }) {
+  return process.env.NODE_ENV === "development" || !gaTrackingId ? null : (
+    <>
+      <script
+        async
+        src={`https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`}
+      />
+      <script
+        async
+        id="gtag-init"
+        dangerouslySetInnerHTML={{
+          __html: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${gaTrackingId}', {
+            page_path: window.location.pathname,
+          });
+        `,
+        }}
+      />
+    </>
+  );
+}
+
 export default function App() {
   const matches = useMatches();
+  const location = useLocation();
+
+  const { gaTrackingId } = useLoaderData();
   const model = matches[0].params?.model;
   const smiles = matches[0].params?.smiles;
+
+  useEffect(() => {
+    if (gaTrackingId?.length) {
+      gtag.pageview(location.pathname, gaTrackingId);
+    }
+  }, [location, gaTrackingId]);
 
   const modelinfo = MODELS.find((x) => x.path == model);
 
@@ -53,6 +94,8 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <Gtag gaTrackingId={gaTrackingId} />
+
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
           <h1 className="text-4xl inline font-bold pr-3 relative">
             <div className="inset-0 absolute -top-2 -z-10">
