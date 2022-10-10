@@ -6,12 +6,28 @@ export default function Model() {
   return (
     <>
       <div className="prose max-w-prose py-20 mx-auto text-sm">
-        <p className="text-lg font-bold">
+        <h2>What is XenoSite?</h2>
+        <p>
           <b>XenoSite</b> predicts how small-molecules become toxic after
           metabolism by liver enzymes.
         </p>
 
-        <hr></hr>
+        <h2> Getting Help </h2>
+        <p>
+          Post comments, questions or problems on the{" "}
+          <a target="_blank" href="https://discourse.xenosite.org">
+            forum
+          </a>
+          .
+        </p>
+
+        <h2> Terms of Use </h2>
+        <p>
+          This website and the results it reports are free for all academic and
+          non-commercial use. Licenses are available for secure commercial
+          access and access to the programatic API.
+        </p>
+
         <h2>More to Come</h2>
 
         <p>
@@ -30,22 +46,6 @@ export default function Model() {
             forum
           </a>
           .
-        </p>
-
-        <h2> Getting Help </h2>
-        <p>
-          Post comments, questions or problems on the{" "}
-          <a target="_blank" href="https://discourse.xenosite.org">
-            forum
-          </a>
-          .
-        </p>
-
-        <h2> Terms of Use </h2>
-        <p>
-          This website and the results it reports are free for all academic and
-          non-commercial use. Licenses are available for secure commercial
-          access and access to the programatic API.
         </p>
       </div>
       <div className=" flex flex-wrap  justify-evenly items-start">
