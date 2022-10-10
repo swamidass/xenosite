@@ -96,8 +96,6 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Gtag gaTrackingId={gaTrackingId} />
-
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
           <h1 className="text-4xl inline font-bold pr-3 relative">
             <div className="inset-0 absolute -top-2 -z-10">
@@ -168,6 +166,8 @@ export default function App() {
 
         <ScrollRestoration />
         <Scripts />
+
+        <Gtag gaTrackingId={gaTrackingId} />
         <LiveReload />
       </body>
     </html>
