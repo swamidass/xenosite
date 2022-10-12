@@ -1,7 +1,8 @@
-import { resolve_query } from "~/search";
+import { resolve_query, check_smiles } from "~/search";
 import Spinner from "~/components/Spinner";
 import { useMatches, useFetcher, redirect, Outlet, useTransition } from "remix";
 
+import { useState } from "react";
 import HEADERS from "~/headers";
 
 export function headers() {
@@ -13,7 +14,6 @@ export async function loader({ params, request }) {
 
   const search = query.get("search");
   const model = query.get("model");
-
   const { smiles, name } = await resolve_query(search);
 
   if (name) {
@@ -46,14 +46,29 @@ export default function Search() {
   const model = matches[matches.length - 1].params?.model;
   const name = matches[matches.length - 1].params?.name;
 
-  const default_search = smiles || name || "";
+  const default_search = smiles || name || null;
+
+  const cansmi = smiles || response?.smiles || "";
+
+  function smiles_msg(smi) {
+    const smi_ck = check_smiles(smi);
+    return !default_search
+      ? "Type in a molecule name or SMILES string."
+      : smi_ck.msg;
+  }
+
+  const msg = smiles ? smiles_msg(cansmi) : "";
+  const [message, setMessage] = useState(msg);
 
   function handleChange(e) {
     const formData = new FormData(e.target.form);
+
+    const search = formData.get("search");
+    const msg = smiles ? smiles_msg(search) : "";
+    setMessage(msg);
+
     fetcher.submit(formData);
   }
-
-  const cansmi = smiles || response?.smiles || "";
 
   let cansmi_split = cansmi
     ? cansmi.split(".").sort((a, b) => b.length - a.length)
@@ -83,16 +98,7 @@ export default function Search() {
         <input className="hidden" type="submit" />
       </fetcher.Form>
       <div className="h-8 text-center  py-3">
-        {default_search ? null : (
-          <div className="text-red-400 text-sm">
-            Type in a molecule name or SMILES string.
-          </div>
-        )}
-        <div className="text-xs text-gray-500">
-          {cansmi_split.length > 0
-            ? cansmi_split.map((c, i) => <div key={i}>{c}</div>)
-            : null}
-        </div>
+        {message ? <div className="text-red-400 text-sm">{message}</div> : null}
       </div>
 
       {transition.state !== "idle" ? <Spinner /> : <Outlet />}

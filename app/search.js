@@ -1,4 +1,15 @@
 import { backend_api } from "~/backend.server";
+import { Parser as smilesParser } from "smiles-drawer";
+
+export function check_smiles(smiles) {
+  // throws exception on invalid smiles
+  try {
+    smilesParser.parse(smiles);
+  } catch (e) {
+    return { msg: e.message };
+  }
+  return {};
+}
 
 export async function resolve_query(query, model) {
   if (!query) return {};
@@ -41,8 +52,6 @@ export async function resolve_query_as_name(name, model) {
   const cid = j1.PropertyTable?.Properties[0].CID;
   const smiles = j1.PropertyTable?.Properties[0].CanonicalSMILES;
   const errmsg = j1.Fault?.Message;
-
-  console.log(name);
 
   if (cid && smiles) {
     const pubchem_url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
