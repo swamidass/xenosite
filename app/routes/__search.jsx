@@ -101,7 +101,7 @@ export default function Search() {
         {message ? <div className="text-red-400 text-sm">{message}</div> : null}
       </div>
 
-      {transition.state !== "idle" ? <Spinner /> : <Outlet />}
+      {transition.submission ? <Spinner /> : <Outlet />}
     </>
   );
 }
