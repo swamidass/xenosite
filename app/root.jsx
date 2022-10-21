@@ -35,8 +35,20 @@ import styles from "./styles/app.css";
 export function meta() {
   return {
     charset: "utf-8",
-    title: "XenoSite",
+    "og:title": "XenoSite",
     viewport: "width=device-width,initial-scale=1",
+    "og:title": "XenoSite",
+    "og:type": "website",
+    "og:url": "https://xenosite.org/",
+    "og:description":
+      "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
+    "og:image": "https://xenosite.org/favicon.png",
+    "twitter:title": "XenoSite",
+    "twitter:description":
+      "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
+    "twitter:url": "https://xenosite.org/",
+    "twitter:image": "https://xenosite.org/favicon.png",
+    "twitter:site": "@xenosite",
   };
 }
 
