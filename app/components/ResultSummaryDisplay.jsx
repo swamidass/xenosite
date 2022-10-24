@@ -31,7 +31,9 @@ export function ResultSummaryDisplay({ response, resolved_name }) {
                 <h1 className="text-xl font-bold pb-3">{resolved_name.name}</h1>
               </div>
             ) : null}
-            <div className="pb-3 text-xs  text-gray-500">{response.smiles}</div>
+            <div className="pb-3 text-xs  text-gray-500">
+              {response?.smiles}
+            </div>
             {resolved_name.description.Description} [
             <a
               className="underline"
