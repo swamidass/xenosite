@@ -51,10 +51,11 @@ export default function Search() {
   const cansmi = smiles || response?.smiles || "";
 
   function smiles_msg(smi) {
+    if (!smi) {
+      return "";
+    }
     const smi_ck = check_smiles(smi);
-    return !default_search
-      ? "Type in a molecule name or SMILES string."
-      : smi_ck.msg;
+    return smi_ck.msg;
   }
 
   const msg = smiles ? smiles_msg(cansmi) : "";
@@ -83,8 +84,9 @@ export default function Search() {
       >
         <input
           type="text"
-          className=" text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
+          className="placeholder:text-red-400 placeholder:text-sm text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
           name="search"
+          placeholder="Type in a molecule name or SMILES string."
           defaultValue={default_search}
         />
         {model ? (
