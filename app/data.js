@@ -20,7 +20,11 @@ export const MODELS = [
           <li>
             Hughes, T. B., Miller, G. P., Swamidass, S. J. (2015). Modeling
             Epoxidation of Drug-like Molecules with a Deep Machine Learning
-            Network. ACS Central Science, 1(4), 168-180, <a href="https://doi.org/10.1021/acscentsci.5b00131">DOI</a>.
+            Network. ACS Central Science, 1(4), 168-180,{" "}
+            <a href="https://doi.org/10.1021/acscentsci.5b00131">
+              https://doi.org/10.1021/acscentsci.5b00131
+            </a>
+            .
           </li>
         </ol>
       </>
@@ -49,8 +53,12 @@ export const MODELS = [
         <ol>
           <li>
             Hughes, T. B. and Swamidass, S. J. (2017). Deep Learning to Predict
-            the Formation of Quinone Species in Drug Metabolism. Chemical Research in
-            Toxicology, <a href="https://doi.org/10.1021/acs.chemrestox.6b00385">DOI</a>.
+            the Formation of Quinone Species in Drug Metabolism. Chemical
+            Research in Toxicology,{" "}
+            <a href="https://doi.org/10.1021/acs.chemrestox.6b00385">
+              https://doi.org/10.1021/acs.chemrestox.6b00385
+            </a>
+            .
           </li>
         </ol>
       </>
@@ -79,14 +87,20 @@ export const MODELS = [
           <li>
             Hughes, T. B., Miller, G. P., Swamidass, S. J. (2015). Site of
             Reactivity Models Predict Molecular Reactivity of Diverse Chemicals
-            with Glutathione. Chemical Research in Toxicology, 28(4),
-            797-809, <a href="https://doi.org/10.1021/acs.chemrestox.5b00017">DOI</a>.
+            with Glutathione. Chemical Research in Toxicology, 28(4), 797-809,{" "}
+            <a href="https://doi.org/10.1021/acs.chemrestox.5b00017">
+              https://doi.org/10.1021/acs.chemrestox.5b00017
+            </a>
+            .
           </li>
           <li>
             Hughes, T. B., Dang, N. L., Miller, G. P., Swamidass, S. J. (2016).
             Modeling Reactivity to Biological Macromolecules with a Deep
-            Multitask Network. ACS Central
-            Science, <a href="https://doi.org/10.1021/acscentsci.6b00162">DOI</a>.
+            Multitask Network. ACS Central Science,{" "}
+            <a href="https://doi.org/10.1021/acscentsci.6b00162">
+              https://doi.org/10.1021/acscentsci.6b00162
+            </a>
+            .
           </li>
         </ol>
       </>
@@ -114,7 +128,11 @@ export const MODELS = [
             Computationally Assessing the Bioactivation of Drugs by
             N-Dealkylation Na Le Dang, Tyler B. Hughes, Grover P. Miller, and S.
             Joshua Swamidass. Chemical Research in Toxicology 2018 31 (2),
-            68-80, <a href="https://doi.org/10.1021/acs.chemrestox.7b00191">DOI</a>.
+            68-80,{" "}
+            <a href="https://doi.org/10.1021/acs.chemrestox.7b00191">
+              https://doi.org/10.1021/acs.chemrestox.7b00191
+            </a>
+            .
           </li>
         </ol>
       </>
@@ -139,7 +157,11 @@ export const MODELS = [
           <li>
             Dang, N. L, Hughes, T. B., Krishnamurthy, V., and Swamidass, S. J.
             (2016). A Simple Model Predicts UGT-Mediated Metabolism.
-            Bioinformatics, <a href="https://doi.org/10.1093/bioinformatics/btw350">DOI</a>.
+            Bioinformatics,{" "}
+            <a href="https://doi.org/10.1093/bioinformatics/btw350">
+              https://doi.org/10.1093/bioinformatics/btw350
+            </a>
+            .
           </li>
         </ol>
       </>
