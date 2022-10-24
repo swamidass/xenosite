@@ -32,14 +32,15 @@ export function headers() {
 
 import styles from "./styles/app.css";
 
-export function meta() {
+export function meta({ location }) {
   return {
     charset: "utf-8",
     "og:title": "XenoSite",
     viewport: "width=device-width,initial-scale=1",
     "og:title": "XenoSite",
     "og:type": "website",
-    "og:url": "https://xenosite.org/",
+
+    "og:url": "https://xenosite.org" + location.pathname,
     "og:description":
       "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
     "og:image": "https://xenosite.org/favicon.png",
