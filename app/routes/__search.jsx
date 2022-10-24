@@ -34,47 +34,24 @@ export async function loader({ params, request }) {
   return null;
 }
 
-export async function meta({ params }) {
-  console.log("inside results summary");
+export function meta({ location, params }) {
   console.log(params);
-
-  if (JSON.stringify(params) !== "{}") {
-    const [response, resolved_name] = await resolve_query_as_smiles(
-      params.smiles,
-      params.model
-    );
-
-    // Need to change it at each place that controls data
-    // for each relevant meta tag. Default tab will be on index/root, somehow
-    console.log(response);
-
-    return {
-      charset: "utf-8",
-      "og:title": params.model ? "XenoSite | " + params.model : "XenoSite",
-      viewport: "width=device-width,initial-scale=1",
-      "og:type": "website",
-      "og:url": params.smiles
-        ? "https://xenosite.org/" + params.model + "/_/" + params.smiles
-        : "https://xenosite.org/",
-      "og:description":
-        "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
-      "og:image":
-        response.results.length > 0
-          ? response.results[0].depiction !== undefined
-            ? response.results[0].depiction
-            : "https://xenosite.org/favicon.png"
-          : "https://xenosite.org/favicon.png",
-      "twitter:title":
-        params.model !== undefined ? "XenoSite | " + params.model : "XenoSite",
-      "twitter:description":
-        "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
-      "twitter:url": "https://xenosite.org/",
-      "twitter:image": "https://xenosite.org/favicon.png",
-      "twitter:site": "@xenosite",
-    };
-  } else {
-    return {};
-  }
+  return {
+    charset: "utf-8",
+    "og:title": "XenoSite",
+    viewport: "width=device-width,initial-scale=1",
+    "og:type": "website",
+    "og:url": "https://xenosite.org" + location.pathname,
+    "og:description":
+      "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
+    "og:image": "https://xenosite.org/favicon.png",
+    "twitter:title": "XenoSite",
+    "twitter:description":
+      "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes",
+    "twitter:url": "https://xenosite.org/",
+    "twitter:image": "https://xenosite.org/favicon.png",
+    "twitter:site": "@xenosite",
+  };
 }
 
 export default function Search() {
