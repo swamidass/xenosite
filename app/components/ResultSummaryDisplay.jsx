@@ -1,6 +1,8 @@
 function last_name(name) {
   name = name.split(".");
-  return name[name.length - 1];
+  name = name[name.length - 1];
+  name = name.replace("_", " ");
+  return name;
 }
 
 export function ResultSummaryDisplay({ response, resolved_name }) {
@@ -10,13 +12,13 @@ export function ResultSummaryDisplay({ response, resolved_name }) {
     <div className="w-fit mx-auto hover:border rounded  mt-10 relative p-10">
       <div className="flex mx-auto mb-5 justify-center flex-wrap">
         {results.map((r, i) => (
-          <div key={i}>
+          <div key={i} className=" mx-2">
             <img
-              className="max-w-full"
+              className="max-w-full mx-auto "
               src={"data:image/svg+xml;utf8," + encodeURIComponent(r.depiction)}
             />
             {results.length > 1 ? (
-              <div className="text-center">{last_name(r.model)}</div>
+              <div className="text-center w-100">{last_name(r.model)}</div>
             ) : null}
           </div>
         ))}

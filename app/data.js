@@ -107,6 +107,39 @@ export const MODELS = [
     ),
   },
   {
+    model: "Phase 1",
+    endpoint: "/v0/phase1",
+    path: "phase1",
+
+    info: () => (
+      <>
+        <p>
+          Phase I enzymes, which are responsible for the metabolism of more than
+          90% of FDA approved drugs, catalyze highly diverse types of reactions
+          and produce metabolites with substantial structural variability. We
+          propose a system for simultaneously labeling sites of metabolism and
+          reaction types, classifying them into five key reaction classes:
+          stable and unstable oxidations, dehydrogenation, hydrolysis, and
+          reduction. These classes unambiguously identify 21 types of phase I
+          reactions, which cover 92.3% of known reactions in our database. We
+          used this labeling system to train a neural network on 20,736 human
+          phase I metabolic reactions, able to identify reaction-type specific
+          sites of metabolism with a cross-validated accuracy of 97.1% area
+          under the receiver operator curve.
+        </p>
+        <p>Please cite:</p>
+        <ol>
+          <li>
+            The Metabolic Rainbow: Deep Learning Phase I Metabolism in Five
+            Colors. Na Le Dang, Matthew K. Matlock, Tyler B. Hughes, and S.
+            Joshua Swamidass Journal of Chemical Information and Modeling 2020
+            60 (3), 1146-1164 DOI: 10.1021/acs.jcim.9b00836
+          </li>
+        </ol>
+      </>
+    ),
+  },
+  {
     model: "N-Dealkylation",
     endpoint: "/v0/ndealk",
     path: "ndealk",
