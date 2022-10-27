@@ -18,7 +18,7 @@ import { ChevronDownIcon, ArrowLongLeftIcon } from "@heroicons/react/20/solid";
 import { MODELS } from "~/data";
 import XDot from "~/components/XDot";
 
-//import * as gtag from "~/gtags.client";
+import * as gtag from "~/gtags.client";
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
