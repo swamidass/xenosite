@@ -119,6 +119,7 @@ export default function Search() {
           name="search"
           placeholder="Type in a molecule name or SMILES string."
           defaultValue={default_search}
+          ref={searchInput}
         />
         {model ? (
           <input
@@ -126,7 +127,6 @@ export default function Search() {
             className="hidden"
             name="model"
             defaultValue={model}
-            ref={searchInput}
           />
         ) : null}
         <input className="hidden" type="submit" />
