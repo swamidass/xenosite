@@ -1,7 +1,7 @@
 import { resolve_query, check_smiles, resolve_query_as_smiles } from "~/search";
 import Spinner from "~/components/Spinner";
 import { useMatches, useFetcher, redirect, Outlet, useTransition } from "remix";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import HEADERS from "~/headers";
 
 export function headers() {
@@ -35,17 +35,21 @@ export async function loader({ params, request }) {
 }
 
 export default function Search() {
-  const matches = useMatches();
   const fetcher = useFetcher();
 
   const transition = useTransition();
-  const response = matches[matches.length - 1].data?.response;
+  const searchInput = useRef();
 
+  const matches = useMatches();
+  const response = matches[matches.length - 1].data?.response;
   const smiles = matches[matches.length - 1].params?.smiles;
   const model = matches[matches.length - 1].params?.model;
   const name = matches[matches.length - 1].params?.name;
 
   const default_search = smiles || name || null;
+
+  const [lookup, setLookup] = useState(null);
+  const [spinner, setSpinner] = useState(false);
 
   const cansmi = smiles || response?.smiles || "";
 
@@ -65,10 +69,38 @@ export default function Search() {
 
     const search = formData.get("search");
     const msg = smiles ? smiles_msg(search) : "";
-    setMessage(msg);
 
-    fetcher.submit(formData);
+    setMessage(msg);
+    setLookup(search);
   }
+
+  useEffect(() => {
+    if (!lookup) return; // avoid extra call on load of page
+
+    let timeout = setTimeout(() => {
+      const formData = searchInput.current.form;
+      fetcher.submit(formData);
+    }, 200); // delay fetch
+
+    return () => {
+      clearTimeout(timeout);
+    }; // debounce fetch
+  }, [lookup]);
+
+  useEffect(() => {
+    if (transition.state == "idle") {
+      setSpinner(false); // remove spinner
+      return;
+    }
+
+    let timeout = setTimeout(() => {
+      setSpinner(true);
+    }, 300); // delayed set spinner
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [transition]);
 
   let cansmi_split = cansmi
     ? cansmi.split(".").sort((a, b) => b.length - a.length)
@@ -94,6 +126,7 @@ export default function Search() {
             className="hidden"
             name="model"
             defaultValue={model}
+            ref={searchInput}
           />
         ) : null}
         <input className="hidden" type="submit" />
@@ -102,7 +135,7 @@ export default function Search() {
         {message ? <div className="text-red-400 text-sm">{message}</div> : null}
       </div>
 
-      {transition.submission ? <Spinner /> : <Outlet />}
+      {spinner ? <Spinner /> : <Outlet />}
     </>
   );
 }
