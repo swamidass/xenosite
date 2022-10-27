@@ -18,18 +18,18 @@ export async function loader({ params, request }) {
   if (name) {
     const url =
       "/" + (model ? model + "/" : "") + `n/${encodeURIComponent(name)}`;
-    return redirect(url, HEADERS);
+    return redirect(url, { headers: HEADERS });
   }
 
   if (smiles) {
     const url =
       "/" + (model ? model + "/" : "") + `_/${encodeURIComponent(smiles)}`;
-    return redirect(url, HEADERS);
+    return redirect(url, { headers: HEADERS });
   }
 
   if (model) {
     const url = "/" + model;
-    return redirect(url, HEADERS);
+    return redirect(url, { headers: HEADERS });
   }
   return null;
 }
