@@ -101,6 +101,8 @@ export default function App() {
   useEffect(() => {
     if (gaTrackingId?.length) {
       gtag.pageview(location.pathname, gaTrackingId);
+    } else {
+      console.log("pageview", location.pathname);
     }
   }, [location, gaTrackingId]);
 
