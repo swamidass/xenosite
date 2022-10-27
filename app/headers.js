@@ -1,5 +1,5 @@
 const headers = {
-  "Cache-Control": "public,s-maxage=600,stale-while-revalidate",
+  "Cache-Control": "public,maxage=600,s-maxage=6000,stale-while-revalidate",
 };
 
 export default headers;
