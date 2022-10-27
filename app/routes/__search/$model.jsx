@@ -3,7 +3,7 @@ import { MODELS } from "~/data";
 
 import HEADERS from "~/headers";
 
-export function meta({ location, params }) {
+export function meta({ params }) {
   const modelinfo = MODELS.find((x) => x.path == params.model);
 
   return {
