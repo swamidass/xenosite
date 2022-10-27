@@ -44,11 +44,11 @@ export function meta({ location }) {
     "og:type": "website",
     "og:url": "https://xenosite.org" + location.pathname,
     "og:description": description,
-    "og:image": "https://xenosite.org/favicon.png",
+    "og:image": "https://xenosite.org/xenosite.png",
     "twitter:title": "XenoSite",
     "twitter:description": description,
     "twitter:url": "https://xenosite.org" + location.pathname,
-    "twitter:image": "https://xenosite.org/favicon.png",
+    "twitter:image": "https://xenosite.org/xenosite.png",
     "twitter:site": "@xenosite",
   };
 }
