@@ -99,7 +99,7 @@ export default function App() {
   const smiles = matches[0].params?.smiles;
 
   useEffect(() => {
-    if (gaTrackingId?.length) {
+    if (gaTrackingId) {
       gtag.pageview(location.pathname, gaTrackingId);
     } else {
       console.log("pageview", location.pathname);
