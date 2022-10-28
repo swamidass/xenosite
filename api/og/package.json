@@ -1,0 +1,9 @@
+{
+  "name": "og",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/og": "^0.0.20"
+  }
+}
