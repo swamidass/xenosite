@@ -2,7 +2,7 @@ import { MODELS } from "~/data";
 import { Link, useMatches } from "remix";
 
 export default function Model() {
-  const { model } = useMatches()[0].params;
+  const { model, query } = useMatches()[0].params;
   const modelinfo = MODELS.find((x) => x.path == model);
 
   return (

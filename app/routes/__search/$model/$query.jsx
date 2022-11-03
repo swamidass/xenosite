@@ -1,5 +1,7 @@
 import { useLoaderData, json } from "remix";
-import { resolve_query_as_smiles } from "~/search";
+//import { defer } from "@remix-run/node";
+import { Await, defer } from "react";
+import { resolve_query } from "~/search";
 import { ResultSummaryDisplay } from "~/components/ResultSummaryDisplay";
 
 import HEADERS from "~/headers";
@@ -9,25 +11,19 @@ export function headers() {
 }
 
 export async function loader({ params }) {
-  const [response, resolved_name] = await resolve_query_as_smiles(
-    params.smiles,
-    params.model
-  );
+  const resolved_query = await resolve_query(params);
 
   return json(
     {
       params,
-      response,
-      resolved_name,
+      resolved_query,
     },
     { headers: HEADERS }
   );
 }
 
 export default function Model() {
-  const { response, resolved_name } = useLoaderData() || {};
+  const { resolved_query } = useLoaderData() || {};
 
-  return (
-    <ResultSummaryDisplay response={response} resolved_name={resolved_name} />
-  );
+  return <ResultSummaryDisplay resolved_query={resolved_query} />;
 }

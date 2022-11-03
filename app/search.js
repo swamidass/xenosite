@@ -1,39 +1,52 @@
-import { backend_api } from "~/backend.server";
 import { Parser as smilesParser } from "smiles-drawer";
 
-export function check_smiles(smiles) {
+export const resolve_query = async ({ model, query }) => {
+  let response, resolved_name;
+
+  if (check_smiles(query).err)
+    [response, resolved_name] = await resolve_query_as_name(query, model);
+  else {
+    [response, resolved_name] = await resolve_query_as_smiles(query, model);
+  }
+
+  if (!response) response = {};
+  response.resolved_name = resolved_name;
+
+  return response;
+};
+
+const XENOSITE_BACKEND =
+  process.env.XENOSITE_BACKEND || `http://127.0.0.1:8000`;
+function _backend_fetch(url) {
+  console.log("FETCH " + url);
+  return fetch(url);
+}
+
+const backend_api = async (smiles, url) => {
+  return await _backend_fetch(
+    `${XENOSITE_BACKEND}${url}?` +
+      new URLSearchParams({
+        smiles: smiles,
+        depict: "true",
+      })
+  )
+    .then((x) => x.json())
+    .catch((e) => {});
+};
+function check_smiles(smiles) {
   // throws exception on invalid smiles
   try {
     smilesParser.parse(smiles);
   } catch (e) {
-    return { msg: e.message };
+    return { err: e.message };
   }
   return {};
 }
 
-export async function resolve_query(query, model) {
-  if (!query) return {};
-
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${query}/property/CanonicalSMILES/json`;
-
-  const [backend, pubchem1] = await Promise.all([
-    backend_api(query, "/v1/canonize"),
-    fetch(url),
-  ]);
-  if (backend.smiles) return backend;
-
-  const j1 = await pubchem1.json();
-  const smiles = j1.PropertyTable?.Properties[0].CanonicalSMILES;
-
-  if (smiles) return { name: query };
-
-  return {};
-}
-
-export async function resolve_query_as_smiles(smiles, model) {
+async function resolve_query_as_smiles(smiles, model) {
   if (!smiles) return [null, null];
 
-  const url = model ? "/v0/" + model : "/v1/canonize";
+  const url = model != "_" ? "/v0/" + model : "/v1/canonize";
   const [response, name_resolve] = await Promise.all([
     backend_api(smiles, url),
     resolve_smiles_name(smiles),
@@ -42,7 +55,7 @@ export async function resolve_query_as_smiles(smiles, model) {
   return [response, name_resolve];
 }
 
-export async function resolve_query_as_name(name, model) {
+async function resolve_query_as_name(name, model) {
   if (!name) return [null, null];
 
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${name}/property/CanonicalSMILES/json`;
@@ -57,7 +70,7 @@ export async function resolve_query_as_name(name, model) {
     const pubchem_url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
     console.log("FETCH", pubchem_url);
 
-    const model_url = model ? "/v0/" + model : "/v1/canonize";
+    const model_url = model != "_" ? "/v0/" + model : "/v1/canonize";
 
     const [response, pubchem2] = await Promise.all([
       backend_api(smiles, model_url),
@@ -80,7 +93,7 @@ async function resolve_smiles_name(smiles) {
     smiles
   )}/synonyms/json`;
   const pubchem1 = await fetch(url);
-  console.log("GET", url);
+  console.log("FETCH", url);
 
   const j1 = await pubchem1.json();
   const cid = j1.InformationList?.Information[0].CID;
@@ -90,7 +103,7 @@ async function resolve_smiles_name(smiles) {
 
   if (cid) {
     url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
-    console.log(url);
+    console.log("FETCH", url);
     var j2 = await fetch(url)
       .then((x) => x.json())
       .catch((x) => {});

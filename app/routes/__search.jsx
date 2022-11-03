@@ -1,125 +1,80 @@
-import { resolve_query, check_smiles, resolve_query_as_smiles } from "~/search";
-import Spinner from "~/components/Spinner";
-import { useMatches, useFetcher, redirect, Outlet, useTransition } from "remix";
-import { useState, useEffect, useRef } from "react";
+import {
+  useMatches,
+  useFetcher,
+  Outlet,
+  useNavigate,
+  redirect,
+  useTransition,
+} from "remix";
+import { useState, useEffect } from "react";
 import HEADERS from "~/headers";
-
+import Spinner from "~/components/Spinner";
 export function headers() {
   return HEADERS;
 }
 
-export async function loader({ params, request }) {
+function query_url(model, query) {
+  if (!query) {
+    if (!model || model == "_") return "/";
+    return `/${model}`;
+  }
+  return `/${model ? model : "_"}/${encodeURIComponent(query)}`;
+}
+
+export async function loader({ request }) {
   const query = new URL(request.url).searchParams;
 
   const search = query.get("search");
   const model = query.get("model");
-  const { smiles, name } = await resolve_query(search);
 
-  if (name) {
-    const url =
-      "/" + (model ? model + "/" : "") + `n/${encodeURIComponent(name)}`;
-    return redirect(url, { headers: HEADERS });
+  if (model || search) {
+    const url = query_url(model, search);
+    throw redirect(url);
   }
-
-  if (smiles) {
-    const url =
-      "/" + (model ? model + "/" : "") + `_/${encodeURIComponent(smiles)}`;
-    return redirect(url, { headers: HEADERS });
-  }
-
-  if (model) {
-    const url = "/" + model;
-    return redirect(url, { headers: HEADERS });
-  }
-  return null;
+  return {};
 }
 
 export default function Search() {
   const fetcher = useFetcher();
 
-  const transition = useTransition();
-  const searchInput = useRef();
-
   const matches = useMatches();
-  const response = matches[matches.length - 1].data?.response;
-  const smiles = matches[matches.length - 1].params?.smiles;
-  const model = matches[matches.length - 1].params?.model;
-  const name = matches[matches.length - 1].params?.name;
+  const query = matches[matches.length - 1].params?.query;
+  const model = matches[matches.length - 1].params?.model || (query ? "_" : "");
 
-  const default_search = smiles || name || null;
+  const navigate = useNavigate();
 
-  const [lookup, setLookup] = useState(null);
-  const [spinner, setSpinner] = useState(false);
+  const transition = useTransition();
 
-  const cansmi = smiles || response?.smiles || "";
-
-  function smiles_msg(smi) {
-    if (!smi) {
-      return "";
-    }
-    const smi_ck = check_smiles(smi);
-    return smi_ck.msg;
-  }
-
-  const msg = smiles ? smiles_msg(cansmi) : "";
-  const [message, setMessage] = useState(msg);
-
-  function handleChange(e) {
-    const formData = new FormData(e.target.form);
-
-    const search = formData.get("search");
-    const msg = smiles ? smiles_msg(search) : "";
-
-    setMessage(msg);
-    setLookup(search);
-  }
+  const [new_query, setNewQuery] = useState(query);
 
   useEffect(() => {
-    if (!lookup) return; // avoid extra call on load of page
+    if (new_query == query) return;
 
-    let timeout = setTimeout(() => {
-      const formData = searchInput.current.form;
-      fetcher.submit(formData);
-    }, 200); // delay fetch
-
+    const debounced = setTimeout(() => {
+      navigate(query_url(model, new_query));
+    }, 300);
     return () => {
-      clearTimeout(timeout);
-    }; // debounce fetch
-  }, [lookup]);
-
-  useEffect(() => {
-    if (transition.state == "idle") {
-      setSpinner(false); // remove spinner
-      return;
-    }
-
-    let timeout = setTimeout(() => {
-      setSpinner(true);
-    }, 300); // delayed set spinner
-
-    return () => {
-      clearTimeout(timeout);
+      clearTimeout(debounced);
     };
-  }, [transition]);
+  }, [new_query, model]);
 
-  let cansmi_split = cansmi
-    ? cansmi.split(".").sort((a, b) => b.length - a.length)
-    : [];
-
+  const message = "";
   return (
     <>
       <fetcher.Form
         method="GET"
         className="mt-10 pt-10 block w-full "
-        onChange={handleChange}
+        onChange={(e) => {
+          const query = e.target.value;
+          setNewQuery(query);
+        }}
       >
         <input
           type="text"
           className="placeholder:text-red-400 placeholder:text-sm text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
           name="search"
           placeholder="Type in a molecule name or SMILES string."
-          defaultValue={default_search}
-          ref={searchInput}
+          defaultValue={query}
         />
         {model ? (
           <input
@@ -135,7 +90,7 @@ export default function Search() {
         {message ? <div className="text-red-400 text-sm">{message}</div> : null}
       </div>
 
-      {spinner ? <Spinner /> : <Outlet />}
+      {transition.state != "idle" && new_query ? <Spinner /> : <Outlet />}
     </>
   );
 }

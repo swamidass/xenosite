@@ -5,8 +5,9 @@ function last_name(name) {
   return name;
 }
 
-export function ResultSummaryDisplay({ response, resolved_name }) {
-  const results = response?.results || [];
+export function ResultSummaryDisplay({ resolved_query }) {
+  const results = resolved_query?.results || [];
+  const resolved_name = resolved_query?.resolved_name;
 
   return (
     <div className="w-fit mx-auto hover:border rounded  mt-10 relative p-10">
@@ -32,7 +33,7 @@ export function ResultSummaryDisplay({ response, resolved_name }) {
               </div>
             ) : null}
             <div className="pb-3 text-xs  text-gray-500">
-              {response?.smiles}
+              {resolved_query?.smiles}
             </div>
             {resolved_name.description.Description} [
             <a
@@ -51,7 +52,9 @@ export function ResultSummaryDisplay({ response, resolved_name }) {
       <div className="print:hidden p-3 w-fit absolute bottom-0 right-0">
         <a
           onClick={() => {
-            navigator.clipboard.writeText(JSON.stringify(response, null, 2));
+            navigator.clipboard.writeText(
+              JSON.stringify(resolved_query, null, 2)
+            );
           }}
           className="print:hidden text-gray-300 w-fit hover:text-black  ml-auto block hover:underline cursor-copy"
         >
