@@ -36,12 +36,12 @@ export function ModelMenu({children}) {
   // }
 
   return (
-    <div className="w-full max-w-md px-2 py-16 sm:px-0 flex justify-center">
+    <div className="w-full px-2 py-16 sm:px-0">
       <Tab.Group
         as="div"
         selectedIndex={MODELS.findIndex((x) => x.path === model)}
       >
-        <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 pt-10 justify-center">
+        <Tab.List className="flex space-x-1 rounded-xl p-1 mt-10 justify-center">
           {MODELS.map((x, i) => (
 
             // <Popover key={`popover-${i}`} className="relative">
@@ -60,7 +60,7 @@ export function ModelMenu({children}) {
                         <Tab as={Fragment} key={`tab-${i}`} 
                           className={({ selected }) =>
                             classNames(
-                              x.path === model ? "bg-gray-100 text-gray-900" : "text-gray-700",
+                              x.path === model ? "bg-gray-200 text-gray-900" : "text-gray-700 hover:bg-gray-100",
                               "block px-4 py-2 text-sm"
                             )
                           }
