@@ -1,74 +1,114 @@
 import { useMatches, Link } from "remix";
-import { Fragment } from "react";
-import { Menu, Transition } from "@headlessui/react";
+import { Fragment, useRef } from "react";
+import { Menu, Tab, Transition, Popover } from "@headlessui/react";
 import { ChevronDownIcon, ArrowLongLeftIcon } from "@heroicons/react/20/solid";
 import { MODELS } from "~/data";
 import { classNames } from "../root";
 
-export function ModelMenu() {
+export function ModelMenu({children}) {
   const matches = useMatches();
+  // const buttonRef = useRef(null);
+  // const timeoutDuration = 700;
+  // let timeout;
   const model = matches[0].params?.model;
   const query = matches[0].params?.query;
   const modelinfo = MODELS.find((x) => x.path == model);
 
+  // const closePopover = () => {
+  //   return buttonRef.current?.dispatchEvent(
+  //     new KeyboardEvent("keydown", {
+  //       key: "Escape",
+  //       bubbles: true,
+  //       cancelable: true
+  //     })
+  //   )
+  // }
+
+  // const onMouseEnter = (open) => {
+  //   clearTimeout(timeout)
+  //   if (open) return
+  //   return buttonRef.current?.click()
+  // }
+
+  // const onMouseLeave = (open) => {
+  //   if (!open) return
+  //   timeout = setTimeout(() => closePopover(), timeoutDuration)
+  // }
+
   return (
-    <>
-      <Menu
+    <div className="w-full max-w-md px-2 py-16 sm:px-0 flex justify-center">
+      <Tab.Group
         as="div"
-        className="relative inline-block align-bottom w-50 text-left"
+        selectedIndex={MODELS.findIndex((x) => x.path === model)}
       >
-        <div className="w-50">
-          <Menu.Button className="inline-flex w-50 text-left rounded-md border border-gray-300 bg-white px-4 py-2  font-medium shadow-sm hover:bg-gray-50 focus:outline-none ">
-            {modelinfo?.model}
-            <ChevronDownIcon
-              className="-mr-1 ml-auto h-5 w-5"
-              aria-hidden="true"
-            />
-          </Menu.Button>
-        </div>
+        <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1 pt-10 justify-center">
+          {MODELS.map((x, i) => (
 
-        <Transition
-          as={Fragment}
-          enter="transition ease-out duration-100"
-          enterFrom="transform opacity-0 scale-95"
-          enterTo="transform opacity-100 scale-100"
-          leave="transition ease-in duration-75"
-          leaveFrom="transform opacity-100 scale-100"
-          leaveTo="transform opacity-0 scale-95"
-        >
-          <Menu.Items className="absolute left-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-            <div className="py-1">
-              {MODELS.map((x, i) => (
-                <Menu.Item key={i}>
-                  {({ active }) => (
-                    <Link
-                      to={`/${x.path}${
-                        query ? "/" + encodeURIComponent(query) : ""
-                      }`}
-                      className={classNames(
-                        active ? "bg-gray-100 text-gray-900" : "text-gray-700",
-                        "block px-4 py-2 text-sm"
-                      )}
-                    >
-                      {x.model}
-                    </Link>
-                  )}
-                </Menu.Item>
-              ))}
-            </div>
-          </Menu.Items>
-        </Transition>
-      </Menu>
+            // <Popover key={`popover-${i}`} className="relative">
+            //   {({ open }) => {
+            //     return (
+            //       <>
+            //         <div onMouseLeave={onMouseLeave.bind(null, open)}>
+            //           <Popover.Button
+            //             ref={buttonRef}
+            //             className={`
+            //             ${open ? "" : "text-opacity-90"}
+            //             text-white group bg-orange-700 px-3 py-2 rounded-md inline-flex items-center text-base font-medium hover:text-opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75`}
+            //             onMouseEnter={onMouseEnter.bind(null, open)}
+            //             onMouseLeave={onMouseLeave.bind(null, open)}
+            //           >
+                        <Tab as={Fragment} key={`tab-${i}`} 
+                          className={({ selected }) =>
+                            classNames(
+                              x.path === model ? "bg-gray-100 text-gray-900" : "text-gray-700",
+                              "block px-4 py-2 text-sm"
+                            )
+                          }
+                        >
+                          <Link
+                            to={`/${x.path}${
+                              query ? "/" + encodeURIComponent(query) : ""
+                            }`}
+                          >
+                            {x.model}
+                          </Link>
+                        </Tab>
+            //           </Popover.Button>
 
-      {model ? null : (
-        <div className="inline-block whitespace-nowrap px-3 align-bottom py-2 text-sm text-red-400">
-          <ArrowLongLeftIcon
-            className="mx-1 h-5 w-5 inline"
-            aria-hidden="true"
-          />
-          select model.
-        </div>
-      )}
-    </>
+            //           <Transition
+            //             as={Fragment}
+            //             enter="transition ease-out duration-200"
+            //             enterFrom="opacity-0 translate-y-1"
+            //             enterTo="opacity-100 translate-y-0"
+            //             leave="transition ease-in duration-150"
+            //             leaveFrom="opacity-100 translate-y-0"
+            //             leaveTo="opacity-0 translate-y-1"
+            //           >
+            //             <Popover.Panel className="absolute z-10 w-screen max-w-sm px-4 mt-0 transform -translate-x-1/2 left-1/2 sm:px-0 lg:max-w-3xl">
+            //               <div
+            //                 className="overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5"
+            //                 onMouseEnter={onMouseEnter.bind(null, open)}
+            //                 onMouseLeave={onMouseLeave.bind(null, open)}
+            //               >
+            //                 <div className="relative grid gap-8 bg-white p-7 lg:grid-cols-2">
+            //                   {x.info()}
+            //                 </div>
+            //               </div>
+            //             </Popover.Panel>
+            //           </Transition>
+            //         </div>
+            //       </>
+            //     )
+            //   }}
+            // </Popover>
+          ))}
+        </Tab.List>
+        <Tab.Panels>
+          {MODELS.map((x, i) => (
+            <Tab.Panel key={`tab-panel-${i}`}>{children}</Tab.Panel>
+          ))}
+        </Tab.Panels>
+      </Tab.Group>
+    </div>
   );
 }

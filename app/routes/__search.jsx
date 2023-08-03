@@ -36,15 +36,11 @@ export async function loader({ request }) {
 
 export default function Search() {
   const fetcher = useFetcher();
-
   const matches = useMatches();
   const query = matches[matches.length - 1].params?.query;
   const model = matches[matches.length - 1].params?.model || (query ? "_" : "");
-
   const navigate = useNavigate();
-
   const transition = useTransition();
-
   const [new_query, setNewQuery] = useState(query);
 
   useEffect(() => {

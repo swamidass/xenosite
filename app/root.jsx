@@ -75,8 +75,9 @@ export default function App() {
             </div>
             <Link to="/">XenoSite</Link>
           </h1>
-          <ModelMenu />
-          <Outlet />
+          <ModelMenu>
+            <Outlet />
+          </ModelMenu>
         </div>
 
         <ScrollRestoration />
