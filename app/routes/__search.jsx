@@ -9,6 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import HEADERS from "~/headers";
 import Spinner from "~/components/Spinner";
+import { ModelMenu } from "~/components/ModelMenu";
 export function headers() {
   return HEADERS;
 }
@@ -86,7 +87,9 @@ export default function Search() {
         {message ? <div className="text-red-400 text-sm">{message}</div> : null}
       </div>
 
-      {transition.state != "idle" && new_query ? <Spinner /> : <Outlet />}
+      <ModelMenu>
+        {transition.state != "idle" && new_query ? <Spinner /> : <Outlet />}
+      </ModelMenu>
     </>
   );
 }

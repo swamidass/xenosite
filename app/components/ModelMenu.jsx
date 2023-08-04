@@ -11,12 +11,12 @@ export function ModelMenu({children}) {
   // const modelinfo = MODELS.find((x) => x.path == model);
 
   return (
-    <div className="w-full px-2 py-16 sm:px-0">
+    <div className="w-full px-2 py-4 sm:px-0">
       <Tab.Group
         as="div"
         selectedIndex={MODELS.findIndex((x) => x.path === model)}
       >
-        <Tab.List className="flex flex-wrap space-x-1 rounded-xl p-1 mt-10 justify-center">
+        <Tab.List className="flex flex-wrap space-x-1 rounded-xl p-1 justify-center">
           {MODELS.map((x, i) => (
             <Tab as={Fragment} key={`tab-${i}`} 
               className={({ selected }) =>
