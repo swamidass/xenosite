@@ -12,7 +12,7 @@ export const resolve_query = async ({ model, query }) => {
   if (!response) response = {};
   response.resolved_name = resolved_name;
 
-  return response;
+  return {resolved_query: response, model};
 };
 
 const XENOSITE_BACKEND =
