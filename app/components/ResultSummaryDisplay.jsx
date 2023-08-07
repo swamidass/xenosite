@@ -1,5 +1,5 @@
 import { MODELS } from "~/data";
-import { Link } from "remix";
+import { Link } from "@remix-run/react";
 
 function last_name(name) {
   name = name.split(".");
