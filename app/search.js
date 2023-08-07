@@ -49,7 +49,7 @@ async function resolve_query_as_smiles(smiles, model) {
   const url = model != "_" ? "/v0/" + model : "/v1/canonize";
   const [response, name_resolve] = await Promise.all([
     backend_api(smiles, url),
-    resolve_smiles_name(smiles),
+    resolve_smiles_name(smiles).catch((e) => ({ error: e.message })),
   ]);
 
   return [response, name_resolve];
@@ -74,7 +74,7 @@ async function resolve_query_as_name(name, model) {
 
     const [response, pubchem2] = await Promise.all([
       backend_api(smiles, model_url),
-      fetch(pubchem_url),
+      fetch(pubchem_url).catch((e) => ({ error: e.message })),
     ]);
 
     if (pubchem2) {
@@ -92,8 +92,9 @@ async function resolve_smiles_name(smiles) {
   var url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(
     smiles
   )}/synonyms/json`;
-  const pubchem1 = await fetch(url);
+
   console.log("FETCH", url);
+  const pubchem1 = await fetch(url);
 
   const j1 = await pubchem1.json();
   const cid = j1.InformationList?.Information[0].CID;
@@ -102,8 +103,8 @@ async function resolve_smiles_name(smiles) {
   var out = { cid, errmsg };
 
   if (cid) {
-    url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
     console.log("FETCH", url);
+    url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
     var j2 = await fetch(url)
       .then((x) => x.json())
       .catch((x) => {});
