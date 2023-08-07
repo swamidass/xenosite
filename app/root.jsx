@@ -5,7 +5,6 @@ import XDot from "~/components/XDot";
 
 import styles from "./styles/app.css";
 import { Gtag } from "~/components/Gtag";
-import { ModelMenu } from "~/components/ModelMenu";
 
 // import GlobalLoading from "~/components/GlobalLoading";
 
@@ -67,7 +66,6 @@ export default function App() {
             </div>
             <Link to="/">XenoSite</Link>
           </h1>
-          <ModelMenu />
           <Outlet />
         </div>
 

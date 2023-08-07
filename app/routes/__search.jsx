@@ -3,6 +3,7 @@ import { Outlet, useFetcher, useMatches, useNavigate, useTransition } from "@rem
 import { useState, useEffect } from "react";
 import HEADERS from "~/headers";
 import Spinner from "~/components/Spinner";
+import { ModelMenu } from "~/components/ModelMenu";
 export function headers() {
   return HEADERS;
 }
@@ -30,15 +31,11 @@ export async function loader({ request }) {
 
 export default function Search() {
   const fetcher = useFetcher();
-
   const matches = useMatches();
   const query = matches[matches.length - 1].params?.query;
   const model = matches[matches.length - 1].params?.model || (query ? "_" : "");
-
   const navigate = useNavigate();
-
   const transition = useTransition();
-
   const [new_query, setNewQuery] = useState(query);
 
   useEffect(() => {
@@ -84,7 +81,9 @@ export default function Search() {
         {message ? <div className="text-red-400 text-sm">{message}</div> : null}
       </div>
 
-      {transition.state != "idle" && new_query ? <Spinner /> : <Outlet />}
+      <ModelMenu>
+        {transition.state != "idle" && new_query ? <Spinner /> : <Outlet />}
+      </ModelMenu>
     </>
   );
 }
