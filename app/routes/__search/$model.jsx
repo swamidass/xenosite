@@ -1,4 +1,5 @@
-import { Outlet, json } from "remix";
+import { json } from "@remix-run/node";
+import { Outlet } from "@remix-run/react";
 import { MODELS } from "~/data";
 
 import HEADERS from "~/headers";

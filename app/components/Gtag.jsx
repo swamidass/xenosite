@@ -1,4 +1,4 @@
-import { useLoaderData, useLocation } from "remix";
+import { useLoaderData, useLocation } from "@remix-run/react";
 import { useEffect } from "react";
 import * as gtag from "~/gtags.client";
 

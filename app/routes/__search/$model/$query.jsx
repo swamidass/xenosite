@@ -1,4 +1,5 @@
-import { useLoaderData, json } from "remix";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 //import { defer } from "@remix-run/node";
 // import { Await, defer } from "react";
 import { resolve_query } from "~/search";

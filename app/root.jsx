@@ -1,13 +1,5 @@
-import {
-  Links,
-  LiveReload,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-  Link,
-  json,
-} from "remix";
+import { json } from "@remix-run/node";
+import { Link, Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
 
 import XDot from "~/components/XDot";
 

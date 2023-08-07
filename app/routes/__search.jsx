@@ -1,11 +1,5 @@
-import {
-  useMatches,
-  useFetcher,
-  Outlet,
-  useNavigate,
-  redirect,
-  useTransition,
-} from "remix";
+import { redirect } from "@remix-run/node";
+import { Outlet, useFetcher, useMatches, useNavigate, useTransition } from "@remix-run/react";
 import { useState, useEffect } from "react";
 import HEADERS from "~/headers";
 import Spinner from "~/components/Spinner";

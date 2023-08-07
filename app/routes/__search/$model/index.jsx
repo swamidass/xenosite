@@ -1,5 +1,5 @@
 import { MODELS } from "~/data";
-import { Link, useMatches } from "remix";
+import { Link, useMatches } from "@remix-run/react";
 
 export default function Model() {
   const { model, query } = useMatches()[0].params;

@@ -1,5 +1,5 @@
 import { json } from "react";
-import { Link } from "remix";
+import { Link } from "@remix-run/react";
 import { MODELS } from "~/data";
 
 export default function Model() {
