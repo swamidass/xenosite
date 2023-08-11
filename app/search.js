@@ -46,6 +46,7 @@ function check_smiles(smiles) {
 async function resolve_query_as_smiles(smiles, model) {
   if (!smiles) return [null, null];
 
+
   const url = model != "_" ? "/v0/" + model : "/v1/canonize";
   const [response, name_resolve] = await Promise.all([
     backend_api(smiles, url),
@@ -58,60 +59,45 @@ async function resolve_query_as_smiles(smiles, model) {
 async function resolve_query_as_name(name, model) {
   if (!name) return [null, null];
 
-  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${name}/property/CanonicalSMILES/json`;
-
+  const url = `http://localhost:8000/search/${name}`
   const pubchem1 = await fetch(url);
-  const j1 = await pubchem1.json();
-  const cid = j1.PropertyTable?.Properties[0].CID;
-  const smiles = j1.PropertyTable?.Properties[0].CanonicalSMILES;
-  const errmsg = j1.Fault?.Message;
+  const j = await pubchem1.json();
 
-  if (cid && smiles) {
-    const pubchem_url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
-    console.log("FETCH", pubchem_url);
-
-    const model_url = model != "_" ? "/v0/" + model : "/v1/canonize";
-
-    const [response, pubchem2] = await Promise.all([
-      backend_api(smiles, model_url),
-      fetch(pubchem_url).catch((e) => ({ error: e.message })),
-    ]);
-
-    if (pubchem2) {
-      const j2 = await pubchem2.json().catch(() => {});
-      const description = j2?.InformationList?.Information[1];
-
-      return [response, { name, description, smiles, cid, errmsg }];
-    }
+  if (j.message || !j.value.description) {
+    errmsg = j.message ? j.message : "No molecule found";
+    return [null, { name, errmsg }];
   }
+
+  const cid = j.value.chebi;
+  const smiles = j.value.smiles;
+  const description = j.value.description;
+
+  const model_url = model != "_" ? "/v0/" + model : "/v1/canonize";
+  const response = await backend_api(smiles, model_url);
+
+  if(response)
+    return [response, { name, description, smiles, cid, errmsg }];
 
   return [null, { name }];
 }
 
 async function resolve_smiles_name(smiles) {
-  var url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(
+  var url = `http://localhost:8000/search/${encodeURIComponent(
     smiles
-  )}/synonyms/json`;
+  )}`;
 
-  console.log("FETCH", url);
   const pubchem1 = await fetch(url);
+  const j = await pubchem1.json();
 
-  const j1 = await pubchem1.json();
-  const cid = j1.InformationList?.Information[0].CID;
-  const errmsg = j1.Fault?.Message;
-
-  var out = { cid, errmsg };
-
-  if (cid) {
-    console.log("FETCH", url);
-    url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/description/json`;
-    var j2 = await fetch(url)
-      .then((x) => x.json())
-      .catch((x) => {});
-    const name = j2.InformationList?.Information[0].Title;
-    const description = j2.InformationList?.Information[1];
-
-    out = { name, description, ...out };
+  if (j.message || !j.value.description) {
+    errmsg = j.message ? j.message : "No molecule found";
+    return [null, { errmsg }];
   }
-  return out;
+
+  const cid = j.value.chebi;
+  const description = j.value.description;
+  const name = j.value.name;
+  let errmsg = j.message ? j.message : null;
+  
+  return { name, description, cid, smiles, errmsg };
 }

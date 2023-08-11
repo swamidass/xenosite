@@ -8,6 +8,12 @@ function last_name(name) {
   return name;
 }
 
+function capitalize(word) {
+  const lower = word.toLowerCase();
+  return word.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+
 export function ResultSummaryDisplay({ resolved_query, model }) {
   const results = resolved_query?.results || [];
   const resolved_name = resolved_query?.resolved_name;
@@ -35,22 +41,26 @@ export function ResultSummaryDisplay({ resolved_query, model }) {
             <>
               {resolved_name?.name ? (
                 <div>
-                  <h1 className="text-xl font-bold pb-3">{resolved_name.name}</h1>
+                  <h1 className="text-xl font-bold pb-3">{capitalize(resolved_name.name)}</h1>
                 </div>
               ) : null}
               <div className="pb-3 text-xs  text-gray-500">
                 {resolved_query?.smiles}
               </div>
-              {resolved_name.description.Description} [
-              <a
-                className="underline"
-                target="_blank"
-                rel="nofollow"
-                href={resolved_name.description.DescriptionURL}
-              >
-                {resolved_name.description.DescriptionSourceName}
-              </a>
-              ]
+              {resolved_name.description} 
+              {resolved_name.description.DescriptionURL ? (
+                [
+                  <a
+                    className="underline"
+                    target="_blank"
+                    rel="nofollow"
+                    href={resolved_name.description.DescriptionURL}
+                  >
+                    {resolved_name.description.DescriptionSourceName}
+                  </a>
+                ]
+              ): null}
+              
             </>
           ) : null}
         </div>
