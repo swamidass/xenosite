@@ -24,7 +24,7 @@ export function ErrorBoundary(error) {
 
 export async function loader({ params }) {
   const { resolved_query, model } = await resolve_query(params);
-
+  
   return json(
     {
       params,
