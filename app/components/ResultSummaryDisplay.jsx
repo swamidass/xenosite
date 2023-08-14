@@ -16,7 +16,7 @@ function capitalize(word) {
 
 export function ResultSummaryDisplay({ resolved_query, model }) {
   const results = resolved_query?.results || [];
-  const resolved_name = resolved_query?.resolved_name;
+  const resolved_name = resolved_query?.name;
   const modelInfo = model ? MODELS.find((x) => x.path == model) : undefined;
 
   return (
