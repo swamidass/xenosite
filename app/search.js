@@ -4,6 +4,11 @@ export const resolve_query = async ({ model, query }) => {
   const url = model != "_" ? "/v0/" + model : "/v1/canonize";
   let response = await backend_api(query, url);
 
+  if (response && response.name && response.name.chebi) {
+    const chebi_url = `https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:${response.name.chebi.toString()}`;
+    response.name["chebiUrl"] = chebi_url;
+  }
+
   if (!response) response = {};
 
   return {resolved_query: response, model};
