@@ -13,7 +13,6 @@ function capitalize(word) {
   return word.charAt(0).toUpperCase() + lower.slice(1);
 }
 
-
 export function ResultSummaryDisplay({ resolved_query, model }) {
   const results = resolved_query?.results || [];
   const resolved_name = resolved_query?.name;
@@ -44,23 +43,27 @@ export function ResultSummaryDisplay({ resolved_query, model }) {
                   <h1 className="text-xl font-bold pb-3">{capitalize(resolved_name.name)}</h1>
                 </div>
               ) : null}
+
+              {/* Description */}
               <div className="pb-3 text-xs  text-gray-500">
                 {resolved_query?.smiles}
               </div>
               {resolved_name.description} 
-              {resolved_name.description.DescriptionURL ? (
-                [
-                  <a
-                    className="underline"
-                    target="_blank"
-                    rel="nofollow"
-                    href={resolved_name.description.DescriptionURL}
-                  >
-                    {resolved_name.description.DescriptionSourceName}
-                  </a>
-                ]
+              {/* Chebi Id */}
+              {resolved_name.chebi ? (
+                <span>
+                  {' '}[
+                    <a
+                      className="underline"
+                      target="_blank"
+                      rel="nofollow"
+                      href={resolved_name.chebiUrl}
+                    >
+                      CHEBI
+                    </a>
+                  ]
+                </span>
               ): null}
-              
             </>
           ) : null}
         </div>
