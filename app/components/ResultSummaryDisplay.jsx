@@ -49,20 +49,20 @@ export function ResultSummaryDisplay({ resolved_query, model }) {
                 {resolved_query?.smiles}
               </div>
               {resolved_name.description} 
-
               {/* Chebi Id */}
               {resolved_name.chebi ? (
-                <div>
-                  {' '}Chebi:{' '}
+                <span>
+                  {' '}[
                     <a
                       className="underline"
                       target="_blank"
                       rel="nofollow"
                       href={resolved_name.chebiUrl}
                     >
-                      {resolved_name.chebi}
+                      CHEBI
                     </a>
-                  </div>
+                  ]
+                </span>
               ): null}
             </>
           ) : null}
