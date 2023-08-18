@@ -8,20 +8,8 @@ module.exports = {
   // so we default back to the standard build output.
   server: process.env.NODE_ENV === "development" ? undefined : "./server.js",
   ignoredRouteFiles: [".*"],
-  serverDependenciesToBundle: [
-    /.*storybook.*/,
-    /^rehype.*/,
-    /^unified.*/,
-    /^bail.*/,
-    /^is-plain-obj.*/,
-    /^trough.*/,
-    /^vfile.*/,
-    /^unist.*/,
-    /^hast.*/,
-    /^property-information.*/,
-    /^.*separated-tokens.*/,
-    /^web-namespaces.*/,
-  ],
+  serverDependenciesToBundle:
+    process.env.NODE_ENV === 'development' ? ['@vercel/og'] : [],
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",
   // serverBuildPath: "api/index.js",
