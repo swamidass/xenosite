@@ -1,8 +1,8 @@
-import type { LoaderFunction } from '@remix-run/node';
+
 
 export const config = { runtime: 'edge' };
 
-export const loader: LoaderFunction = async () => {
+export const loader = async () => {
   const { ImageResponse } = require('@vercel/og');
 
   return new ImageResponse(
