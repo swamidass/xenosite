@@ -21,6 +21,7 @@ module.exports = {
     /^property-information.*/,
     /^.*separated-tokens.*/,
     /^web-namespaces.*/,
+    '@vercel/og',
   ],
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",
