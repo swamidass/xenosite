@@ -4,16 +4,16 @@ import { MODELS } from "~/data";
 
 import HEADERS from "~/headers";
 
-export function meta({ params }) {
-  const modelinfo = MODELS.find((x) => x.path == params.model);
+// export function meta({ params }) {
+//   const modelinfo = MODELS.find((x) => x.path == params.model);
 
-  if (!modelinfo) return {};
+//   if (!modelinfo) return {};
 
-  return {
-    "og:title": "XenoSite | " + modelinfo.model,
-    title: "XenoSite | " + modelinfo.model,
-  };
-}
+//   return {
+//     "og:title": "XenoSite | " + modelinfo.model,
+//     title: "XenoSite | " + modelinfo.model,
+//   };
+// }
 
 export async function loader({ params: { model } }) {
   const modelinfo = MODELS.find((x) => x.path == model);

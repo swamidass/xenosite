@@ -18,26 +18,26 @@ export function headers() {
   };
 }
 
-export function meta({ location }) {
-  const description =
-    "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes";
-  return {
-    charset: "utf-8",
-    viewport: "width=device-width,initial-scale=1",
-    title: "XenoSite",
-    description: description,
-    "og:title": "XenoSite",
-    "og:type": "website",
-    "og:url": "https://xenosite.org" + location.pathname,
-    "og:description": description,
-    "og:image": "https://xenosite.org/xenosite.png",
-    "twitter:title": "XenoSite",
-    "twitter:description": description,
-    "twitter:url": "https://xenosite.org" + location.pathname,
-    "twitter:image": "https://xenosite.org/xenosite.png",
-    "twitter:site": "@xenosite",
-  };
-}
+// export function meta({ location }) {
+//   const description =
+//     "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes";
+//   return {
+//     charset: "utf-8",
+//     viewport: "width=device-width,initial-scale=1",
+//     title: "XenoSite",
+//     description: description,
+//     "og:title": "XenoSite",
+//     "og:type": "website",
+//     "og:url": "https://xenosite.org" + location.pathname,
+//     "og:description": description,
+//     "og:image": "https://xenosite.org/xenosite.png",
+//     "twitter:title": "XenoSite",
+//     "twitter:description": description,
+//     "twitter:url": "https://xenosite.org" + location.pathname,
+//     "twitter:image": "https://xenosite.org/xenosite.png",
+//     "twitter:site": "@xenosite",
+//   };
+// }
 
 export function links() {
   return [
