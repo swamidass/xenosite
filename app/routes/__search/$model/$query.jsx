@@ -1,10 +1,10 @@
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-// import { V2_MetaFunction } from "@remix-run/node";
-// import { Await, defer } from "react";
+import ReactDOMServer from 'react-dom/server'
 import { resolve_query } from "~/search";
 import { ResultSummaryDisplay } from "~/components/ResultSummaryDisplay";
 
+import { MODELS } from "~/data";
 import HEADERS from "~/headers";
 
 export function headers() {
@@ -41,20 +41,16 @@ function capitalize(word) {
 }
 
 export const meta = ({ data }) => {
-  // console.log(data);
+  const modelInfo = MODELS.find((x) => x.path == data.model);
 
-  let name = null;
+  let name = '';
   if (data.resolved_query?.name?.name) {
     name = ` | ${capitalize(data.resolved_query.name.name)}`;
-  } else {
-    name = '';
   }
 
-  let model = null;
-  if (data.model !== '_') {
-    model = ` | ${capitalize(data.model)}`;
-  } else {
-    model = ''; 
+  let model = '';
+  if (modelInfo) {
+    model = ` | ${modelInfo.model}`;
   }
 
   let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
@@ -65,6 +61,7 @@ export const meta = ({ data }) => {
   }
 
   let url = `https://xenosite.org/${data.params.model}/${data.params.query}`
+  const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
 
   return [
     { charSet: "utf-8" },
@@ -143,8 +140,15 @@ export const meta = ({ data }) => {
       "script:ld+json": {
         "@context": "https://schema.org",
         "@type": "Xenosite",
-        name: "Xenosite",
-        url: "https://xenosite.org",
+        author: "Dr. Josh Swamidass",
+        url: url,
+        name: data.resolved_query?.name?.name ? data.resolved_query.name.name : null,
+        description: data.resolved_query?.name?.description ? data.resolved_query.name.description : null,
+        model: modelInfo ? modelInfo.model : null,
+        modelInfo: info,
+        query: data.params.query,
+        smiles: data.resolved_query?.smiles ? data.resolved_query.smiles : null,
+        chebi: data.resolved_query?.name?.chebi ? data.resolved_query.name.chebi : null,
       },
     },
   ];
