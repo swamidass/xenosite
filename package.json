@@ -29,7 +29,6 @@
     "@remix-run/vercel": "^1.7.4",
     "@tailwindcss/typography": "^0.5.7",
     "@vercel/node": "^1.8.3",
-    "@vercel/og": "^0.5.11",
     "aws-sdk": "^2.1112.0",
     "clean-css": "^5.2.4",
     "dotenv": "^16.0.0",
@@ -40,8 +39,9 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recompose": "^0.30.0",
-    "satori": "^0.0.43",
+    "satori": "^0.10.3",
     "smiles-drawer": "^2.0.3",
+    "svg2img": "^1.0.0-beta.2",
     "yarn": "^1.22.19",
     "zora": "^5.0.3"
   },
