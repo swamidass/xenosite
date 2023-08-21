@@ -57,13 +57,14 @@ export const meta = ({ data }) => {
     model = ''; 
   }
 
-  let description = "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes.";
-  if (data.resolved_query?.name?.description) {
-    if(name && name !== '') {
-      description = description + ` ${name.replace('|', '').trim()}:`;
-    }
-    description = description + " " + data.resolved_query.name.description;
+  let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
+  if (data.resolved_query?.name?.description && 
+    data.params.model !== "_" && 
+    name !== null) {
+    description = `XenoSite prediction of the reactivity of ${name.replace('|', '').trim()}. The reactivity model is "${data.params.model}".`
   }
+
+  let url = `https://xenosite.org/${data.params.model}/${data.params.query}`
 
   return [
     { charSet: "utf-8" },
@@ -71,7 +72,20 @@ export const meta = ({ data }) => {
     { title: `Xenosite${model}${name}` },
     {
       name: "description",
-      content: "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes.",
+      content: description,
+    },
+    {
+      name: "robots",
+      content: "index, follow",
+    },
+    {
+      tagName: "link",
+      rel: "canonical",
+      href: "https://xenosite.org",
+    },
+    {
+      name: "author",
+      content: "Dr. Josh Swamidass",
     },
     {
       name: "og:title",
@@ -83,15 +97,23 @@ export const meta = ({ data }) => {
     },
     {
       name: "og:url",
-      content: `https://xenosite.org/${data.params.model}/${data.params.query}`,
+      content: url,
     },
     {
       name: "og:site_name",
       content: "Xenosite",
     },
+    {
+      name: "og:image",
+      content: `${url}/0`,
+    },
     { 
       name: "og:description",
       content: description,
+    },
+    {
+      name: "og:canonical",
+      content: "https://xenosite.org",
     },
     {
       name: "twitter:title",
@@ -100,6 +122,30 @@ export const meta = ({ data }) => {
     {
       name: "twitter:description",
       content: description,
+    },
+    {
+      name: "twitter:image",
+      content: `${url}/0`,
+    },
+    {
+      name: "twitter:card",
+      content: "summary_large_image",
+    },
+    {
+      name: "twitter:site",
+      content: "@xenosite",
+    },
+    {
+      name: "twitter:creator",
+      content: "Dr. Josh Swamidass",
+    },
+    {
+      "script:ld+json": {
+        "@context": "https://schema.org",
+        "@type": "Xenosite",
+        name: "Xenosite",
+        url: "https://xenosite.org",
+      },
     },
   ];
 };
