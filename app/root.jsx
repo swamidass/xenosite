@@ -98,11 +98,10 @@ export const meta = ({ params }) => {
     {
       "script:ld+json": {
         "@context": "https://schema.org",
-        "@type": "Xenosite",
-        author: "Dr. Josh Swamidass",
-        url: url,
-        description: description,
-      },
+        "@type": "Organization",
+        "url": "https://xenosite.org",
+        "logo": "https://xenosite.org/favicon.png"
+      }
     },
   ]
 }

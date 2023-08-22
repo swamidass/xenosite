@@ -5,6 +5,34 @@ import ReactDOMServer from 'react-dom/server'
 
 import HEADERS from "~/headers";
 
+function getLdJson(modelInfo) {
+
+  let ldJson = [];
+
+  if (modelInfo && modelInfo !== undefined) {
+    const listItem = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": 'Xenosite',
+        "item": `https://xenosite.org/`
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": modelInfo.model,
+        "item": `https://xenosite.org/${modelInfo.path}`
+      }
+    ]};
+    ldJson.push(listItem);
+  }
+
+  return ldJson;
+}
+
 export const meta = ({ params }) => {
   const modelInfo = MODELS.find((x) => x.path == params.model);
 
@@ -21,8 +49,9 @@ export const meta = ({ params }) => {
 
   let url = `https://xenosite.org/${params.model}`;
   const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
+  const ldJson = getLdJson(modelInfo);
 
-  return [
+  let results = [
     { charSet: "utf-8" },
     { viewport: "width=device-width,initial-scale=1" },
     { title: `Xenosite${model}` },
@@ -95,18 +124,15 @@ export const meta = ({ params }) => {
       name: "twitter:creator",
       content: "Dr. Josh Swamidass",
     },
-    {
-      "script:ld+json": {
-        "@context": "https://schema.org",
-        "@type": "Xenosite",
-        author: "Dr. Josh Swamidass",
-        url: url,
-        description: description,
-        model: modelInfo ? modelInfo.model : null,
-        modelInfo: info,
-      },
-    },
-  ]
+  ];
+
+  if (ldJson.length > 0) {
+    results.push({
+      "script:ld+json": ldJson
+    });
+  }
+
+  return results;
 }
 
 export async function loader({ params: { model } }) {

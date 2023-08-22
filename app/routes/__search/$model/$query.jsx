@@ -22,6 +22,46 @@ export function ErrorBoundary(error) {
   );
 }
 
+function capitalize(word) {
+  const lower = word.toLowerCase();
+  return word.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function getLdJson(data, modelInfo, name) {
+
+  let ldJson = [];
+
+  if (modelInfo && modelInfo !== undefined) {
+    const listItem = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": 'Xenosite',
+        "item": `https://xenosite.org/`
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": modelInfo.model ? modelInfo.model : "All Models",
+        "item": `https://xenosite.org/${data.params.model}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": name !== "" ? name.replace('|', '').trim() : "Query",
+        "item": `https://xenosite.org/${data.params.model}/${data.params.query}`
+      }
+    ]};
+    ldJson.push(listItem);
+  }
+
+  return ldJson;
+}
+
+
 export async function loader({ params }) {
   const { resolved_query, model } = await resolve_query(params);
   
@@ -33,11 +73,6 @@ export async function loader({ params }) {
     },
     { headers: HEADERS }
   );
-}
-
-function capitalize(word) {
-  const lower = word.toLowerCase();
-  return word.charAt(0).toUpperCase() + lower.slice(1);
 }
 
 export const meta = ({ data }) => {
@@ -61,9 +96,10 @@ export const meta = ({ data }) => {
   }
 
   let url = `https://xenosite.org/${data.params.model}/${data.params.query}`
-  const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
+  // const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
+  const ldJson = getLdJson(data, modelInfo, name);
 
-  return [
+  let results = [
     { charSet: "utf-8" },
     { viewport: "width=device-width,initial-scale=1" },
     { title: `Xenosite${model}${name}` },
@@ -136,22 +172,15 @@ export const meta = ({ data }) => {
       name: "twitter:creator",
       content: "Dr. Josh Swamidass",
     },
-    {
-      "script:ld+json": {
-        "@context": "https://schema.org",
-        "@type": "Xenosite",
-        author: "Dr. Josh Swamidass",
-        url: url,
-        name: data.resolved_query?.name?.name ? data.resolved_query.name.name : null,
-        description: data.resolved_query?.name?.description ? data.resolved_query.name.description : null,
-        model: modelInfo ? modelInfo.model : null,
-        modelInfo: info,
-        query: data.params.query,
-        smiles: data.resolved_query?.smiles ? data.resolved_query.smiles : null,
-        chebi: data.resolved_query?.name?.chebi ? data.resolved_query.name.chebi : null,
-      },
-    },
   ];
+
+  if (ldJson.length > 0) {
+    results.push({
+      "script:ld+json": ldJson
+    });
+  }
+
+  return results;
 };
 
 export default function Model() {
