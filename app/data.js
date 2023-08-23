@@ -3,6 +3,7 @@ export const MODELS = [
     model: "Epoxidation",
     endpoint: "/v0/epoxidation",
     path: "epoxidation",
+    citation: "https://doi.org/10.1021/acscentsci.5b00131",
     info: () => (
       <>
         <p>
@@ -33,7 +34,7 @@ export const MODELS = [
     model: "Quinonation",
     endpoint: "/v0/quinone",
     path: "quinone",
-
+    citation: "https://doi.org/10.1021/acs.chemrestox.6b00385",
     info: () => (
       <>
         <p>
@@ -66,6 +67,7 @@ export const MODELS = [
     model: "Reactivity",
     endpoint: "/v0/reactivity",
     path: "reactivity",
+    citation: "https://doi.org/10.1021/acs.chemrestox.5b00017",
     info: () => (
       <>
         <p>
@@ -106,7 +108,7 @@ export const MODELS = [
     model: "Phase 1",
     endpoint: "/v0/phase1",
     path: "phase1",
-
+    citation: "https://doi.org/10.1021/acs.jcim.9b00836",
     info: () => (
       <>
         <p>
@@ -142,7 +144,7 @@ export const MODELS = [
     model: "N-Dealkylation",
     endpoint: "/v0/ndealk",
     path: "ndealk",
-
+    citation: "https://doi.org/10.1021/acs.chemrestox.7b00191",
     info: () => (
       <>
         <p>
@@ -173,6 +175,7 @@ export const MODELS = [
     model: "UGT Conjugation",
     endpoint: "/v0/ugt",
     path: "ugt",
+    citation: "https://doi.org/10.1093/bioinformatics/btw350",
     info: () => (
       <>
         <p>

@@ -27,12 +27,12 @@ function capitalize(word) {
   return word.charAt(0).toUpperCase() + lower.slice(1);
 }
 
-function getLdJson(data, modelInfo, name) {
+function getLdJson(data, modelInfo, name, url) {
 
   let ldJson = [];
 
   if (modelInfo && modelInfo !== undefined) {
-    const listItem = {
+    const breadCrumbList = {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       "itemListElement": [
@@ -55,7 +55,53 @@ function getLdJson(data, modelInfo, name) {
         "item": `https://xenosite.org/${data.params.model}/${data.params.query}`
       }
     ]};
-    ldJson.push(listItem);
+    ldJson.push(breadCrumbList);
+
+    const softwareApplication = {
+      "@context": "http://schema.org",
+      "@type": "SoftwareApplication",
+      "@id": `https://xenosite.org/${modelInfo.path}`,
+      "name": "Xenosite",
+      "identifier":  `https://xenosite.org/${modelInfo.path}`,
+      "isAccessibleForFree": "True",
+      "applicationCategory": "Web application",
+      "citation": modelInfo.citation,
+    }
+    ldJson.push(softwareApplication);
+  }
+
+  ldJson.push(
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "url": "https://xenosite.org",
+      "logo": "https://xenosite.org/favicon.png"
+    }
+  )
+
+  let chemJson;
+  if (data.resolved_query?.name) {
+    chemJson = {
+      "@context": "http://schema.org",
+      "@type": "ChemicalSubstance",
+      "@id": url,
+      "identifier": `CHEBI:${data.resolved_query.name.chebi}`,
+      "name": data.resolved_query.name.name,
+      "url": url,
+      "description": data.resolved_query.name.description,
+      "hasBioChemEntityPart": [
+        {
+          "@type": "MolecularEntity",
+          "@id": data.resolved_query.name.chebiUrl,
+          "identifier": `CHEBI:${data.resolved_query.name.chebi}`,
+          "name": data.resolved_query.name.name,
+          "smiles": data.resolved_query.smiles
+        }
+      ],
+      "hasRepresentation": data.resolved_query.smiles
+    }
+
+    ldJson.push(chemJson);
   }
 
   return ldJson;
@@ -77,6 +123,7 @@ export async function loader({ params }) {
 
 export const meta = ({ data }) => {
   const modelInfo = MODELS.find((x) => x.path == data.model);
+  // console.log(data);
 
   let name = '';
   if (data.resolved_query?.name?.name) {
@@ -97,8 +144,9 @@ export const meta = ({ data }) => {
 
   let url = `https://xenosite.org/${data.params.model}/${data.params.query}`
   // const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
-  const ldJson = getLdJson(data, modelInfo, name);
+  const ldJson = getLdJson(data, modelInfo, name, url);
 
+  // add meta
   let results = [
     { charSet: "utf-8" },
     { viewport: "width=device-width,initial-scale=1" },
@@ -174,10 +222,13 @@ export const meta = ({ data }) => {
     },
   ];
 
+  // add ld+json
   if (ldJson.length > 0) {
-    results.push({
-      "script:ld+json": ldJson
-    });
+    for (let i = 0; i < ldJson.length; i++) {
+      results.push({
+        "script:ld+json": ldJson[i]
+      });
+    }
   }
 
   return results;

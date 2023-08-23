@@ -30,6 +30,15 @@ function getLdJson(modelInfo) {
     ldJson.push(listItem);
   }
 
+  ldJson.push(
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "url": "https://xenosite.org",
+      "logo": "https://xenosite.org/favicon.png"
+    }
+  )
+
   return ldJson;
 }
 
@@ -51,6 +60,7 @@ export const meta = ({ params }) => {
   const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
   const ldJson = getLdJson(modelInfo);
 
+  // add meta
   let results = [
     { charSet: "utf-8" },
     { viewport: "width=device-width,initial-scale=1" },
@@ -126,10 +136,13 @@ export const meta = ({ params }) => {
     },
   ];
 
+  // add ld+json
   if (ldJson.length > 0) {
-    results.push({
-      "script:ld+json": ldJson
-    });
+    for (let i = 0; i < ldJson.length; i++) {
+      results.push({
+        "script:ld+json": ldJson[i]
+      });
+    }
   }
 
   return results;
