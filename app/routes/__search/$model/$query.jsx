@@ -6,7 +6,7 @@ import { ResultSummaryDisplay } from "~/components/ResultSummaryDisplay";
 
 import { MODELS } from "~/data";
 import HEADERS from "~/headers";
-import { getLdJson, capitalize } from "~/loaders";
+import { getLdJson, capitalize, LdJsonType } from "~/loaders";
 
 export function headers() {
   return HEADERS;
@@ -22,9 +22,6 @@ export function ErrorBoundary(error) {
     </div>
   );
 }
-
-
-
 
 export async function loader({ params }) {
   const { resolved_query, model } = await resolve_query(params);
@@ -61,8 +58,7 @@ export const meta = ({ data }) => {
   }
 
   let url = `https://xenosite.org/${data.params.model}/${data.params.query}`
-  // const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
-  const ldJson = getLdJson(data, modelInfo, name, url);
+  const ldJson = getLdJson(LdJsonType.QUERY, {data, modelInfo, name, url});
 
   // add meta
   let results = [
@@ -143,6 +139,7 @@ export const meta = ({ data }) => {
   // add ld+json
   if (ldJson.length > 0) {
     for (let i = 0; i < ldJson.length; i++) {
+      console.log(ldJson[i])
       results.push({
         "script:ld+json": ldJson[i]
       });

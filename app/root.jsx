@@ -1,12 +1,10 @@
 import { json } from "@remix-run/node";
 import { Link, Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
-
 import XDot from "~/components/XDot";
-
 import styles from "./styles/app.css";
 import { Gtag } from "~/components/Gtag";
 
-// import GlobalLoading from "~/components/GlobalLoading";
+import { getLdJson, LdJsonType } from "~/loaders";
 
 export function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -22,7 +20,7 @@ export const meta = ({ params }) => {
   let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
   let url = `https://xenosite.org`;
 
-  return [
+  let results = [
     { charSet: "utf-8" },
     { viewport: "width=device-width,initial-scale=1" },
     { title: `Xenosite` },
@@ -94,16 +92,20 @@ export const meta = ({ params }) => {
     {
       name: "twitter:creator",
       content: "Dr. Josh Swamidass",
-    },
-    {
-      "script:ld+json": {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "url": "https://xenosite.org",
-        "logo": "https://xenosite.org/favicon.png"
-      }
-    },
-  ]
+    }
+  ];
+  const ldJson = getLdJson(LdJsonType.ROOT, {data: null, modelInfo: null, name: null, url: null});
+
+  // add ld+json
+  if (ldJson.length > 0) {
+    for (let i = 0; i < ldJson.length; i++) {
+      results.push({
+        "script:ld+json": ldJson[i]
+      });
+    }
+  }
+
+  return results;
 }
 
 export function links() {

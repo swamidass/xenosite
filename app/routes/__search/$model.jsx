@@ -4,43 +4,7 @@ import { MODELS } from "~/data";
 import ReactDOMServer from 'react-dom/server'
 
 import HEADERS from "~/headers";
-
-function getLdJson(modelInfo) {
-
-  let ldJson = [];
-
-  if (modelInfo && modelInfo !== undefined) {
-    const listItem = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": 'Xenosite',
-        "item": `https://xenosite.org/`
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": modelInfo.model,
-        "item": `https://xenosite.org/${modelInfo.path}`
-      }
-    ]};
-    ldJson.push(listItem);
-  }
-
-  ldJson.push(
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "url": "https://xenosite.org",
-      "logo": "https://xenosite.org/favicon.png"
-    }
-  )
-
-  return ldJson;
-}
+import { getLdJson, LdJsonType } from "~/loaders";
 
 export const meta = ({ params }) => {
   const modelInfo = MODELS.find((x) => x.path == params.model);
@@ -58,7 +22,7 @@ export const meta = ({ params }) => {
 
   let url = `https://xenosite.org/${params.model}`;
   const info = modelInfo ? ReactDOMServer.renderToString(modelInfo.info()) : null;
-  const ldJson = getLdJson(modelInfo);
+  const ldJson = getLdJson(LdJsonType.MODEL, {data: null, modelInfo, name: null, url});
 
   // add meta
   let results = [
