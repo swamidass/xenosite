@@ -1,7 +1,6 @@
-/**
- * @type {import('@remix-run/dev').AppConfig}
- */
+/** @type {import('@remix-run/dev').AppConfig} */
 module.exports = {
+  ignoredRouteFiles: ["**/.*"],
   publicPath: "/build/",
   serverBuildPath: "api/index.js",
   serverMainFields: ["main", "module"],
@@ -16,10 +15,4 @@ module.exports = {
   // assetsBuildDirectory: "public/build",
   // serverBuildPath: "api/index.js",
   // publicPath: "/build/",
-
-  // You can opt-in to the new meta API with a future flag in 
-  // Remix config.
-  future: {
-    v2_meta: true,
-  },
 };
