@@ -1,3 +1,4 @@
+import { LoaderFunctionArgs } from "@remix-run/node";
 import satori from "satori";
 import { SatoriOptions } from "satori";
 // import { join } from "path";
@@ -5,11 +6,6 @@ import { SatoriOptions } from "satori";
 import svg2img from "svg2img";
 import XDot from "~/components/XDot";
 
-declare module "react" {
-  interface HTMLAttributes<T> {
-    tw?: string;
-  }
-}
 
 async function getFont(
   font: string,
@@ -46,20 +42,23 @@ async function getFont(
 
 const fontData = getFont("Roboto");
 
-export async function loader({ request }) {
+
+export async function loader({
+  request,
+}: LoaderFunctionArgs) {
+  console.log("inside og")
   const jsx = (
-    <div tw="w-full h-full flex">
-      <div tw=" absolute bottom-0 left-0 flex align-text-bottom ">
-        <h1 tw="text-4xl font-bold px-3 flex inline">
-          <div tw="inset-0 absolute -top-2 -z-10 flex">
-            <XDot tw="w-[4em] mx-auto opacity-25 flex" />
+    <div className="w-full h-full flex">
+      <div className=" absolute bottom-0 left-0 flex align-text-bottom ">
+        <h1 className="text-4xl font-bold px-3 flex">
+          <div className="inset-0 absolute -top-2 -z-10 flex">
+            {/* <XDot tw="w-[4em] mx-auto opacity-25 flex" /> */}
+            <XDot />
           </div>
           XenoSite
         </h1>
-<div tw="my-auto text-xl"> Epoxidation </div>
+        <div className="my-auto text-xl"> Epoxidation </div>
       </div>
-      <div tw=" w-full h-full text-white float-left"> Here </div>
-      <div tw=" w-full h-full text-white float-left"> Here </div>
     </div>
   );
 

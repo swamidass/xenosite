@@ -278,3 +278,85 @@ declare module "react" {
 //     },
 //   });
 // }
+
+export function commonMetaValues() {
+  let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
+  let url = `https://xenosite.org`;
+
+  let results = [
+    { charSet: "utf-8" },
+    { viewport: "width=device-width,initial-scale=1" },
+    { title: `Xenosite` },
+    {
+      name: "description",
+      content: description,
+    },
+    {
+      name: "robots",
+      content: "index, follow",
+    },
+    {
+      tagName: "link",
+      rel: "canonical",
+      href: "https://xenosite.org",
+    },
+    {
+      name: "author",
+      content: "Dr. Josh Swamidass",
+    },
+    {
+      name: "og:title",
+      content: `Xenosite`,
+    },
+    {
+      name: "og:type",
+      content: "website",
+    },
+    {
+      name: "og:url",
+      content: url,
+    },
+    {
+      name: "og:site_name",
+      content: "Xenosite",
+    },
+    {
+      name: "og:image",
+      content: `/favicon.png`,
+    },
+    { 
+      name: "og:description",
+      content: description,
+    },
+    {
+      name: "og:canonical",
+      content: "https://xenosite.org",
+    },
+    {
+      name: "twitter:title",
+      content: `Xenosite`,
+    },
+    {
+      name: "twitter:description",
+      content: description,
+    },
+    {
+      name: "twitter:image",
+      content: `/favicon.png`,
+    },
+    {
+      name: "twitter:card",
+      content: "summary_large_image",
+    },
+    {
+      name: "twitter:site",
+      content: "@xenosite",
+    },
+    {
+      name: "twitter:creator",
+      content: "Dr. Josh Swamidass",
+    }
+  ];
+
+  return results;
+}

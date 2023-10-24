@@ -69,10 +69,9 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
 }
 
 export async function loader({
-  request,
+  params
 }: LoaderFunctionArgs) {
-  const params = new URL(request.url).pathname.split("/");
-  const model = params[1];
+  const model = params.model;
   const modelInfo = MODELS.find((x) => x.path == model);
 
   if (!modelInfo && model != "_") {
@@ -90,7 +89,6 @@ export default function Model() {
   const modelinfo = MODELS.find((x) => x.path == model);
 
   if (modelinfo || model == "_") {
-
     if(model == "_" || !model) {
       if(!query) return <ModelDescriptions />
       else return <Outlet />

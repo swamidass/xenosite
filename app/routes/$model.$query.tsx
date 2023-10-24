@@ -2,22 +2,22 @@ import type { LoaderFunction, LoaderFunctionArgs, MetaArgs, MetaFunction} from "
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import HEADERS from "~/loaders/headers";
-import { MoleculeSummary } from "~/components";
+import { Loading, MoleculeSummary } from "~/components";
 import { resolve_query } from "~/loaders/backend.server";
 import { MODELS } from "~/data";
 import type { LdJsonParams} from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import type { SwamidassApiData} from "~/utils";
-import { capitalize } from "~/utils";
+import { capitalize, commonMetaValues } from "~/utils";
 
 
-export const meta: MetaFunction = ({ matches, params, data }: MetaArgs) => {
+export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
   const queryData = data as SwamidassApiData;
 
   // Get parent route's meta data & filter out changed fields
   // ref: https://remix.run/docs/en/main/route/meta#merging-with-parent-meta
+  const matches = commonMetaValues();  // Need to use common value to avoid Warnings from react-dom
   const parentMeta = matches
-    .flatMap((match) => match.meta ?? [])
     .filter((meta) => !("title" in meta))
     .filter((meta) => !("script:ld+json" in meta))
     .filter((meta): meta is { name: string, content: string } => ("name" in meta &&
@@ -32,24 +32,32 @@ export const meta: MetaFunction = ({ matches, params, data }: MetaArgs) => {
         meta.name !== "twitter:image"
       )
     ));
-  // console.log(parentMeta)
+  // console.log(parentMeta);
   
   // Get new values for title, description, etc.
   const modelInfo = MODELS.find((x) => x.path == queryData.model);
-  const molecule = queryData.resolved_query.name ? 
-    capitalize(queryData.resolved_query.name.name) : 
-    queryData.resolved_query.smiles;
-  const title = modelInfo ? 
-    `Xenosite | ${capitalize(queryData.model)} | ${molecule}` : 
-    "Xenosite";
-  const description = (
-    queryData.resolved_query.name &&
-    queryData.resolved_query.name.name &&
-    modelInfo
-  ) ?
-    `XenoSite prediction of the reactivity of "${queryData.resolved_query.name.name}". The reactivity model is "${modelInfo.model}".` :
-    "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
-  const url = `https://xenosite.org/${params.model}/${encodeURIComponent(params.query as string)}`;
+  
+  // Set defaults if model = "_"
+  let molecule = params.query;
+  let title = `Xenosite | ${params.query}`;
+  let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
+  const url = `https://xenosite.org/${params.model}/${encodeURIComponent(params.query as string)}`
+
+  if(modelInfo) {
+    molecule = queryData.resolved_query.name ? 
+      capitalize(queryData.resolved_query.name.name) : 
+      queryData.resolved_query.smiles;
+    title = modelInfo ? 
+      `Xenosite | ${capitalize(queryData.model)} | ${molecule}` : 
+      `Xenosite | ${params.query}`;
+    description = (
+      queryData.resolved_query.name &&
+      queryData.resolved_query.name.name &&
+      modelInfo
+    ) ?
+      `XenoSite prediction of the reactivity of "${queryData.resolved_query.name.name}". The reactivity model is "${modelInfo.model}".` :
+      "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
+  }
 
   // Add changed results
   let results = [
@@ -70,20 +78,22 @@ export const meta: MetaFunction = ({ matches, params, data }: MetaArgs) => {
     model: modelInfo ? 
       modelInfo.path as string : 
       params.model as string,
-    smiles: queryData.resolved_query.smiles,
-    name: queryData.resolved_query.name ?
+    smiles: queryData.resolved_query?.smiles ? 
+      queryData.resolved_query.smiles :
+      params.query,
+    name: queryData.resolved_query?.name ?
       queryData.resolved_query.name.name :
-      "",
-    description: queryData.resolved_query.name ?
+      params.query,
+    description: queryData.resolved_query?.name ?
       queryData.resolved_query.name.description :
       description,
     xenositeUrl: url,
     citation: modelInfo ? 
       modelInfo.citation : "",
-    chebi: queryData.resolved_query.name ?
+    chebi: queryData.resolved_query?.name ?
       queryData.resolved_query.name.chebi.toString() :
       "",
-    chebiUrl: queryData.resolved_query.name ?
+    chebiUrl: queryData.resolved_query?.name ?
       queryData.resolved_query.name.chebiUrl :
       "",
   }
@@ -101,13 +111,10 @@ export const meta: MetaFunction = ({ matches, params, data }: MetaArgs) => {
   return results
 }
 
-export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
-  const params = new URL(request.url).pathname.split("/");
-  const pathModel = params[1];
-
+export const loader: LoaderFunction = async ({ params }: LoaderFunctionArgs) => {
   const { resolved_query, model } = await resolve_query({
-    model: pathModel,
-    query: params[2]
+    model: params.model || "",
+    query: params.query || null // add null check here
   });
 
   // console.log(`$query: ${resolved_query} $model: ${model} $params: ${params}`);
@@ -122,7 +129,17 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
 }
 
 export default function Query() {
-  const { resolved_query, model } = useLoaderData() || {};
+  const { resolved_query, model } = 
+    useLoaderData() as { resolved_query: any, model: any } || 
+    { resolved_query: null, model: null };
 
-  return <MoleculeSummary resolved_query={resolved_query} model={model} />;
+  return (
+    <>
+      {resolved_query && model ? (
+        <MoleculeSummary resolved_query={resolved_query} model={model} />
+      ) : (
+        <Loading />
+      )}
+    </>
+  );
 }
