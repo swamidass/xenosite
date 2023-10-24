@@ -42,7 +42,7 @@ export default function MoleculeSummary({ resolved_query }: ResultSummaryDisplay
 
         <div className="flex mx-auto mb-5 justify-center flex-wrap">
             {results.map((r, i) => (
-                <div key={i} className=" mx-2">
+                <div key={i} className="mx-2">
                     <img
                         className="max-w-full mx-auto "
                         src={"data:image/svg+xml;utf8," + encodeURIComponent(r.depiction)}

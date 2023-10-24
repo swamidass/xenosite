@@ -42,6 +42,7 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
   let title = `Xenosite | ${params.query}`;
   let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
   const url = `https://xenosite.org/${params.model}/${encodeURIComponent(params.query as string)}`
+  const imageUrl = `https://xenosite.org/og/${params.model}/${encodeURIComponent(params.query as string)}`
 
   if(modelInfo) {
     molecule = queryData.resolved_query.name ? 
@@ -69,8 +70,8 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
     { name: 'og:description', content: description },
     { name: 'twitter:description', content: description },
     { name: 'og:url', content: url },
-    { name: 'og:image', content: `${url}/0` },
-    { name: 'twitter:image', content: `${url}/0` },
+    { name: 'og:image', content: imageUrl },
+    { name: 'twitter:image', content: imageUrl },
   ];
 
   // Add ld+json

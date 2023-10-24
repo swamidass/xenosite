@@ -21,7 +21,7 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
         meta.name !== "description" &&
         meta.name !== "og:description" &&
         meta.name !== "twitter:description" && 
-        meta.name !== "og.url"
+        meta.name !== "og:url"
       )
     ));
   // console.log(parentMeta)

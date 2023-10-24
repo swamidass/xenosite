@@ -1,10 +1,10 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import satori from "satori";
 import { SatoriOptions } from "satori";
-// import { join } from "path";
-// import { readFile } from "node:fs/promises";
 import svg2img from "svg2img";
 import XDot from "~/components/XDot";
+import { resolve_query } from "~/loaders/backend.server";
+import { chooseRandom } from "~/utils";
 
 
 async function getFont(
@@ -42,39 +42,43 @@ async function getFont(
 
 const fontData = getFont("Roboto");
 
-
 export async function loader({
-  request,
+  params,
 }: LoaderFunctionArgs) {
-  console.log("inside og")
-  const jsx = (
-    <div className="w-full h-full flex">
-      <div className=" absolute bottom-0 left-0 flex align-text-bottom ">
-        <h1 className="text-4xl font-bold px-3 flex">
-          <div className="inset-0 absolute -top-2 -z-10 flex">
-            {/* <XDot tw="w-[4em] mx-auto opacity-25 flex" /> */}
-            <XDot />
-          </div>
-          XenoSite
-        </h1>
-        <div className="my-auto text-xl"> Epoxidation </div>
-      </div>
-    </div>
-  );
+  console.log(params);
 
+  // Get the depiction.
+  let jsx: React.ReactElement | string = <XDot />;
+  const response = await resolve_query({
+    model: params.model || "_",
+    query: params.query || null,
+  });
+  if(response.resolved_query) {
+    const depiction = chooseRandom(response.resolved_query.results).depiction
+    jsx = (
+      <img
+          className="max-w-full mx-auto "
+          src={"data:image/svg+xml;utf8," + encodeURIComponent(depiction)}
+          alt=""
+      />
+    )
+  }
+
+  // Create the SVG.
   const svg = await satori(jsx, {
     width: 600,
     height: 400,
     //debug: true,
     fonts: await fontData,
   });
+
+  // Convert the SVG to PNG.
   const { data, error } = await new Promise(
     (
       resolve: (value: { data: Buffer | null; error: Error | null }) => void
     ) => {
       svg2img(
         svg,
-
         {
           resvg: {
             fitTo: {
@@ -93,6 +97,8 @@ export async function loader({
       );
     }
   );
+
+  // Return the response.
   if (error) {
     return new Response(error.toString(), {
       status: 500,

@@ -279,6 +279,12 @@ declare module "react" {
 //   });
 // }
 
+/**
+ * 
+ * Exports the meta values that are common to all pages.
+ * 
+ * @returns The meta values that are common to all pages.
+ */
 export function commonMetaValues() {
   let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
   let url = `https://xenosite.org`;
@@ -359,4 +365,15 @@ export function commonMetaValues() {
   ];
 
   return results;
+}
+
+/**
+ * 
+ * Choose a random element from an array.
+ * 
+ * @param array The array to choose from
+ * @returns A random element from the array
+ */
+export function chooseRandom(array: any[]) {
+  return array[Math.floor(Math.random() * array.length)];
 }
