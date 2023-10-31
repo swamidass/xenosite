@@ -101,11 +101,9 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
   // console.log(ldJsonParams);
   const ldJson = getLdJson(ldJsonParams)
   if (ldJson.length > 0) {
-    for (let i = 0; i < ldJson.length; i++) {
-      results.push({
-        "script:ld+json": ldJson[i]  // @ts-ignore
-      });
-    }
+    results.push({
+      "script:ld+json": ldJson  // @ts-ignore
+    });
   }
 
   // console.log(results);

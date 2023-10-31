@@ -19,8 +19,7 @@ import { useEffect, useState } from "react";
 import { ModelTabs, Spinner } from "~/components";
 import HEADERS from "~/loaders/headers";
 import { commonMetaValues, getQueryUrl } from "~/utils";
-import XDot from "./components/XDot";
-import Gtag from "./components/Gtag";
+import { XDot, Gtag } from "~/components";
 import { getLdJson } from "./loaders/ld-json";
 
 
@@ -57,11 +56,9 @@ export const meta: MetaFunction = () => {
   // add ld+json
   const ldJson = getLdJson()
   if (ldJson.length > 0) {
-    for (let i = 0; i < ldJson.length; i++) {
-      results.push({
-        "script:ld+json": ldJson[i]  // @ts-ignore
-      });
-    }
+    results.push({
+      "script:ld+json": ldJson  // @ts-ignore
+    });
   }
 
   return results;

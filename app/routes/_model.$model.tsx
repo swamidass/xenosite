@@ -57,11 +57,9 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
   }
   const ldJson = getLdJson(ldJsonParams)
   if (ldJson.length > 0) {
-    for (let i = 0; i < ldJson.length; i++) {
-      results.push({
-        "script:ld+json": ldJson[i]  // @ts-ignore
-      });
-    }
+    results.push({
+      "script:ld+json": ldJson  // @ts-ignore
+    });
   }
 
   // console.log(results);
@@ -105,6 +103,7 @@ export default function Model() {
                   <Link
                     className="no-underline hover:underline"
                     to={`/${modelinfo.path}`}
+                    reloadDocument
                   >
                     {modelinfo.model}
                   </Link>

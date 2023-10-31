@@ -67,13 +67,14 @@ function getSoftwareApplication(params?: LdJsonParams): any | null {
 
   return {
     "@context": "http://schema.org",
-    "@type": "SoftwareApplication",
+    "@type": "WebApplication",
     "@id": params.xenositeUrl,
     name: "Xenosite",
     identifier: params.xenositeUrl,
     isAccessibleForFree: "True",
-    applicationCategory: "Web application",
+    applicationCategory: "HealthApplication",
     citation: params.citation,
+    operatingSystem: "All",
   };
 }
 
