@@ -1,5 +1,6 @@
 /** @type {import('@remix-run/dev').AppConfig} */
 module.exports = {
+  serverBuildTarget: "vercel",
   ignoredRouteFiles: ["**/.*"],
   publicPath: "/build/",
   serverBuildPath: "api/index.js",
@@ -7,8 +8,7 @@ module.exports = {
   serverModuleFormat: "cjs",
   serverPlatform: "node",
   serverMinify: false,
-  // server: process.env.NODE_ENV === "development" ? undefined : "./server.js",
- // ignoredRouteFiles: [".*"],
+  server: process.env.NODE_ENV === "development" ? undefined : "./server.js",
   serverDependenciesToBundle:
     process.env.NODE_ENV === 'development' ? ['@vercel/og'] : [],
   // appDirectory: "app",
