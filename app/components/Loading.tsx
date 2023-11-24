@@ -1,8 +1,8 @@
-import { useTransition } from "@remix-run/react";
+import { useNavigation } from "@remix-run/react";
 
-export default function GlobalLoading() {
-  const transition = useTransition();
-  const active = transition.state !== "idle";
+export default function Loading() {
+  const navigation = useNavigation();
+  const active = navigation.state !== "idle";
 
   return (
     <div
@@ -10,7 +10,7 @@ export default function GlobalLoading() {
       aria-valuetext={active ? "Loading" : undefined}
       aria-hidden={!active}
       className={
-        "pointer-events-none fixed left-0 bottom-0 z-50 p-4 transition-all duration-500 ease-out" +
+        "pointer-events-none fixed left-0 bottom-0 z-50 p-4 navigation-all duration-500 ease-out" +
         (active ? "translate-y-0" : "translate-y-full")
       }
     >
@@ -37,5 +37,3 @@ export default function GlobalLoading() {
     </div>
   );
 }
-
-export { GlobalLoading };

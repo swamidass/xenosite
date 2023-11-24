@@ -1,7 +1,7 @@
 import { installGlobals } from "@remix-run/node";
+import { toJson } from 'isomorphic-xml2js'
 
 installGlobals();
-import { toJson } from 'isomorphic-xml2js'
 
 const PUGURL = 'https://pubchem.ncbi.nlm.nih.gov/pug/pug.cgi'
 

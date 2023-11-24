@@ -1,8 +1,7 @@
-import { json } from "react";
 import { Link } from "@remix-run/react";
 import { MODELS } from "~/data";
 
-export default function Model() {
+export default function ModelDescriptions() {
   return (
     <>
       <div className="prose max-w-prose py-20 mx-auto text-sm">
@@ -14,11 +13,11 @@ export default function Model() {
 
         <h2> Getting Help </h2>
         <p>
-          Post comments, questions or problems on the{" "}
-          <a target="_blank" href="https://discourse.xenosite.org">
+        Post comments, questions or problems on the{" "}
+        <a target="_blank" href="https://discourse.xenosite.org" rel="noreferrer noopener">
             forum
-          </a>
-          .
+        </a>
+        .
         </p>
 
         <h2> Terms of Use </h2>
@@ -33,16 +32,17 @@ export default function Model() {
         <p>
           This site is under active development. More models and features will
           be available soon.{" "}
-          <a
+        <a
             target="_blank"
             href={
-              "https://scholar.google.com/citations?user=oWGEj78AAAAJ&hl=en&oi=sra"
+                "https://scholar.google.com/citations?user=oWGEj78AAAAJ&hl=en&oi=sra"
             }
-          >
+            rel="noreferrer noopener"
+        >
             What
           </a>{" "}
           should we prioritize? Tell us on the{" "}
-          <a target="_blank" href="https://discourse.xenosite.org">
+          <a target="_blank" href="https://discourse.xenosite.org" rel="noopener noreferrer">
             forum
           </a>
           .

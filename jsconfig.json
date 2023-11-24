@@ -16,5 +16,5 @@
     "noEmit": true,
     "resolveJsonModule": true
   },
-  "include": ["**/*.js", "**/*.jsx"]
+  "include": ["**/*.js", "**/*.jsx",  "**/*.ts", "**/*.tsx"]
 }

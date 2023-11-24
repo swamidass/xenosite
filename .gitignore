@@ -1,3 +1,4 @@
+.DS_Store
 *.ttf
 ./*.py
 ./*.ipynb
@@ -15,4 +16,5 @@ node_modules
 app/styles/app.css
 build/
 public/build
+public/sitemap/*
 api/index.js
