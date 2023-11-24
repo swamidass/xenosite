@@ -4,7 +4,6 @@ const zlib = require('zlib');
 const msgpack = require('msgpack5')();
 const os = require('os');
 const path = require('path');
-const { remove } = require('smiles-drawer/src/ArrayHelper');
 
 // Setup
 const fileUrl = 'https://swami.wustl.edu/~jswami/chebi.msgpack.gz';
@@ -13,6 +12,8 @@ const downloadPath = path.join(tempDir, 'chebi.msgpack.gz');
 const unzipPath = path.join(tempDir, 'chebi.msgpack');
 const parentDir = path.dirname(__dirname);
 const targetDir = path.join(parentDir, "public", "sitemap");
+const models = ["epoxidation", "quinone", "reactivity", "phase1", "ndealk", "ugt", "_"];
+const sitemapUrlLimit = 50000;
 
 // Functions
 function downloadUnzipAndLoad(url) {
@@ -50,7 +51,7 @@ function removeFile(filePath) {
 function getParamValues(data) {
   let smilesArray = [];
 
-  // Get all smiles from lookup & encode URI
+  // Get all smiles from lookup
   if (data["lookup"]) {
     Object.keys(data["lookup"]).forEach((key) => {
       smilesArray.push(key);
@@ -63,18 +64,24 @@ function getParamValues(data) {
   return smilesArray;
 }
 
-function createSitemap(smilesArray, modelsArray) {
-  console.log("Creating sitemaps");
+function createSitemaps(smilesArray, modelsArray) {
+  console.log(
+    `Creating sitemaps: ` +
+    `${smilesArray.length} param values, ` +
+    `${modelsArray.length} models, ` +
+    `${smilesArray.length * modelsArray.length} urls ` +
+    `(${Math.ceil(smilesArray.length * modelsArray.length / sitemapUrlLimit)} files)`);
   let urlCount = 0;
   let fileCount = 0;
   let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   let sitemapFiles = [];
+  let today = new Date().toISOString().split('T')[0];
 
   for (let smiles of smilesArray) {
     for (let model of modelsArray) {
-      if (urlCount >= 50000) {
+      if (urlCount >= sitemapUrlLimit) {
         sitemap += '</urlset>\n';
-        const fileName = `sitemap${fileCount}.xml`;
+        const fileName = `sitemap${fileCount+1}.xml`;
         const sitemapPath = path.join(targetDir, fileName);
         console.log("Writing sitemap: " + sitemapPath);
         fs.writeFileSync(sitemapPath, sitemap);
@@ -84,14 +91,18 @@ function createSitemap(smilesArray, modelsArray) {
         sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
       }
 
+      // Encode URI
       let url = `https://xenosite.org/${model}/${encodeURIComponent(smiles)}`;
-      sitemap += `  <url>\n    <loc>${url}</loc>\n  </url>\n`;
-      urlCount++;
+      sitemap += `  <url>\n    <loc>${url}</loc>\n    <lastmod>${today}</lastmod>\n  </url>\n`;      urlCount++;
     }
   }
 
   sitemap += '</urlset>\n';
-  fs.writeFileSync(`sitemap${fileCount}.xml`, sitemap);
+  const fileName = `sitemap${fileCount+1}.xml`;
+  const sitemapPath = path.join(targetDir, fileName);
+  console.log("Writing sitemap: " + sitemapPath);
+  fs.writeFileSync(sitemapPath, sitemap);
+  sitemapFiles.push(fileName);
 
   return sitemapFiles;
 }
@@ -139,14 +150,12 @@ downloadUnzipAndLoad(fileUrl)
     // Get lookup values
     const smilesArray = getParamValues(data);
 
-    // Create models array
-    const models = ["epoxidation", "quinone", "reactivity", "phase1", "ndealk", "ugt", "_"];
-
     // Create sitemap files
-    const sitemapFiles = createSitemap(smilesArray, models);
+    const sitemapFiles = createSitemaps(smilesArray, models);
 
     // Create sitemap index
     const sitemapIndexPath = createSitemapIndex(sitemapFiles);
+    console.log("Sitemap index created: " + sitemapIndexPath);
 
     removeFile(unzipPath)
       .then(() => console.log("File removed: " + unzipPath))
