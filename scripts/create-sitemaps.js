@@ -158,12 +158,17 @@ downloadUnzipAndLoad(fileUrl)
   })
   .catch((error) => console.error(error))
   .finally(() => {
-    removeFile(unzipPath)
-      .then(() => console.log("File removed: " + unzipPath))
-      .catch((error) => console.error('Error removing file:', error));
+    // Remove temp files
+    if (fs.existsSync(unzipPath)) {
+      removeFile(unzipPath)
+        .then(() => console.log("File removed: " + unzipPath))
+        .catch((error) => console.error('Error removing file:', error));
+    }
 
-    removeFile(downloadPath)
-      .then(() => console.log("File removed: " + downloadPath))
-      .catch((error) => console.error('Error removing file:', error));
+    if(fs.existsSync(downloadPath)) {
+      removeFile(downloadPath)
+        .then(() => console.log("File removed: " + downloadPath))
+        .catch((error) => console.error('Error removing file:', error));
+    }
   });
 
