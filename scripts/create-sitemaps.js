@@ -143,7 +143,6 @@ downloadUnzipAndLoad(fileUrl)
   .then((data) => {
     console.log(`Loaded records`);
     
-    
     // Clear sitemap dir
     clearDirectory();
     
@@ -156,7 +155,9 @@ downloadUnzipAndLoad(fileUrl)
     // Create sitemap index
     const sitemapIndexPath = createSitemapIndex(sitemapFiles);
     console.log("Sitemap index created: " + sitemapIndexPath);
-
+  })
+  .catch((error) => console.error(error))
+  .finally(() => {
     removeFile(unzipPath)
       .then(() => console.log("File removed: " + unzipPath))
       .catch((error) => console.error('Error removing file:', error));
@@ -164,6 +165,5 @@ downloadUnzipAndLoad(fileUrl)
     removeFile(downloadPath)
       .then(() => console.log("File removed: " + downloadPath))
       .catch((error) => console.error('Error removing file:', error));
-  })
-  .catch((error) => console.error(error));
+  });
 
