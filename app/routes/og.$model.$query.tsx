@@ -2,6 +2,7 @@ import { LoaderFunctionArgs } from "@remix-run/node";
 import satori from "satori";
 import { SatoriOptions } from "satori";
 import svg2img from "svg2img";
+import OpenGraphImage from "~/components/OpenGraphImage";
 import XDot from "~/components/XDot";
 import { resolve_query } from "~/loaders/backend.server";
 import { chooseRandom } from "~/utils";
@@ -54,13 +55,19 @@ export async function loader({
     query: params.query || null,
   });
   if(response.resolved_query) {
-    const depiction = chooseRandom(response.resolved_query.results).depiction
-    jsx = (
-      <img
-          className="max-w-full mx-auto "
-          src={"data:image/svg+xml;utf8," + encodeURIComponent(depiction)}
-          alt=""
-      />
+    // console.log(response);
+    // console.log(response.resolved_query);
+    // console.log(response.resolved_query.results);
+    
+    const name = response.resolved_query.name ? response.resolved_query.name.name : response.resolved_query.smiles;
+    const majorModel = response.model == "_" ? "All Models" : response.model;
+    const choice = chooseRandom(response.resolved_query.results)
+    const subModel = choice.model ? choice.model.includes(".") ? choice.model.split(".")[1] : null : null;
+    const model = subModel ? `${majorModel}: ${subModel}` : majorModel;
+    const depiction = choice.depiction;
+
+    jsx = ( 
+      <OpenGraphImage name={name} model={model} depiction={depiction} /> 
     )
   }
 
