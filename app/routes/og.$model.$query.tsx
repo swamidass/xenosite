@@ -4,8 +4,9 @@ import { SatoriOptions } from "satori";
 import svg2img from "svg2img";
 import OpenGraphImage from "~/components/OpenGraphImage";
 import XDot from "~/components/XDot";
-import { resolve_query } from "~/loaders/backend.server";
-import { chooseRandom } from "~/utils";
+import { MODELS } from "~/data";
+import { QueryResult, resolve_query } from "~/loaders/backend.server";
+import { capitalize, chooseRandom } from "~/utils";
 
 
 async function getFont(
@@ -43,6 +44,34 @@ async function getFont(
 
 const fontData = getFont("Roboto");
 
+function getMoleculeInfo (response: QueryResult) {
+  // Get Name of molecule
+  let name: string = response.resolved_query.name ? 
+    capitalize(response.resolved_query.name.name) : 
+    response.resolved_query.smiles;
+
+  // Get Model information
+  const modelinfo = MODELS.find((x) => x.path == response.model);
+  const majorModel = response.model == "_" ? 
+    "All Models" : 
+    modelinfo?.model ? 
+      modelinfo.model :
+      null;
+  if(!majorModel) throw new Error("No model found.");
+
+  // Get (random) Depiction (Svg)
+  const choice = chooseRandom(response.resolved_query.results)
+  
+  // Create description & depiction
+  const subModel = choice.model ? choice.model.includes(".") ? ` (${choice.model.split(".")[1]})` : null : null;
+  const model = subModel ? `${majorModel}${subModel}` : majorModel;
+  // const description = `${model}: ${name}`;
+  const depiction = choice.depiction;
+  console.log(depiction);
+
+  return { depiction, model, name };
+}
+
 export async function loader({
   params,
 }: LoaderFunctionArgs) {
@@ -54,21 +83,21 @@ export async function loader({
     model: params.model || "_",
     query: params.query || null,
   });
+
   if(response.resolved_query) {
     // console.log(response);
     // console.log(response.resolved_query);
     // console.log(response.resolved_query.results);
-    
-    const name = response.resolved_query.name ? response.resolved_query.name.name : response.resolved_query.smiles;
-    const majorModel = response.model == "_" ? "All Models" : response.model;
-    const choice = chooseRandom(response.resolved_query.results)
-    const subModel = choice.model ? choice.model.includes(".") ? choice.model.split(".")[1] : null : null;
-    const model = subModel ? `${majorModel}: ${subModel}` : majorModel;
-    const depiction = choice.depiction;
 
-    jsx = ( 
-      <OpenGraphImage name={name} model={model} depiction={depiction} /> 
-    )
+    try {
+      const { depiction, model, name } = getMoleculeInfo(response);
+      jsx = ( 
+        <OpenGraphImage model={model} name={name} depiction={depiction} /> 
+      )
+    } catch (error) {
+      console.error(error);
+      jsx = <XDot />;
+    }
   }
 
   // Create the SVG.
@@ -78,6 +107,7 @@ export async function loader({
     //debug: true,
     fonts: await fontData,
   });
+  // console.log(svg);
 
   // Convert the SVG to PNG.
   const { data, error } = await new Promise(
@@ -120,3 +150,4 @@ export async function loader({
     },
   });
 }
+
