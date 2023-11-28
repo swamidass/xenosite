@@ -1,4 +1,4 @@
-import { MODELS } from "~/data";
+import { MODELS, XenositeModelInfo } from "~/data";
 import { Link, Outlet, useMatches } from "@remix-run/react";
 import { ModelDescriptions } from "~/components";
 import { json} from "@remix-run/node";
@@ -48,9 +48,7 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
 
   // Add ld+json
   const ldJsonParams: LdJsonParams = {
-    model: modelInfo ? 
-      modelInfo.path as string : 
-      params.model as string,
+    model: modelInfo as XenositeModelInfo,
     xenositeUrl: url,
     citation: modelInfo ? 
       modelInfo.citation : "",
