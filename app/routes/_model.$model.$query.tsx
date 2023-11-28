@@ -4,7 +4,7 @@ import { useLoaderData } from "@remix-run/react";
 import HEADERS from "~/loaders/headers";
 import { Loading, MoleculeSummary } from "~/components";
 import { resolve_query } from "~/loaders/backend.server";
-import { MODELS } from "~/data";
+import { MODELS, XenositeModelInfo } from "~/data";
 import type { LdJsonParams} from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import type { SwamidassApiData} from "~/utils";
@@ -76,9 +76,7 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
 
   // Add ld+json
   const ldJsonParams: LdJsonParams = {
-    model: modelInfo ? 
-      modelInfo.path as string : 
-      params.model as string,
+    model: modelInfo as XenositeModelInfo,
     smiles: queryData.resolved_query?.smiles ? 
       queryData.resolved_query.smiles :
       params.query,
