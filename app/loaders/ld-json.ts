@@ -210,9 +210,16 @@ function getScholarlyArticle(params?: LdJsonParams): any | null {
     "@context": "http://schema.org",
     "@type": "ScholarlyArticle",
     url: params.model.citation,
+    headline: params.model.title,
+    datePublished: params.model.datePublished,
     name: params.model.model,
     description: params.model.description,
     citation: params.model.citation,
+    author: [getSwamidassPerson()],
+    publisher: {
+      "@type": "Organization",
+      name: params.model.publisher,
+    },
   };
 }
 
