@@ -95,13 +95,21 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
     chebiUrl: queryData.resolved_query?.name ?
       queryData.resolved_query.name.chebiUrl :
       "",
+    results: queryData.resolved_query?.results ?
+      queryData.resolved_query.results.map((result) => result.model) :
+      undefined,
   }
   // console.log(ldJsonParams);
   const ldJson = getLdJson(ldJsonParams)
   if (ldJson.length > 0) {
-    results.push({
-      "script:ld+json": ldJson  // @ts-ignore
-    });
+    for (let i = 0; i < ldJson.length; i++) {
+      results.push({
+        "script:ld+json": ldJson[i]  // @ts-ignore
+      });
+    }
+    // results.push({
+    //   "script:ld+json": ldJson  // @ts-ignore
+    // });
   }
 
   // console.log(results);

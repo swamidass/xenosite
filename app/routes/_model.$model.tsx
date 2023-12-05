@@ -55,9 +55,14 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
   }
   const ldJson = getLdJson(ldJsonParams)
   if (ldJson.length > 0) {
-    results.push({
-      "script:ld+json": ldJson  // @ts-ignore
-    });
+    for (let i = 0; i < ldJson.length; i++) {
+      results.push({
+        "script:ld+json": ldJson[i]  // @ts-ignore
+      });
+    }
+    // results.push({
+    //   "script:ld+json": ldJson  // @ts-ignore
+    // });
   }
 
   // console.log(results);

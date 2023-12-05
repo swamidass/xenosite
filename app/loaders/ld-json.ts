@@ -1,4 +1,5 @@
 import { XenositeModelInfo } from "~/data";
+import { replaceUnderscores, capitalize } from "~/utils";
 
 function getOrganization(): any {
   return {
@@ -271,8 +272,43 @@ function getChemicalSubstance(params?: LdJsonParams): any | null {
         smiles: params.smiles,
       },
     ],
-    hasRepresentation: params.smiles,
+    hasRepresentation: {
+      "@type": "PropertyValue",
+      propertyID: "SMILES",
+      value: params.smiles,
+    },
   };
+}
+
+function getImageObject(params?: LdJsonParams): any | null {
+  if (!params || !params.results || !params.model || !params.name) {
+    return null;
+  }
+  console.log(params);
+
+  const imageObjects = [];
+
+  for (let i = 0; i < params.results.length; i++) {
+    const mainModel = params.model.model;
+    const subModel = params.results[i].includes(".")
+      ? `, ${capitalize(
+          replaceUnderscores((params.results[i] as string).split(".")[1]),
+        )}`
+      : "";
+    const molecule = params.name;
+    const name = `Visualization of the ${mainModel}${subModel} model results for "${molecule}".`;
+    const description = `Static image showing the interaction points predicted by the ${mainModel}${subModel} model for "${molecule}".`;
+
+    imageObjects.push({
+      "@context": "http://schema.org",
+      "@type": "ImageObject",
+      contentUrl: `https://xenosite.org/${params.model.path}/${params.smiles}`,
+      name: name,
+      description: description,
+    });
+  }
+
+  return imageObjects;
 }
 
 export type LdJsonParams = {
@@ -284,10 +320,13 @@ export type LdJsonParams = {
   chebi?: string;
   chebiUrl?: string;
   citation?: string;
+  results?: any[];
 };
 
 export function getLdJson(params?: LdJsonParams): any[] {
   const ld = [];
+
+  console.log("getLdJson", params);
 
   // Add Organization Ld+Json
   // ref: https://schema.org/Organization
@@ -311,6 +350,10 @@ export function getLdJson(params?: LdJsonParams): any[] {
   // ref: https://bioschemas.org/profiles/ChemicalSubstance/0.4-RELEASE
   const chemicalSubstance = getChemicalSubstance(params);
   if (chemicalSubstance) ld.push(chemicalSubstance);
+
+  // Add ImageObject(s) Ld+Json
+  const imageObjects = getImageObject(params);
+  if (imageObjects && imageObjects.length > 0) ld.push(...imageObjects);
 
   console.log(JSON.stringify(ld, null, 2));
   return ld;
