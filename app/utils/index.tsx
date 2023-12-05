@@ -17,6 +17,17 @@ export function capitalize(word: string) {
 }
 
 /**
+ * Return a string with underscores replaced with spaces.
+ * 
+ * @param word - The string to replace underscores in, (e.g. "foo_bar")
+ * @returns The string with underscores replaced with spaces (e.g. "foo bar")
+ */
+export function replaceUnderscores(word: string) {
+  if(word && !word.includes("_")) return word;
+  return word.replace(/_/g, " ");
+}
+
+/**
  *
  * Augmenting the global Window interface to recognize the
  * gtag method, which is often injected into web pages when
@@ -175,8 +186,10 @@ export type SwamidassApiData = {
     results: {
       name: string,
       description: string,
+      depiction?: string,
       chebi: number,
-      chebiUrl: string
+      chebiUrl: string,
+      model?: string,
     }[],
     atoms: {
       num: number
@@ -200,84 +213,6 @@ declare module "react" {
     tw?: string;
   }
 }
-
-/**
- * 
- * Get the SVG for the og image.
- * 
- * @returns The SVG for the og image in a Response object
- */
-// export async function getSvg() {
-
-//   // Get font data
-//   const fontData = await getFont("Roboto");
-  
-//   // Create jsx
-//   const jsx = (
-//     <div tw="w-full h-full flex">
-//         <div tw=" absolute bottom-0 left-0 flex align-text-bottom ">
-//             <h1 tw="text-4xl font-bold px-3 flex inline">
-//                 <div tw="inset-0 absolute -top-2 -z-10 flex">
-//                     <div tw="w-[4em] mx-auto opacity-25 flex">
-//                         <XDot />
-//                     </div>
-//                 </div>
-//                 XenoSite
-//             </h1>
-//         </div>
-//     </div>
-//   );
-
-//   // Create svg
-//   const svg = await satori(jsx, {
-//     width: 600,
-//     height: 400,
-//     //debug: true,
-//     fonts: fontData,
-//   });
-
-//   // Convert svg to png
-//   const { data, error } = await new Promise(
-//     (
-//       resolve: (value: { data: Buffer | null; error: Error | null }) => void
-//     ) => {
-//       svg2img(
-//         svg,
-//         {
-//           resvg: {
-//             fitTo: {
-//               mode: "width", // or height
-//               value: 1200,
-//             },
-//           },
-//         },
-//         (error, buffer) => {
-//           if (error) {
-//             resolve({ data: null, error });
-//           } else {
-//             resolve({ data: buffer, error: null });
-//           }
-//         }
-//       );
-//     }
-//   );
-
-//   // Return response
-//   if (error) {
-//     return new Response(error.toString(), {
-//       status: 500,
-//       headers: {
-//         "Content-Type": "text/plain",
-//       },
-//     });
-//   }
-
-//   return new Response(data, {
-//     headers: {
-//       "Content-Type": "image/png", 
-//     },
-//   });
-// }
 
 /**
  * 
