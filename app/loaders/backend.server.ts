@@ -17,6 +17,7 @@ export type QueryResult = {
   model: string;
 };
 
+console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
 /**
  *
  * Call the XenoSite backend API
