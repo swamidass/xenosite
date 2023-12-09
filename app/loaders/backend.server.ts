@@ -4,6 +4,14 @@ import type { QueryParameters } from "~/utils";
 const XENOSITE_BACKEND =
   process.env.XENOSITE_BACKEND || `http://localhost:8000`;
 
+const XENOSITE_BACKEND_KEY =
+  process.env.XENOSITE_BACKEND_KEY || null;
+
+const XENOSITE_HEADERS: { [key: string]: string } = {};
+
+if (XENOSITE_BACKEND_KEY)
+  XENOSITE_HEADERS["Authorization"] = "Bearer " + XENOSITE_BACKEND_KEY;
+
 export type QueryResult = {
   resolved_query: any;
   model: string;
@@ -29,7 +37,7 @@ export const backend_api = async (smiles: string | null, url: string) => {
     });
   console.log("Fetching " + req);
 
-  return (await fetch(req)).json().catch((_e) => null);
+  return (await fetch(req, { headers: XENOSITE_HEADERS })).json().catch((_e) => null);
 };
 
 /**
