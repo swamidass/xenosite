@@ -10,17 +10,19 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  isRouteErrorResponse,
   useFetcher, 
   useMatches, 
-  useNavigate
+  useNavigate,
+  useRouteError,
 } from "@remix-run/react";
 import { useNavigation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ModelTabs, Spinner } from "~/components";
 import HEADERS from "~/loaders/headers";
-import { commonMetaValues, getQueryUrl } from "~/utils";
+import { getQueryUrl } from "~/utils";
 import { XDot, Gtag } from "~/components";
-import { getLdJson } from "./loaders/ld-json";
+import { MODELS } from "~/data";
 
 
 export const headers: HeadersFunction = ({
@@ -35,7 +37,7 @@ export const headers: HeadersFunction = ({
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
   { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-  { rel: "icon", type: "image/png", href: "./favicon.png" },
+  { rel: "icon", type: "image/png", href: "/favicon.png" },
 ];
 
 export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
@@ -50,18 +52,20 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   return json({ gaTrackingId: process.env.GA_TRACKING_ID });
 };
 
-export const meta: MetaFunction = () => {
-  const results = commonMetaValues();
-  
-  // add ld+json
-  const ldJson = getLdJson()
-  if (ldJson.length > 0) {
-    results.push({
-      "script:ld+json": ldJson  // @ts-ignore
-    });
-  }
+export const meta: MetaFunction = () => [
+  { charSet: "utf-8" },
+  { viewport: "width=device-width,initial-scale=1" },
+];
 
-  return results;
+function SiteLogo() {
+  return (
+    <p className="text-4xl inline font-bold pr-3 relative">
+      <span className="inset-0 absolute -top-2 -z-10">
+        <XDot className="w-[4em] m-auto opacity-25" />
+      </span>
+      <Link to="/" reloadDocument>XenoSite</Link>
+    </p>
+  );
 }
 
 export default function App() {
@@ -93,12 +97,7 @@ export default function App() {
       </head>
       <body>
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
-          <h1 className="text-4xl inline font-bold pr-3 relative">
-            <div className="inset-0 absolute -top-2 -z-10">
-              <XDot className="w-[4em] m-auto opacity-25" />
-            </div>
-            <Link to=".." reloadDocument>XenoSite</Link>
-          </h1>
+          <SiteLogo />
           <>
               {/* Search Input */}
               <fetcher.Form
@@ -145,6 +144,47 @@ export default function App() {
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" ? <LiveReload /> : <Gtag />}
+      </body>
+    </html>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  const is404 = isRouteErrorResponse(error) && error.status === 404;
+  const heading = is404 ? "Page not found" : "Something went wrong";
+  const message = is404
+    ? "That page does not exist. Try a model below, or go back home."
+    : "An unexpected error occurred.";
+
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="robots" content="noindex" />
+        <title>{`XenoSite | ${heading}`}</title>
+        <Links />
+      </head>
+      <body>
+        <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
+          <SiteLogo />
+          <div className="prose max-w-prose mx-auto py-16 text-center">
+            <h1>{heading}</h1>
+            <p>{message}</p>
+            <p>
+              <Link to="/">Home</Link>
+            </p>
+            <ul className="list-none p-0 flex flex-wrap justify-center gap-3">
+              {MODELS.map((model) => (
+                <li key={model.path}>
+                  <Link to={`/${model.path}`}>{model.model}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <Scripts />
       </body>
     </html>
   );
