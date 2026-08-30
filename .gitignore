@@ -3,7 +3,9 @@
 ./*.py
 ./*.ipynb
 ./*.jar
+# Never commit gzipped artifacts (including generated sitemaps)
 *.gz
+public/sitemap/*.xml.gz
 api
 .vscode
 yarn-error.log
@@ -16,5 +18,11 @@ node_modules
 app/styles/app.css
 build/
 public/build
+# Generated sitemap shards + index (rebuilt from inventory at build time)
 public/sitemap/*
+!public/sitemap/.gitkeep
+data/sitemap-candidates.json
+data/sitemap-inventory.checkpoint.json
+data/sitemap-inventory.json.tmp
+data/*.tmp
 api/index.js
