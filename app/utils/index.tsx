@@ -5,14 +5,13 @@ import type { SatoriOptions } from "satori";
 
 /**
  *
- * Capitalize the first letter of a word in a string
- * & trims the string.
+ * Capitalize the first letter of a word in a string.
  *
  * @param word The string to capitalize
  * @returns The capitalized string
  */
 export function capitalize(word: string) {
-  const lower = word.toLowerCase().trim();
+  const lower = word.toLowerCase();
 
   return word.charAt(0).toUpperCase() + lower.slice(1);
 }
