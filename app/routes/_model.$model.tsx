@@ -5,64 +5,35 @@ import { json} from "@remix-run/node";
 import type { MetaFunction, MetaArgs, LoaderFunctionArgs } from "@remix-run/node";
 import type { LdJsonParams} from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
+import { SITE_NAME, commonMetaValues, isMetaLeaf, siteUrl } from "~/utils";
 
 export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
+  if (!isMetaLeaf(matches, "routes/_model.$model")) {
+    return [];
+  }
 
-  // Get parent route's meta data & filter out changed fields
-  // ref: https://remix.run/docs/en/main/route/meta#merging-with-parent-meta
-  const parentMeta = matches
-    .flatMap((match) => match.meta ?? [])
-    .filter((meta) => !("title" in meta))
-    .filter((meta) => !("script:ld+json" in meta))
-    .filter((meta): meta is { name: string, content: string } => ("name" in meta &&
-      (
-        meta.name !== "og:title" &&
-        meta.name !== "twitter:title" &&
-        meta.name !== "description" &&
-        meta.name !== "og:description" &&
-        meta.name !== "twitter:description" && 
-        meta.name !== "og:url"
-      )
-    ));
-  
-  // Get new values for title, description, etc.
   const modelInfo = resolveModelInfo(params.model);
-  const title = modelInfo ? `Xenosite | ${modelInfo.model}` : "Xenosite";
+  const title = modelInfo ? `${SITE_NAME} | ${modelInfo.model}` : SITE_NAME;
   const description = (params.model !== "_" && modelInfo) ?
     `XenoSite reactivity model of "${params.model}".` :
     "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
-  const url = `https://xenosite.org/${params.model}`;
+  const path = `/${params.model}`;
 
-  // Add changed results
-  let results = [
-    ... parentMeta,
-    { title: title },
-    { name: 'og:title', content: title },
-    { name: 'twitter:title', content: title },
-    { name: 'description', content: description },
-    { name: 'og:description', content: description },
-    { name: 'twitter:description', content: description },
-    { name: 'og:url', content: url },
+  const results: any[] = [
+    ...commonMetaValues({ title, description, path }),
   ];
 
-  // Add ld+json
   const ldJsonParams: LdJsonParams = {
     model: modelInfo as XenositeModelInfo,
-    xenositeUrl: url,
-    citation: modelInfo ? 
+    xenositeUrl: siteUrl(path),
+    citation: modelInfo ?
       modelInfo.citation : "",
   }
-  const ldJson = getLdJson(ldJsonParams)
-  if (ldJson.length > 0) {
-    for (let i = 0; i < ldJson.length; i++) {
-      results.push({
-        "script:ld+json": ldJson[i]  // @ts-ignore
-      });
-    }
+  for (const node of getLdJson(ldJsonParams)) {
+    results.push({ "script:ld+json": node });
   }
 
-  // console.log(results);
-  return results
+  return results;
 }
 
 export async function loader({
@@ -82,8 +53,10 @@ export async function loader({
 }
 
 export default function Model() {
-  const { model, query } = useMatches()[0].params;
+  const matches = useMatches();
+  const { model, query } = matches[matches.length - 1].params;
   const modelinfo = MODELS.find((x) => x.path == model);
+  const Heading = query ? "h2" : "h1";
 
   if (modelinfo || model == "_") {
     if(model == "_" || !model) {
@@ -98,7 +71,7 @@ export default function Model() {
           <div className="prose text-sm max-w-prose border p-3 rounded-lg align-top m-3  hover:shadow hover:bg-slate-50">
             {modelinfo && (
               <>
-                <h2>
+                <Heading>
                   <Link
                     className="no-underline hover:underline"
                     to={`/${modelinfo.path}`}
@@ -106,7 +79,7 @@ export default function Model() {
                   >
                     {modelinfo.model}
                   </Link>
-                </h2>
+                </Heading>
 
                 {modelinfo.info ? <modelinfo.info /> : null}
               </>

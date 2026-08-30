@@ -215,20 +215,55 @@ declare module "react" {
   }
 }
 
-/**
- * 
- * Exports the meta values that are common to all pages.
- * 
- * @returns The meta values that are common to all pages.
- */
-export function commonMetaValues() {
-  let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
-  let url = `https://xenosite.org`;
+export const SITE_ORIGIN = "https://xenosite.org";
+export const SITE_NAME = "XenoSite";
+export const DEFAULT_DESCRIPTION =
+  "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
+export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/xenosite.png`;
+export const DEFAULT_OG_IMAGE_WIDTH = 2400;
+export const DEFAULT_OG_IMAGE_HEIGHT = 1350;
+export const MOLECULE_OG_IMAGE_WIDTH = 1200;
+export const MOLECULE_OG_IMAGE_HEIGHT = 800;
 
-  let results = [
-    { charSet: "utf-8" },
-    { viewport: "width=device-width,initial-scale=1" },
-    { title: `Xenosite` },
+export function siteUrl(path = "/"): string {
+  if (!path || path === "/") return SITE_ORIGIN;
+  const withSlash = path.startsWith("/") ? path : `/${path}`;
+  return `${SITE_ORIGIN}${withSlash}`;
+}
+
+/** Canonical path for a molecule page; prefers the resolved CHEBI name over synonyms. */
+export function moleculePath(
+  model: string,
+  requestedQuery: string,
+  preferredName?: string | null,
+) {
+  const slug = preferredName?.trim() || requestedQuery;
+  return `/${model}/${encodeURIComponent(slug)}`;
+}
+
+export type PageMetaOptions = {
+  title?: string;
+  description?: string;
+  path?: string;
+  image?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+};
+
+/**
+ * Page-level meta (title, canonical, Open Graph, Twitter).
+ * Charset and viewport stay on the root route so they are not duplicated.
+ */
+export function commonMetaValues(options: PageMetaOptions = {}) {
+  const title = options.title ?? SITE_NAME;
+  const description = options.description ?? DEFAULT_DESCRIPTION;
+  const url = siteUrl(options.path ?? "/");
+  const image = options.image ?? DEFAULT_OG_IMAGE;
+  const imageWidth = String(options.imageWidth ?? DEFAULT_OG_IMAGE_WIDTH);
+  const imageHeight = String(options.imageHeight ?? DEFAULT_OG_IMAGE_HEIGHT);
+
+  return [
+    { title },
     {
       name: "description",
       content: description,
@@ -238,9 +273,9 @@ export function commonMetaValues() {
       content: "index, follow",
     },
     {
-      tagName: "link",
+      tagName: "link" as const,
       rel: "canonical",
-      href: "https://xenosite.org",
+      href: url,
     },
     {
       name: "author",
@@ -248,7 +283,7 @@ export function commonMetaValues() {
     },
     {
       name: "og:title",
-      content: `Xenosite`,
+      content: title,
     },
     {
       name: "og:type",
@@ -260,23 +295,27 @@ export function commonMetaValues() {
     },
     {
       name: "og:site_name",
-      content: "Xenosite",
+      content: SITE_NAME,
     },
     {
       name: "og:image",
-      content: `/favicon.png`,
+      content: image,
     },
-    { 
+    {
+      name: "og:image:width",
+      content: imageWidth,
+    },
+    {
+      name: "og:image:height",
+      content: imageHeight,
+    },
+    {
       name: "og:description",
       content: description,
     },
     {
-      name: "og:canonical",
-      content: "https://xenosite.org",
-    },
-    {
       name: "twitter:title",
-      content: `Xenosite`,
+      content: title,
     },
     {
       name: "twitter:description",
@@ -284,7 +323,7 @@ export function commonMetaValues() {
     },
     {
       name: "twitter:image",
-      content: `/favicon.png`,
+      content: image,
     },
     {
       name: "twitter:card",
@@ -297,10 +336,17 @@ export function commonMetaValues() {
     {
       name: "twitter:creator",
       content: "Dr. Josh Swamidass",
-    }
+    },
   ];
+}
 
-  return results;
+/** True when this route is the leaf of the current match (avoids duplicate canonicals). */
+export function isMetaLeaf(
+  matches: { id: string }[],
+  routeId: string,
+) {
+  const leafId = matches.at(-1)?.id ?? "";
+  return leafId === routeId || leafId.endsWith(routeId);
 }
 
 /**
