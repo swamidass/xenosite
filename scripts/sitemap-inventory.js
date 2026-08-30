@@ -370,7 +370,8 @@ async function main() {
 
       const scores = { ...(prev?.scores || {}) };
       const modelErrors = { ...(prev?.errors || {}) };
-      let name = prev?.name || job.name;
+      const queryName = job.name;
+      let resolvedName = prev?.name && prev.name !== queryName ? prev.name : null;
 
       try {
         for (const model of MODELS) {
@@ -382,7 +383,7 @@ async function main() {
             const apiName = payload?.name?.name
               ? String(payload.name.name).trim().toLowerCase()
               : null;
-            if (apiName) name = apiName;
+            if (apiName && apiName !== queryName) resolvedName = apiName;
           } catch (err) {
             modelErrors[model] = String(err.message || err);
           }
@@ -393,8 +394,10 @@ async function main() {
         const errorCount = Object.keys(modelErrors).length;
         checkpoint.results[job.key] = {
           chebi: job.chebi,
-          queryName: job.name,
-          name: name || job.name,
+          queryName,
+          // `name` stays the queried slug so sitemap loc never follows redirects.
+          name: queryName,
+          ...(resolvedName ? { resolvedName } : {}),
           scores,
           hits,
           ...(errorCount ? { errors: modelErrors } : {}),
