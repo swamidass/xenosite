@@ -13,6 +13,7 @@
     "build:css": "tailwindcss -m -i ./styles/app.css -o app/styles/app.css",
     "build:sitemaps": "node scripts/build-sitemaps-from-inventory.js",
     "validate:sitemaps": "node scripts/validate-sitemaps.js",
+    "check:site": "node scripts/check-site.js",
     "dev:remix": "remix dev",
     "dev": "concurrently \"yarn dev:css\" \"yarn dev:remix\"",
     "dev:css": "tailwindcss -w -i ./styles/app.css -o app/styles/app.css",

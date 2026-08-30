@@ -5,7 +5,7 @@
 
 NODE ?= node
 
-.PHONY: help sitemap-candidates sitemap-inventory sitemap-inventory-rebuild sitemaps validate-sitemaps clean-sitemaps
+.PHONY: help sitemap-candidates sitemap-inventory sitemap-inventory-rebuild sitemaps validate-sitemaps clean-sitemaps check-site
 
 help:
 	@echo "Sitemap targets:"
@@ -14,6 +14,9 @@ help:
 	@echo "  make sitemap-inventory-rebuild   Rebuild inventory JSON from checkpoint (no API)"
 	@echo "  make sitemaps                    Build public/sitemap/*.xml.gz from inventory (or checkpoint)"
 	@echo "  make validate-sitemaps           Check gzip, XML syntax, index URLs, and robots.txt"
+	@echo "  make check-site URL=https://xenosite.org   Live SEO/sitemap smoke tests"
+	@echo "  make check-site URL=http://localhost:3000"
+	@echo "  make check-site URL=https://<preview>.vercel.app"
 	@echo "  make clean-sitemaps              Remove generated gz/index under public/sitemap"
 
 sitemap-candidates:
@@ -30,6 +33,9 @@ sitemaps:
 
 validate-sitemaps:
 	$(NODE) scripts/validate-sitemaps.js
+
+check-site:
+	$(NODE) scripts/check-site.js $(URL)
 
 clean-sitemaps:
 	rm -rf public/sitemap
