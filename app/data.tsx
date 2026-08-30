@@ -254,4 +254,25 @@ export const MODELS: XenositeModelInfo[] = [
       ),
     },
   ];
-  
+
+/** Sentinel used when the route model is `_` (all models). */
+export const ALL_MODELS: XenositeModelInfo = {
+  model: "All Models",
+  endpoint: "",
+  path: "_",
+  citation: "",
+  title: "",
+  description:
+    "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes.",
+  citationText: "",
+  datePublished: "",
+  publisher: "",
+  info: () => <></>,
+};
+
+export function resolveModelInfo(path?: string | null): XenositeModelInfo | undefined {
+  if (!path) return undefined;
+  if (path === "_") return ALL_MODELS;
+  return MODELS.find((x) => x.path == path);
+}
+ 

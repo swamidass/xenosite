@@ -97,14 +97,14 @@ function getSwamidassPerson(): any {
     "@context": "https://schema.org",
     "@id": "https://swami.wustl.edu/contact",
     "@type": "Person",
-    mainentityofpage: {
+    mainEntityOfPage: {
       "@context": "https://schema.org",
       "@id": "https://swami.wustl.edu/contact",
       "@type": "WebPage",
       url: "https://swami.wustl.edu/contact",
     },
     name: "S. Joshua Swamidass",
-    sameas: [
+    sameAs: [
       "https://pathology.wustl.edu/people/joshua-swamidass-md-phd/",
       "https://orcid.org/0000-0003-2191-0778",
       "https://twitter.com/swamidass",
@@ -203,7 +203,7 @@ function getBreadCrumbList(params?: LdJsonParams): any {
 }
 
 function getScholarlyArticle(params?: LdJsonParams): any | null {
-  if (!params || !params.model) {
+  if (!params?.model?.citation || !params.model.title) {
     return null;
   }
 
@@ -281,34 +281,29 @@ function getChemicalSubstance(params?: LdJsonParams): any | null {
 }
 
 function getImageObject(params?: LdJsonParams): any | null {
-  if (!params || !params.results || !params.model || !params.name) {
+  if (!params?.model || !params.name || !params.ogImageUrl) {
     return null;
   }
-  console.log(params);
 
-  const imageObjects = [];
+  const mainModel = params.model.model;
+  const molecule = params.name;
+  const subModels = (params.results || [])
+    .filter((result): result is string => typeof result === "string" && result.includes("."))
+    .map((result) => capitalize(replaceUnderscores(result.split(".")[1])));
+  const subModelSuffix =
+    subModels.length > 0 ? ` (${subModels.join(", ")})` : "";
+  const modelLabel =
+    mainModel === "All Models"
+      ? "All Models"
+      : `${mainModel}${subModelSuffix} model`;
 
-  for (let i = 0; i < params.results.length; i++) {
-    const mainModel = params.model.model;
-    const subModel = params.results[i].includes(".")
-      ? `, ${capitalize(
-          replaceUnderscores((params.results[i] as string).split(".")[1]),
-        )}`
-      : "";
-    const molecule = params.name;
-    const name = `Visualization of the ${mainModel}${subModel} model results for "${molecule}".`;
-    const description = `Static image showing the interaction points predicted by the ${mainModel}${subModel} model for "${molecule}".`;
-
-    imageObjects.push({
-      "@context": "http://schema.org",
-      "@type": "ImageObject",
-      contentUrl: `https://xenosite.org/${params.model.path}/${params.smiles}`,
-      name: name,
-      description: description,
-    });
-  }
-
-  return imageObjects;
+  return {
+    "@context": "http://schema.org",
+    "@type": "ImageObject",
+    contentUrl: params.ogImageUrl,
+    name: `Visualization of the ${modelLabel} results for "${molecule}".`,
+    description: `Open Graph image showing sites predicted by ${modelLabel} for "${molecule}".`,
+  };
 }
 
 export type LdJsonParams = {
@@ -316,6 +311,7 @@ export type LdJsonParams = {
   name?: string;
   description?: string;
   xenositeUrl?: string;
+  ogImageUrl?: string;
   smiles?: string;
   chebi?: string;
   chebiUrl?: string;
@@ -325,8 +321,6 @@ export type LdJsonParams = {
 
 export function getLdJson(params?: LdJsonParams): any[] {
   const ld = [];
-
-  console.log("getLdJson", params);
 
   // Add Organization Ld+Json
   // ref: https://schema.org/Organization
@@ -351,10 +345,9 @@ export function getLdJson(params?: LdJsonParams): any[] {
   const chemicalSubstance = getChemicalSubstance(params);
   if (chemicalSubstance) ld.push(chemicalSubstance);
 
-  // Add ImageObject(s) Ld+Json
-  const imageObjects = getImageObject(params);
-  if (imageObjects && imageObjects.length > 0) ld.push(...imageObjects);
+  // Add ImageObject Ld+Json for the OG image
+  const imageObject = getImageObject(params);
+  if (imageObject) ld.push(imageObject);
 
-  console.log(JSON.stringify(ld, null, 2));
   return ld;
 }

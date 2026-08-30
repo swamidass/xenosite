@@ -1,4 +1,4 @@
-import { MODELS, XenositeModelInfo } from "~/data";
+import { MODELS, resolveModelInfo, XenositeModelInfo } from "~/data";
 import { Link, Outlet, useMatches } from "@remix-run/react";
 import { ModelDescriptions } from "~/components";
 import { json} from "@remix-run/node";
@@ -24,10 +24,9 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
         meta.name !== "og:url"
       )
     ));
-  // console.log(parentMeta)
   
   // Get new values for title, description, etc.
-  const modelInfo = MODELS.find((x) => x.path == params.model);
+  const modelInfo = resolveModelInfo(params.model);
   const title = modelInfo ? `Xenosite | ${modelInfo.model}` : "Xenosite";
   const description = (params.model !== "_" && modelInfo) ?
     `XenoSite reactivity model of "${params.model}".` :
@@ -60,9 +59,6 @@ export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
         "script:ld+json": ldJson[i]  // @ts-ignore
       });
     }
-    // results.push({
-    //   "script:ld+json": ldJson  // @ts-ignore
-    // });
   }
 
   // console.log(results);

@@ -4,7 +4,7 @@ import { useLoaderData } from "@remix-run/react";
 import HEADERS from "~/loaders/headers";
 import { Loading, MoleculeSummary } from "~/components";
 import { resolve_query } from "~/loaders/backend.server";
-import { MODELS, XenositeModelInfo } from "~/data";
+import { resolveModelInfo, XenositeModelInfo } from "~/data";
 import type { LdJsonParams} from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import type { SwamidassApiData} from "~/utils";
@@ -35,7 +35,7 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
   // console.log(parentMeta);
   
   // Get new values for title, description, etc.
-  const modelInfo = MODELS.find((x) => x.path == queryData.model);
+  const modelInfo = resolveModelInfo(queryData.model);
   
   // Set defaults if model = "_"
   let molecule = params.query;
@@ -87,6 +87,7 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
       queryData.resolved_query.name.description :
       description,
     xenositeUrl: url,
+    ogImageUrl: imageUrl,
     citation: modelInfo ? 
       modelInfo.citation : "",
     chebi: queryData.resolved_query?.name ?
@@ -99,7 +100,6 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
       queryData.resolved_query.results.map((result) => result.model) :
       undefined,
   }
-  // console.log(ldJsonParams);
   const ldJson = getLdJson(ldJsonParams)
   if (ldJson.length > 0) {
     for (let i = 0; i < ldJson.length; i++) {
@@ -107,9 +107,6 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
         "script:ld+json": ldJson[i]  // @ts-ignore
       });
     }
-    // results.push({
-    //   "script:ld+json": ldJson  // @ts-ignore
-    // });
   }
 
   // console.log(results);
