@@ -138,7 +138,7 @@ function isDrugLikeName(rawName, options = {}) {
  * Prefer recognizable common names over obscure short synonyms
  * (e.g. "caffeine" over "thein", "ibuprofen" over "anco").
  */
-function nameQuality(name) {
+function nameQuality(name, options = {}) {
   let score = 0;
   if (/^[a-z]+$/.test(name)) {
     score += 100 + Math.min(name.length, 12);
@@ -152,7 +152,21 @@ function nameQuality(name) {
   if (/[()]/.test(name)) score -= 40;
   if (name.length < 5) score -= 30;
   if (name.length > 20) score -= name.length - 20;
+  if (options.preferred && options.preferred.has(name)) score += 1000;
   return score;
+}
+
+function loadPreferredDrugNames(filePath) {
+  const preferredPath =
+    filePath || path.join(__dirname, "preferred-drug-names.txt");
+  if (!fs.existsSync(preferredPath)) return new Set();
+  return new Set(
+    fs
+      .readFileSync(preferredPath, "utf8")
+      .split(/\r?\n/)
+      .map((line) => line.trim().toLowerCase())
+      .filter(Boolean),
+  );
 }
 
 /**
@@ -161,6 +175,7 @@ function nameQuality(name) {
 function collectDrugLikeCandidates(lookup, options = {}) {
   const byChebi = new Map();
   const dropped = { totalNames: 0, keptNames: 0, reasons: {} };
+  const preferred = options.preferred || loadPreferredDrugNames();
 
   for (const [rawKey, chebi] of Object.entries(lookup)) {
     dropped.totalNames++;
@@ -174,7 +189,7 @@ function collectDrugLikeCandidates(lookup, options = {}) {
     const id = Number(chebi);
     if (!Number.isFinite(id)) continue;
 
-    const quality = nameQuality(verdict.name);
+    const quality = nameQuality(verdict.name, { preferred });
     const existing = byChebi.get(id);
     if (
       !existing ||
@@ -198,6 +213,7 @@ module.exports = {
   loadChebiLookup,
   isDrugLikeName,
   nameQuality,
+  loadPreferredDrugNames,
   collectDrugLikeCandidates,
   looksLikeSmiles,
 };
