@@ -1,4 +1,5 @@
 import { capitalize } from "~/utils";
+import { resolveModelInfo } from "~/data";
 
 function last_name(name: string) {
     const words = name.split(".");
@@ -24,7 +25,7 @@ interface ResultSummaryDisplayProps {
     model?: string;
 }
 
-export default function MoleculeSummary({ resolved_query }: ResultSummaryDisplayProps) {
+export default function MoleculeSummary({ resolved_query, model }: ResultSummaryDisplayProps) {
   if(resolved_query.detail) {
     return (
       <div className="w-fit mx-auto mt-10 relative p-10">
@@ -35,6 +36,10 @@ export default function MoleculeSummary({ resolved_query }: ResultSummaryDisplay
   
   const results = resolved_query?.results || [];
   const resolved_name = resolved_query?.name;
+  const modelLabel = resolveModelInfo(model)?.model ?? model ?? "XenoSite";
+  const moleculeName = resolved_name?.name
+    ? capitalize(resolved_name.name)
+    : resolved_query?.smiles ?? "Molecule";
   // console.log(resolved_query);
 
   return (
@@ -46,7 +51,7 @@ export default function MoleculeSummary({ resolved_query }: ResultSummaryDisplay
                     <img
                         className="max-w-full mx-auto "
                         src={"data:image/svg+xml;utf8," + encodeURIComponent(r.depiction)}
-                        alt=""
+                        alt={`${moleculeName} ${results.length > 1 ? last_name(r.model) : modelLabel} prediction`}
                     />
                     {results.length > 1 ? (
                         <div className="text-center w-100">{last_name(r.model)}</div>
@@ -76,7 +81,7 @@ export default function MoleculeSummary({ resolved_query }: ResultSummaryDisplay
                     <a
                       className="underline"
                       target="_blank"
-                      rel="nofollow noreferrer"
+                      rel="noopener noreferrer"
                       href={resolved_name.chebiUrl}
                     >
                       CHEBI

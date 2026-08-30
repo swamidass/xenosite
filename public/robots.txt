@@ -1,2 +1,2 @@
-User-agent: * 
+User-agent: *
 Sitemap: https://xenosite.org/sitemap/sitemap_index.xml

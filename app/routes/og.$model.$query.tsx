@@ -67,7 +67,6 @@ function getMoleculeInfo (response: QueryResult) {
   const model = subModel ? `${majorModel}${subModel}` : majorModel;
   // const description = `${model}: ${name}`;
   const depiction = choice.depiction;
-  console.log(depiction);
 
   return { depiction, model, name };
 }
@@ -75,8 +74,6 @@ function getMoleculeInfo (response: QueryResult) {
 export async function loader({
   params,
 }: LoaderFunctionArgs) {
-  console.log(params);
-
   // Get the depiction.
   let jsx: React.ReactElement | string = <XDot />;
   const response = await resolve_query({

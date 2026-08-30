@@ -11,14 +11,14 @@ export interface ModelMenuProps {
 
 export function ModelTabs({ children }: ModelMenuProps): JSX.Element {
     const matches = useMatches();
-    const model = matches[0].params?.model;
-    const query = matches[0].params?.query;
+    const { model, query } = matches[matches.length - 1]?.params ?? {};
+    const selectedIndex = MODELS.findIndex((x) => x.path === model);
 
     return (
         <div className="w-full px-2 py-4 sm:px-0">
             <Tab.Group
                 as="div"
-                selectedIndex={MODELS.findIndex((x) => x.path === model)}
+                {...(selectedIndex >= 0 ? { selectedIndex } : {})}
             >
                 <Tab.List className="flex flex-wrap space-x-1 rounded-xl p-1 justify-center">
                     {MODELS.map((x, i) => (
@@ -38,11 +38,15 @@ export function ModelTabs({ children }: ModelMenuProps): JSX.Element {
                         </div>
                     ))}
                 </Tab.List>
-                <Tab.Panels>
-                    {MODELS.map((x, i) => (
-                        <Tab.Panel key={`tab-panel-${i}`}>{children}</Tab.Panel>
-                    ))}
-                </Tab.Panels>
+                {selectedIndex < 0 ? (
+                    children
+                ) : (
+                    <Tab.Panels>
+                        {MODELS.map((x, i) => (
+                            <Tab.Panel key={`tab-panel-${i}`}>{children}</Tab.Panel>
+                        ))}
+                    </Tab.Panels>
+                )}
             </Tab.Group>
         </div>
     );

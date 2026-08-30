@@ -5,7 +5,7 @@ export default function ModelDescriptions() {
   return (
     <>
       <div className="prose max-w-prose py-20 mx-auto text-sm">
-        <h2>What is XenoSite?</h2>
+        <h1>What is XenoSite?</h1>
         <p>
           <b>XenoSite</b> predicts how small-molecules become toxic after
           metabolism by liver enzymes.

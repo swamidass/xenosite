@@ -8,49 +8,36 @@ import { resolveModelInfo, XenositeModelInfo } from "~/data";
 import type { LdJsonParams} from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import type { SwamidassApiData} from "~/utils";
-import { capitalize, commonMetaValues } from "~/utils";
+import {
+  capitalize,
+  commonMetaValues,
+  moleculePath,
+  SITE_NAME,
+  MOLECULE_OG_IMAGE_WIDTH,
+  MOLECULE_OG_IMAGE_HEIGHT,
+  siteUrl,
+} from "~/utils";
 
 
 export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
-  const queryData = data as SwamidassApiData;
+  const queryData = data as SwamidassApiData | undefined;
+  const requestedQuery = params.query as string;
+  const preferredName = queryData?.resolved_query?.name?.name;
+  const path = moleculePath(params.model as string, requestedQuery, preferredName);
+  const slug = path.split("/").pop() || requestedQuery;
+  const imageUrl = `${siteUrl(`/og/${params.model}/${slug}`)}`;
 
-  // Get parent route's meta data & filter out changed fields
-  // ref: https://remix.run/docs/en/main/route/meta#merging-with-parent-meta
-  const matches = commonMetaValues();  // Need to use common value to avoid Warnings from react-dom
-  const parentMeta = matches
-    .filter((meta) => !("title" in meta))
-    .filter((meta) => !("script:ld+json" in meta))
-    .filter((meta): meta is { name: string, content: string } => ("name" in meta &&
-      (
-        meta.name !== "og:title" &&
-        meta.name !== "twitter:title" &&
-        meta.name !== "description" &&
-        meta.name !== "og:description" &&
-        meta.name !== "twitter:description" && 
-        meta.name !== "og:url" &&
-        meta.name !== "og:image"&&
-        meta.name !== "twitter:image"
-      )
-    ));
-  // console.log(parentMeta);
-  
-  // Get new values for title, description, etc.
-  const modelInfo = resolveModelInfo(queryData.model);
-  
-  // Set defaults if model = "_"
-  let molecule = params.query;
-  let title = `Xenosite | ${params.query}`;
+  const modelInfo = queryData ? resolveModelInfo(queryData.model) : resolveModelInfo(params.model);
+
+  let molecule = requestedQuery;
+  let title = `${SITE_NAME} | ${requestedQuery}`;
   let description = "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
-  const url = `https://xenosite.org/${params.model}/${encodeURIComponent(params.query as string)}`
-  const imageUrl = `https://xenosite.org/og/${params.model}/${encodeURIComponent(params.query as string)}`
 
-  if(modelInfo) {
-    molecule = queryData.resolved_query.name ? 
-      capitalize(queryData.resolved_query.name.name) : 
+  if (queryData && modelInfo) {
+    molecule = queryData.resolved_query.name ?
+      capitalize(queryData.resolved_query.name.name) :
       queryData.resolved_query.smiles;
-    title = modelInfo ? 
-      `Xenosite | ${capitalize(queryData.model)} | ${molecule}` : 
-      `Xenosite | ${params.query}`;
+    title = `${SITE_NAME} | ${capitalize(queryData.model)} | ${molecule}`;
     description = (
       queryData.resolved_query.name &&
       queryData.resolved_query.name.name &&
@@ -60,57 +47,49 @@ export const meta: MetaFunction = ({ params, data }: MetaArgs) => {
       "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
   }
 
-  // Add changed results
-  let results = [
-    ... parentMeta,
-    { title: title },
-    { name: 'og:title', content: title },
-    { name: 'twitter:title', content: title },
-    { name: 'description', content: description },
-    { name: 'og:description', content: description },
-    { name: 'twitter:description', content: description },
-    { name: 'og:url', content: url },
-    { name: 'og:image', content: imageUrl },
-    { name: 'twitter:image', content: imageUrl },
+  const results: any[] = [
+    ...commonMetaValues({
+      title,
+      description,
+      path,
+      image: imageUrl,
+      imageWidth: MOLECULE_OG_IMAGE_WIDTH,
+      imageHeight: MOLECULE_OG_IMAGE_HEIGHT,
+    }),
   ];
 
-  // Add ld+json
-  const ldJsonParams: LdJsonParams = {
-    model: modelInfo as XenositeModelInfo,
-    smiles: queryData.resolved_query?.smiles ? 
-      queryData.resolved_query.smiles :
-      params.query,
-    name: queryData.resolved_query?.name ?
-      queryData.resolved_query.name.name :
-      params.query,
-    description: queryData.resolved_query?.name ?
-      queryData.resolved_query.name.description :
-      description,
-    xenositeUrl: url,
-    ogImageUrl: imageUrl,
-    citation: modelInfo ? 
-      modelInfo.citation : "",
-    chebi: queryData.resolved_query?.name ?
-      queryData.resolved_query.name.chebi.toString() :
-      "",
-    chebiUrl: queryData.resolved_query?.name ?
-      queryData.resolved_query.name.chebiUrl :
-      "",
-    results: queryData.resolved_query?.results ?
-      queryData.resolved_query.results.map((result) => result.model) :
-      undefined,
-  }
-  const ldJson = getLdJson(ldJsonParams)
-  if (ldJson.length > 0) {
-    for (let i = 0; i < ldJson.length; i++) {
-      results.push({
-        "script:ld+json": ldJson[i]  // @ts-ignore
-      });
+  if (queryData) {
+    const ldJsonParams: LdJsonParams = {
+      model: modelInfo as XenositeModelInfo,
+      smiles: queryData.resolved_query?.smiles ?
+        queryData.resolved_query.smiles :
+        requestedQuery,
+      name: queryData.resolved_query?.name ?
+        queryData.resolved_query.name.name :
+        requestedQuery,
+      description: queryData.resolved_query?.name ?
+        queryData.resolved_query.name.description :
+        description,
+      xenositeUrl: siteUrl(path),
+      ogImageUrl: imageUrl,
+      citation: modelInfo ?
+        modelInfo.citation : "",
+      chebi: queryData.resolved_query?.name ?
+        queryData.resolved_query.name.chebi.toString() :
+        "",
+      chebiUrl: queryData.resolved_query?.name ?
+        queryData.resolved_query.name.chebiUrl :
+        "",
+      results: queryData.resolved_query?.results ?
+        queryData.resolved_query.results.map((result) => result.model) :
+        undefined,
+    }
+    for (const node of getLdJson(ldJsonParams)) {
+      results.push({ "script:ld+json": node });
     }
   }
 
-  // console.log(results);
-  return results
+  return results;
 }
 
 export const loader: LoaderFunction = async ({ params }: LoaderFunctionArgs) => {
