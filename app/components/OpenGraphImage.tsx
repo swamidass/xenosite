@@ -23,7 +23,7 @@ export default function OpenGraphImage({ name, model, depiction, width, height }
                 />
             </div>
             <div tw="flex flex-col text-2xl text-gray-800 text-center max-w-lg mx-auto">
-                <div tw="flex text-center justify-center">{`Xenosite - ${model}`}</div>
+                <div tw="flex text-center justify-center">{`XenoSite - ${model}`}</div>
                 <div tw="flex text-center justify-center">{name}</div>
             </div>
       </div>

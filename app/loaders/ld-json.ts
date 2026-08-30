@@ -5,10 +5,10 @@ function getOrganization(): any {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": "https://xenosite.org",
+    "@id": "https://xenosite.org/#organization",
     url: "https://xenosite.org",
     logo: "https://xenosite.org/favicon.png",
-    name: "Xenosite",
+    name: "XenoSite",
     description:
       "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes.",
     image: "https://xenosite.org/favicon.png",
@@ -144,6 +144,29 @@ function getOrganizationKeywords(): any {
   ];
 }
 
+function getWebSite(): any {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://xenosite.org/#website",
+    url: "https://xenosite.org",
+    name: "XenoSite",
+    description:
+      "XenoSite predicts how small-molecules become toxic after metabolism by liver enzymes.",
+    publisher: {
+      "@id": "https://xenosite.org/#organization",
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://xenosite.org/_/{search_term_string}",
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+}
+
 interface BreadCrumbListItem {
   "@type": string;
   "@id": string;
@@ -167,7 +190,7 @@ function getBreadCrumbList(params?: LdJsonParams): any {
         "@type": "ListItem",
         "@id": "https://xenosite.org/",
         position: 1,
-        name: "Xenosite",
+        name: "XenoSite",
         item: `https://xenosite.org/`,
       },
     ],
@@ -233,7 +256,7 @@ function getSoftwareApplication(params?: LdJsonParams): any | null {
     "@context": "http://schema.org",
     "@type": "WebApplication",
     "@id": params.xenositeUrl,
-    name: "Xenosite",
+    name: "XenoSite",
     identifier: params.xenositeUrl,
     isAccessibleForFree: "True",
     applicationCategory: "HealthApplication",
@@ -325,6 +348,10 @@ export function getLdJson(params?: LdJsonParams): any[] {
   // Add Organization Ld+Json
   // ref: https://schema.org/Organization
   ld.push(getOrganization());
+
+  // Add WebSite + SearchAction
+  // ref: https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox
+  ld.push(getWebSite());
 
   // Add BreadCrumbList Ld+Json
   // ref: https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
