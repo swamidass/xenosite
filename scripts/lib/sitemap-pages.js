@@ -42,17 +42,38 @@ function staticSitemapPages() {
   ];
 }
 
-function pagesFromCheckpoint(checkpoint, minScore = minScoreFromEnv()) {
+function slugForRecord(record, nameByChebi) {
+  const queryName = String(record.queryName || "").trim();
+  const mapped =
+    nameByChebi && record.chebi != null
+      ? nameByChebi.get(Number(record.chebi))
+      : null;
+  return String(mapped || queryName).trim();
+}
+
+function pagesFromCheckpoint(
+  checkpoint,
+  minScore = minScoreFromEnv(),
+  nameByChebi = null,
+) {
   const pages = [...staticSitemapPages()];
   for (const record of Object.values(checkpoint?.results || {})) {
     if (!isCompleteRecord(record)) continue;
-    const name = record.name || record.queryName;
+    // loc is the drug-like name (query or better CHEBI synonym), never the
+    // API/CHEBI preferred label the resolver may redirect to.
+    const name = slugForRecord(record, nameByChebi);
     if (!name) continue;
     const scores = record.scores || {};
     const hits = hitsFromScores(scores, minScore);
     if (hits.length === 0) continue;
 
     const encoded = encodeURIComponent(name);
+    const resolvedName =
+      record.name && record.name !== name ? record.name : undefined;
+    const queryName =
+      record.queryName && record.queryName !== name
+        ? record.queryName
+        : undefined;
     let best = 0;
     for (const model of hits) {
       const score = Number(scores[model]);
@@ -63,7 +84,8 @@ function pagesFromCheckpoint(checkpoint, minScore = minScoreFromEnv()) {
         model,
         name,
         score: Number(score.toFixed(6)),
-        queryName: record.queryName,
+        ...(queryName ? { queryName } : {}),
+        ...(resolvedName ? { resolvedName } : {}),
       });
     }
     pages.push({
@@ -73,7 +95,8 @@ function pagesFromCheckpoint(checkpoint, minScore = minScoreFromEnv()) {
       name,
       score: Number(best.toFixed(6)),
       models: hits,
-      queryName: record.queryName,
+      ...(queryName ? { queryName } : {}),
+      ...(resolvedName ? { resolvedName } : {}),
     });
   }
   pages.sort((a, b) => a.loc.localeCompare(b.loc));
@@ -82,7 +105,11 @@ function pagesFromCheckpoint(checkpoint, minScore = minScoreFromEnv()) {
 
 function inventoryFromCheckpoint(checkpoint, extras = {}) {
   const minScore = extras.minScore ?? minScoreFromEnv();
-  const pages = pagesFromCheckpoint(checkpoint, minScore);
+  const pages = pagesFromCheckpoint(
+    checkpoint,
+    minScore,
+    extras.nameByChebi || null,
+  );
   return {
     generatedAt: new Date().toISOString(),
     source: extras.source || "chebi.msgpack.gz + xenosite-api",
@@ -118,6 +145,7 @@ module.exports = {
   isCompleteRecord,
   staticSitemapPages,
   pagesFromCheckpoint,
+  slugForRecord,
   inventoryFromCheckpoint,
   absoluteUrl,
 };
