@@ -26,15 +26,16 @@ function scoreOf(m: MetaboliteRecord) {
 }
 
 function dedupeBySmiles(list: MetaboliteRecord[]): MetaboliteRecord[] {
-  const seen = new Set<string>();
-  const out: MetaboliteRecord[] = [];
+  const best = new Map<string, MetaboliteRecord>();
   for (const m of list) {
     const key = String(m.smiles || "");
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    out.push(m);
+    if (!key) continue;
+    const prev = best.get(key);
+    if (!prev || scoreOf(m) > scoreOf(prev)) {
+      best.set(key, m);
+    }
   }
-  return out;
+  return [...best.values()];
 }
 
 function matchesSelection(

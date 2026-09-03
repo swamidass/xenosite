@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from "@remix-run/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import AboutModel from "~/components/AboutModel";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
 import MetabolitePanel from "~/components/MetabolitePanel";
@@ -52,11 +52,7 @@ export default function MoleculeFocus({
   const [externalHover, setExternalHover] = useState<SomHighlight | null>(null);
 
   const results = resolved_query?.results || [];
-  const metabolites = useMemo(
-    () => collectMetabolites(results),
-    // results identity changes every render from || []; use resolved_query
-    [resolved_query],
-  );
+  const metabolites = collectMetabolites(results);
 
   if (resolved_query?.detail) {
     return (

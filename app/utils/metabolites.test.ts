@@ -49,4 +49,16 @@ describe("rankMetabolites", () => {
     expect(totalMatching).toBe(1);
     expect(shown[0].smiles).toBe("D");
   });
+
+  it("dedupes by SMILES keeping the highest score", () => {
+    const { shown, totalMatching } = rankMetabolites([
+      { smiles: "SAL", atom: [0], score: 0.05 },
+      { smiles: "SAL", atom: [1, 3], score: 0.89 },
+      { smiles: "OTHER", atom: [2], score: 0.3 },
+    ]);
+    expect(totalMatching).toBe(2);
+    expect(shown.map((m) => m.smiles)).toEqual(["SAL", "OTHER"]);
+    expect(shown[0].score).toBe(0.89);
+    expect(shown[0].atom).toEqual([1, 3]);
+  });
 });

@@ -45,6 +45,7 @@ function parseViewBox(svgString: string): SvgViewBox | null {
 
 /**
  * Parse xenopict-embedded JSON coords/scale and the SVG viewBox from a depiction string.
+ * Xenopict may HTML-escape quotes inside the script body (&quot;).
  */
 export function parseDepictionMetadata(
   svgString: string,
@@ -58,7 +59,13 @@ export function parseDepictionMetadata(
   if (!script) return null;
 
   try {
-    const parsed = JSON.parse(script[1].trim()) as {
+    const raw = script[1]
+      .trim()
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+    const parsed = JSON.parse(raw) as {
       coords?: unknown;
       scale?: unknown;
     };

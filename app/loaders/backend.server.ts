@@ -18,6 +18,18 @@ export type QueryResult = {
 };
 
 console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
+
+/** Query string for prediction / canonize requests. */
+export function backendQueryParams(smiles: string): URLSearchParams {
+  return new URLSearchParams({
+    query: decodeURIComponent(smiles),
+    depict: "true",
+    detailed: "false",
+    // Forest metabolites for the site panel (capped/ranked in the UI).
+    metabolites: "true",
+  });
+}
+
 /**
  *
  * Call the XenoSite backend API
@@ -29,13 +41,7 @@ console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
 export const backend_api = async (smiles: string | null, url: string) => {
   if (!smiles) return {};
 
-  const req =
-    `${XENOSITE_BACKEND}${url}?` +
-    new URLSearchParams({
-      query: decodeURIComponent(smiles),
-      depict: "true",
-      detailed: "false",
-    });
+  const req = `${XENOSITE_BACKEND}${url}?` + backendQueryParams(smiles);
   console.log("Fetching " + req);
 
   return (await fetch(req, { headers: XENOSITE_HEADERS })).json().catch((_e) => null);
