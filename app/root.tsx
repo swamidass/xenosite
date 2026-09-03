@@ -18,11 +18,15 @@ import {
 } from "@remix-run/react";
 import { useNavigation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ModelTabs, Spinner } from "~/components";
+import { Spinner } from "~/components";
 import HEADERS from "~/loaders/headers";
 import { getQueryUrl } from "~/utils";
 import { XDot, Gtag } from "~/components";
 import { MODELS } from "~/data";
+import {
+  focusQuery,
+  parseMoleculeFocusPath,
+} from "~/utils/metabolitePath";
 
 
 export const headers: HeadersFunction = ({
@@ -71,22 +75,29 @@ function SiteLogo() {
 export default function App() {
   const fetcher = useFetcher();
   const matches = useMatches();
-  const query = matches[matches.length - 1].params?.query;
-  const model = matches[matches.length - 1].params?.model || (query ? "_" : "");
+  const leaf = matches[matches.length - 1];
+  const parsed = parseMoleculeFocusPath(leaf?.pathname || "");
+  const query =
+    (parsed ? focusQuery(parsed.segments) : null) ||
+    leaf?.params?.query;
+  const model =
+    parsed?.model ||
+    leaf?.params?.model ||
+    (query ? "_" : "");
   const navigate = useNavigate();
   const transition = useNavigation();
   const message = "";
-  const [new_query, setNewQuery] = useState<string | null>(query || '');
+  const [new_query, setNewQuery] = useState<string | null>(query || "");
 
   useEffect(() => {
-      if (new_query === query) return;
+    if (new_query === query) return;
 
-      const debounced = setTimeout(() => {
-          navigate(getQueryUrl({model, query: new_query}));
-      }, 300);
-      return () => {
-          clearTimeout(debounced);
-      };
+    const debounced = setTimeout(() => {
+      navigate(getQueryUrl({ model, query: new_query }));
+    }, 300);
+    return () => {
+      clearTimeout(debounced);
+    };
   }, [new_query, model, query, navigate]);
 
   return (
@@ -99,47 +110,47 @@ export default function App() {
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
           <SiteLogo />
           <>
-              {/* Search Input */}
-              <fetcher.Form
-                  method="GET"
-                  className="mt-10 pt-10 block w-full "
-                  onChange={(e) => {
-                      const query = (e.target as HTMLInputElement).value;
-                      setNewQuery(query);
-                  }}
-              >
-                  <input
-                      type="text"
-                      className="placeholder:text-red-400 placeholder:text-sm text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
-                      name="search"
-                      placeholder="Type in a molecule name or SMILES string."
-                      defaultValue={query}
-                  />
-                      {model ? (
-                          <input
-                              type="text"
-                              className="hidden"
-                              name="model"
-                              defaultValue={model}
-                          />
-                      ) : null}
-                  <input className="hidden" type="submit" />
-              </fetcher.Form>
+            {/* Search Input */}
+            <fetcher.Form
+              method="GET"
+              className="mt-10 pt-10 block w-full "
+              onChange={(e) => {
+                const q = (e.target as HTMLInputElement).value;
+                setNewQuery(q);
+              }}
+            >
+              <input
+                type="text"
+                className="placeholder:text-red-400 placeholder:text-sm text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
+                name="search"
+                placeholder="Type in a molecule name or SMILES string."
+                defaultValue={query}
+              />
+              {model ? (
+                <input
+                  type="text"
+                  className="hidden"
+                  name="model"
+                  defaultValue={model}
+                />
+              ) : null}
+              <input className="hidden" type="submit" />
+            </fetcher.Form>
 
-              {/* Search Error Message */}
-              <div className="h-8 text-center  py-3">
-                  {message ? <div className="text-red-400 text-sm">{message}</div> : null}
-              </div>
+            {/* Search Error Message */}
+            <div className="h-8 text-center py-3">
+              {message ? (
+                <div className="text-red-400 text-sm">{message}</div>
+              ) : null}
+            </div>
 
-              {/* Search Model Filter & Results */}
-              <ModelTabs>
-                  {transition.state != "idle" && new_query ? 
-                      <Spinner /> :
-                      <Outlet />
-                  }
-              </ModelTabs>
+            {transition.state != "idle" && new_query ? (
+              <Spinner />
+            ) : (
+              <Outlet />
+            )}
           </>
-        </div> 
+        </div>
 
         <ScrollRestoration />
         <Scripts />
