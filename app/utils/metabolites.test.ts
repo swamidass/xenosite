@@ -22,7 +22,7 @@ describe("rankMetabolites", () => {
     const { shown, totalMatching } = rankMetabolites(sample);
     expect(shown).toHaveLength(5);
     expect(shown.map((m) => m.smiles)).toEqual(["A", "E", "F", "G", "B"]);
-    expect(totalMatching).toBe(6); // D below 0.2; A deduped
+    expect(totalMatching).toBe(7); // all unique smiles ≥ 0.05; A deduped
   });
 
   it("never exceeds display cap", () => {

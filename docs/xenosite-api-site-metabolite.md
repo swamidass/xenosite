@@ -82,7 +82,7 @@ In `depictor` (or right after predictions are assembled, before return):
 ## Out of scope for this API pass
 
 - Bioactivation as a live site model
-- Changing metabolite ranking/threshold (frontend: top 5, score ≥ 0.2)
+- Changing metabolite ranking/threshold (frontend: top 5, score ≥ 0.05)
 - Path URLs / `/m/` drill-down (frontend only)
 - Frontend overlay / hit-test UI
 
