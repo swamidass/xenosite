@@ -60,6 +60,17 @@ export const resolve_query = async (
     response.name["chebiUrl"] = chebi_url;
   }
 
+  // Best-effort metabolite name links when API attaches name.chebi
+  if (response?.results) {
+    for (const r of response.results) {
+      for (const m of r.metabolite || []) {
+        if (m?.name?.chebi && !m.name.chebiUrl) {
+          m.name.chebiUrl = `https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:${m.name.chebi.toString()}`;
+        }
+      }
+    }
+  }
+
   if (!response) response = {};
 
   return { resolved_query: response, model };
