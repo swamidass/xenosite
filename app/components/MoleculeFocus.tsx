@@ -8,11 +8,14 @@ import { capitalize } from "~/utils";
 import { resolveModelInfo } from "~/data";
 import {
   appendMetaboliteSegment,
+  encodeHeadParam,
   moleculeFocusUrl,
   parseSomSearchParams,
+  resolveHeadIndex,
   somToSearchParams,
 } from "~/utils/metabolitePath";
 import {
+  collectMetabolites,
   findMetaboliteBySmiles,
   type MetaboliteRecord,
 } from "~/utils/metabolites";
@@ -27,16 +30,6 @@ function last_name(name: string) {
   let lastName = words[words.length - 1];
   lastName = lastName.replace("_", " ");
   return lastName;
-}
-
-function collectMetabolites(results: any[] | undefined): MetaboliteRecord[] {
-  const out: MetaboliteRecord[] = [];
-  for (const r of results || []) {
-    for (const m of r.metabolite || []) {
-      if (m?.smiles) out.push(m as MetaboliteRecord);
-    }
-  }
-  return out;
 }
 
 /** Map a metabolite's parent atoms to an overlay highlight (bond if possible). */
@@ -77,7 +70,10 @@ type GenerationProps = {
 function Generation({ depth, chain, model, segments }: GenerationProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [externalHover, setExternalHover] = useState<SomHighlight | null>(null);
+  const [hover, setHover] = useState<{
+    highlight: SomHighlight;
+    headIndex: number;
+  } | null>(null);
 
   const resolved_query = chain[depth];
   if (!resolved_query) return null;
@@ -91,6 +87,7 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
   }
 
   const results = resolved_query?.results || [];
+  // Metabolites from every head, each tagged with headIndex / headModel.
   const metabolites = collectMetabolites(results);
   const childSmiles = segments[depth + 1] || null;
   const childMet = findMetaboliteBySmiles(metabolites, childSmiles);
@@ -101,27 +98,39 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
     ? capitalize(resolved_name.name)
     : resolved_query?.smiles ?? "Molecule";
 
-  const primaryResult = results[0] || {};
-  const selectionMode = selectionModeFromResult(primaryResult);
-
-  const somFromPath = somFromMetabolite(childMet, resolved_query?.bonds?.idx);
   const somFromSearch = parseSomSearchParams(searchParams);
-  const selected: SomHighlight | null = somFromPath
-    ? somFromPath
-    : depth === 0 && somFromSearch.atomIdxs?.length
+  const searchHeadIndex = resolveHeadIndex(somFromSearch.head, results);
+
+  // Path-selected metabolite owns the highlight head; else URL ?head= + atoms/bond.
+  const pathHighlight = somFromMetabolite(childMet, resolved_query?.bonds?.idx);
+  const searchHighlight: SomHighlight | null =
+    !childMet &&
+    depth === 0 &&
+    searchHeadIndex != null &&
+    (somFromSearch.atomIdxs?.length || somFromSearch.bondIdx != null)
       ? {
-          atomIdxs: somFromSearch.atomIdxs,
+          atomIdxs: somFromSearch.atomIdxs || [],
           bondIdx: somFromSearch.bondIdx,
         }
       : null;
 
+  const selectedHighlight = pathHighlight || searchHighlight;
+  const selectedHeadIndex = childMet
+    ? typeof childMet.headIndex === "number"
+      ? childMet.headIndex
+      : null
+    : searchHeadIndex;
+
   const siteSelection = childMet
     ? { metaboliteSmiles: childMet.smiles }
-    : selected
-      ? { atomIdxs: selected.atomIdxs, bondIdx: selected.bondIdx }
+    : selectedHighlight && selectedHeadIndex != null
+      ? {
+          atomIdxs: selectedHighlight.atomIdxs,
+          bondIdx: selectedHighlight.bondIdx,
+        }
       : null;
 
-  const applyHit = (hit: SiteHit | null) => {
+  const applyHit = (hit: SiteHit | null, headIndex: number) => {
     if (childSmiles) return;
     if (!hit) {
       setSearchParams({}, { replace: true });
@@ -131,6 +140,7 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
       somToSearchParams({
         atomIdxs: hit.atomIdxs,
         bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
+        head: encodeHeadParam(headIndex, results),
       }),
       { replace: true },
     );
@@ -139,19 +149,44 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
   const onSelectMetabolite = (m: MetaboliteRecord) => {
     const base = segments.slice(0, depth + 1);
     const nextSegments = appendMetaboliteSegment(base, m.smiles);
-    navigate(moleculeFocusUrl({ model, segments: nextSegments }));
+    // Carry the source head into the URL so the parent SOM stays scoped.
+    const head =
+      typeof m.headIndex === "number"
+        ? encodeHeadParam(m.headIndex, results)
+        : m.headModel
+          ? encodeHeadParam(
+              resolveHeadIndex(m.headModel, results) ?? 0,
+              results,
+            )
+          : null;
+    const som = somFromMetabolite(m, resolved_query?.bonds?.idx);
+    const search = somToSearchParams({
+      atomIdxs: som?.atomIdxs,
+      bondIdx: som?.bondIdx,
+      head,
+    }).toString();
+    navigate(
+      moleculeFocusUrl({
+        model,
+        segments: nextSegments,
+        search: search || undefined,
+      }),
+    );
   };
 
-  // Always preview the metabolite's SOM on this generation while hovering the card.
   const onHoverMetabolite = (m: MetaboliteRecord | null) => {
-    if (!m?.atom?.length) {
-      setExternalHover(null);
+    if (!m?.atom?.length || typeof m.headIndex !== "number") {
+      setHover(null);
       return;
     }
-    setExternalHover(somFromMetabolite(m, resolved_query?.bonds?.idx));
+    const highlight = somFromMetabolite(m, resolved_query?.bonds?.idx);
+    if (!highlight) {
+      setHover(null);
+      return;
+    }
+    setHover({ highlight, headIndex: m.headIndex });
   };
 
-  // Nested tabs under this metabolite generation (path through this segment).
   const segmentsThroughHere = segments.slice(0, depth + 1);
 
   return (
@@ -168,28 +203,35 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
         }
       >
         <div className="flex mx-auto mb-4 justify-center flex-wrap gap-4">
-          {results.map((r: any, i: number) => (
-            <div key={i} className="mx-2">
-              {r.depiction ? (
-                <InteractiveMoleculeDepiction
-                  svg={r.depiction}
-                  alt={`${moleculeName} ${
-                    results.length > 1 ? last_name(r.model) : modelLabel
-                  } prediction`}
-                  bondsIdx={resolved_query?.bonds?.idx}
-                  selectionMode={selectionMode}
-                  selected={selected}
-                  externalHover={externalHover}
-                  onSelect={childSmiles ? undefined : applyHit}
-                />
-              ) : null}
-              {results.length > 1 ? (
-                <div className="text-center w-100 text-xs text-gray-500">
-                  {last_name(r.model)}
-                </div>
-              ) : null}
-            </div>
-          ))}
+          {results.map((r: any, i: number) => {
+            const mode = selectionModeFromResult(r);
+            const isSelectedHead = selectedHeadIndex === i;
+            const isHoverHead = hover?.headIndex === i;
+            return (
+              <div key={r.model || i} className="mx-2">
+                {r.depiction ? (
+                  <InteractiveMoleculeDepiction
+                    svg={r.depiction}
+                    alt={`${moleculeName} ${
+                      results.length > 1 ? last_name(r.model) : modelLabel
+                    } prediction`}
+                    bondsIdx={resolved_query?.bonds?.idx}
+                    selectionMode={mode}
+                    selected={isSelectedHead ? selectedHighlight : null}
+                    externalHover={isHoverHead ? hover?.highlight : null}
+                    onSelect={
+                      childSmiles ? undefined : (hit) => applyHit(hit, i)
+                    }
+                  />
+                ) : null}
+                {results.length > 1 ? (
+                  <div className="text-center w-100 text-xs text-gray-500">
+                    {last_name(r.model)}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
 
         {depth === 0 ? (
@@ -252,7 +294,6 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
         ) : null}
       </div>
 
-      {/* Nested model menu sits under a selected metabolite generation. */}
       {depth > 0 ? (
         <>
           <ModelTabs nested segments={segmentsThroughHere} />

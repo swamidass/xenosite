@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  collectMetabolites,
   findMetaboliteBySmiles,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
@@ -80,5 +81,26 @@ describe("findMetaboliteBySmiles", () => {
 
   it("returns null when missing", () => {
     expect(findMetaboliteBySmiles([{ smiles: "CCO", score: 1 }], "O")).toBeNull();
+  });
+});
+
+describe("collectMetabolites", () => {
+  it("flattens every head and tags headIndex", () => {
+    const list = collectMetabolites([
+      {
+        model: "phase1.stable_oxygenation",
+        metabolite: [{ smiles: "A", score: 0.3, atom: [0] }],
+      },
+      {
+        model: "phase1.hydrolysis",
+        metabolite: [
+          { smiles: "B", score: 0.9, atom: [1] },
+          { smiles: "C", score: 0.1, atom: [2] },
+        ],
+      },
+    ]);
+    expect(list).toHaveLength(3);
+    expect(list.map((m) => m.headIndex)).toEqual([0, 1, 1]);
+    expect(list[1].headModel).toBe("phase1.hydrolysis");
   });
 });

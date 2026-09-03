@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   appendMetaboliteSegment,
+  encodeHeadParam,
   focusQuery,
   moleculeFocusUrl,
   parseMoleculeFocusPath,
   parseSomSearchParams,
+  resolveHeadIndex,
   somToSearchParams,
 } from "./metabolitePath";
 
@@ -63,5 +65,35 @@ describe("SOM search params", () => {
     const out = somToSearchParams(som);
     expect(out.getAll("atom")).toEqual(["1", "3"]);
     expect(out.get("bond")).toBe("2");
+  });
+
+  it("round-trips head slug / index", () => {
+    const p = new URLSearchParams("head=hydrolysis&atom=1");
+    expect(parseSomSearchParams(p).head).toBe("hydrolysis");
+    expect(
+      somToSearchParams({ head: "hydrolysis", atomIdxs: [1] }).get("head"),
+    ).toBe("hydrolysis");
+  });
+});
+
+describe("resolveHeadIndex / encodeHeadParam", () => {
+  const results = [
+    { model: "phase1.stable_oxygenation" },
+    { model: "phase1.hydrolysis" },
+  ];
+
+  it("resolves numeric head indices", () => {
+    expect(resolveHeadIndex("1", results)).toBe(1);
+    expect(resolveHeadIndex("9", results)).toBeNull();
+  });
+
+  it("resolves head by slug or full model id", () => {
+    expect(resolveHeadIndex("hydrolysis", results)).toBe(1);
+    expect(resolveHeadIndex("phase1.stable_oxygenation", results)).toBe(0);
+  });
+
+  it("encodes a readable head slug when possible", () => {
+    expect(encodeHeadParam(1, results)).toBe("hydrolysis");
+    expect(encodeHeadParam(0, [{ model: undefined }])).toBe("0");
   });
 });

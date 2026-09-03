@@ -10,7 +10,31 @@ export type MetaboliteRecord = {
     description?: string;
   } | null;
   depiction?: string | null;
+  /** Result / head index this metabolite came from (multi-head models). */
+  headIndex?: number;
+  /** Result model id, e.g. phase1.hydrolysis */
+  headModel?: string | null;
 };
+
+/**
+ * Flatten metabolites from every prediction head, tagging source head index.
+ */
+export function collectMetabolites(
+  results: any[] | null | undefined,
+): MetaboliteRecord[] {
+  const out: MetaboliteRecord[] = [];
+  (results || []).forEach((r, headIndex) => {
+    for (const m of r?.metabolite || []) {
+      if (!m?.smiles) continue;
+      out.push({
+        ...(m as MetaboliteRecord),
+        headIndex,
+        headModel: typeof r?.model === "string" ? r.model : null,
+      });
+    }
+  });
+  return out;
+}
 
 export type SiteSelection = {
   atomIdxs?: number[];

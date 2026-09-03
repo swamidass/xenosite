@@ -73,7 +73,50 @@ export function appendMetaboliteSegment(
 export type SomSearchParams = {
   atomIdxs?: number[];
   bondIdx?: number | null;
+  /**
+   * Active prediction head for multi-head models (phase1, etc.).
+   * URL form: `?head=0` (0-based results[] index) or `?head=hydrolysis`
+   * (suffix / full id of results[i].model).
+   */
+  head?: string | null;
 };
+
+/** Last segment of a dotted head model id (`phase1.hydrolysis` → `hydrolysis`). */
+export function headSlug(model: string | null | undefined): string {
+  if (!model) return "";
+  const parts = String(model).split(".");
+  return parts[parts.length - 1] || String(model);
+}
+
+/**
+ * Resolve `?head=` to a results[] index.
+ * Accepts a non-negative integer, a full model id, or a head slug suffix.
+ */
+export function resolveHeadIndex(
+  head: string | null | undefined,
+  results: { model?: string }[] | null | undefined,
+): number | null {
+  if (head == null || head === "") return null;
+  const list = results || [];
+  if (/^\d+$/.test(head)) {
+    const i = Number(head);
+    return i >= 0 && i < list.length ? i : null;
+  }
+  const byFull = list.findIndex((r) => r.model === head);
+  if (byFull >= 0) return byFull;
+  const bySlug = list.findIndex((r) => headSlug(r.model) === head);
+  return bySlug >= 0 ? bySlug : null;
+}
+
+/** Prefer a stable slug in the URL when the head has a model id. */
+export function encodeHeadParam(
+  headIndex: number,
+  results: { model?: string }[] | null | undefined,
+): string {
+  const r = results?.[headIndex];
+  const slug = headSlug(r?.model);
+  return slug || String(headIndex);
+}
 
 export function parseSomSearchParams(
   params: URLSearchParams,
@@ -88,9 +131,11 @@ export function parseSomSearchParams(
     bondRaw != null && bondRaw !== "" && Number.isInteger(Number(bondRaw))
       ? Number(bondRaw)
       : null;
+  const head = params.get("head");
   return {
     atomIdxs: atoms.length ? atoms : undefined,
     bondIdx,
+    head: head || null,
   };
 }
 
@@ -101,6 +146,9 @@ export function somToSearchParams(som: SomSearchParams): URLSearchParams {
   }
   if (som.bondIdx != null && Number.isInteger(som.bondIdx)) {
     p.set("bond", String(som.bondIdx));
+  }
+  if (som.head) {
+    p.set("head", som.head);
   }
   return p;
 }
