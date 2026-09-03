@@ -13,9 +13,15 @@ export interface ModelMenuProps {
   children?: ReactNode;
   /** Path segments after model (root query + /m/ hops). Preserved across tab changes. */
   segments?: string[];
+  /** Compact nested menu under a selected metabolite. */
+  nested?: boolean;
 }
 
-export function ModelTabs({ children, segments }: ModelMenuProps): JSX.Element {
+export function ModelTabs({
+  children,
+  segments,
+  nested = false,
+}: ModelMenuProps): JSX.Element {
   const matches = useMatches();
   const location = useLocation();
   const leafParams = matches[matches.length - 1]?.params ?? {};
@@ -28,21 +34,33 @@ export function ModelTabs({ children, segments }: ModelMenuProps): JSX.Element {
   const selectedIndex = MODELS.findIndex((x) => x.path === model);
 
   return (
-    <div className="w-full px-2 py-4 sm:px-0">
+    <div
+      className={classNames(
+        "w-full sm:px-0",
+        nested ? "px-2 py-2" : "px-2 py-4",
+      )}
+    >
       <Tab.Group
         as="div"
         {...(selectedIndex >= 0 ? { selectedIndex } : {})}
       >
-        <Tab.List className="flex flex-wrap space-x-1 rounded-xl p-1 justify-center">
+        <Tab.List
+          className={classNames(
+            "flex flex-wrap space-x-1 rounded-xl p-1 justify-center",
+            nested && "bg-gray-50",
+          )}
+        >
           {MODELS.map((x, i) => (
             <div
               className={classNames(
                 x.path === model
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-700 hover:bg-gray-100",
-                "block px-4 py-2 text-sm sm:m-1",
+                nested
+                  ? "block px-3 py-1.5 text-xs sm:m-0.5"
+                  : "block px-4 py-2 text-sm sm:m-1",
               )}
-              key={`tab-${i}`}
+              key={`tab-${nested ? "n" : "p"}-${i}`}
             >
               <Tab as={Fragment}>
                 <Link
@@ -64,7 +82,9 @@ export function ModelTabs({ children, segments }: ModelMenuProps): JSX.Element {
           ) : (
             <Tab.Panels>
               {MODELS.map((x, i) => (
-                <Tab.Panel key={`tab-panel-${i}`}>{children}</Tab.Panel>
+                <Tab.Panel key={`tab-panel-${nested ? "n" : "p"}-${i}`}>
+                  {children}
+                </Tab.Panel>
               ))}
             </Tab.Panels>
           )

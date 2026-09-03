@@ -100,3 +100,19 @@ export function rankMetabolites(
     totalMatching,
   };
 }
+
+/**
+ * Prefer the metabolite record matching `smiles` (highest score if duplicates).
+ */
+export function findMetaboliteBySmiles(
+  metabolites: MetaboliteRecord[] | null | undefined,
+  smiles: string | null | undefined,
+): MetaboliteRecord | null {
+  if (!smiles) return null;
+  let best: MetaboliteRecord | null = null;
+  for (const m of metabolites || []) {
+    if (m.smiles !== smiles) continue;
+    if (!best || scoreOf(m) > scoreOf(best)) best = m;
+  }
+  return best;
+}

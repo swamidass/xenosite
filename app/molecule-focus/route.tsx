@@ -41,7 +41,6 @@ function segmentsFromRequest(
   const splat = params["*"];
   if (!splat) return [root];
 
-  // splat is "smiles" or "smiles/m/smiles2/..." after /m/
   const parts = splat.split("/").filter(Boolean);
   const segments = [root];
   for (let i = 0; i < parts.length; i++) {
@@ -57,14 +56,16 @@ function segmentsFromRequest(
 
 export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
   const queryData = data as
-    | (SwamidassApiData & { segments?: string[] })
+    | (SwamidassApiData & { segments?: string[]; chain?: any[] })
     | undefined;
   const segments =
     queryData?.segments ||
     parseMoleculeFocusPath(location.pathname)?.segments ||
     (params.query ? [params.query] : []);
-  const focus = focusQuery(segments) || (params.query as string);
-  const preferredName = queryData?.resolved_query?.name?.name;
+  const rootQuery = segments[0] || (params.query as string);
+  const rootResolved =
+    queryData?.chain?.[0] || queryData?.resolved_query;
+  const preferredName = rootResolved?.name?.name;
   const path = moleculeFocusUrl({
     model: params.model as string,
     segments:
@@ -72,30 +73,27 @@ export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
         ? [preferredName]
         : segments.length
           ? segments
-          : [focus],
+          : [rootQuery],
   });
-  const slug = focus;
-  const imageUrl = `${siteUrl(`/og/${params.model}/${encodeURIComponent(slug)}`)}`;
+  const imageUrl = `${siteUrl(`/og/${params.model}/${encodeURIComponent(rootQuery)}`)}`;
 
   const modelInfo = queryData
     ? resolveModelInfo(queryData.model)
     : resolveModelInfo(params.model);
 
-  let molecule = focus;
-  let title = `${SITE_NAME} | ${focus}`;
+  let molecule = rootQuery;
+  let title = `${SITE_NAME} | ${rootQuery}`;
   let description =
     "XenoSite predicts how small molecules become toxic after metabolism by liver enzymes.";
 
-  if (queryData && modelInfo) {
-    molecule = queryData.resolved_query.name
-      ? capitalize(queryData.resolved_query.name.name)
-      : queryData.resolved_query.smiles;
-    title = `${SITE_NAME} | ${capitalize(queryData.model)} | ${molecule}`;
+  if (rootResolved && modelInfo) {
+    molecule = rootResolved.name
+      ? capitalize(rootResolved.name.name)
+      : rootResolved.smiles;
+    title = `${SITE_NAME} | ${capitalize(queryData!.model)} | ${molecule}`;
     description =
-      queryData.resolved_query.name &&
-      queryData.resolved_query.name.name &&
-      modelInfo
-        ? `XenoSite prediction of the reactivity of "${queryData.resolved_query.name.name}". The reactivity model is "${modelInfo.model}".`
+      rootResolved.name && rootResolved.name.name && modelInfo
+        ? `XenoSite prediction of the reactivity of "${rootResolved.name.name}". The reactivity model is "${modelInfo.model}".`
         : description;
   }
 
@@ -110,29 +108,21 @@ export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
     }),
   ];
 
-  if (queryData) {
+  if (queryData && rootResolved) {
     const ldJsonParams: LdJsonParams = {
       model: modelInfo as XenositeModelInfo,
-      smiles: queryData.resolved_query?.smiles
-        ? queryData.resolved_query.smiles
-        : focus,
-      name: queryData.resolved_query?.name
-        ? queryData.resolved_query.name.name
-        : focus,
-      description: queryData.resolved_query?.name
-        ? queryData.resolved_query.name.description
+      smiles: rootResolved.smiles ? rootResolved.smiles : rootQuery,
+      name: rootResolved.name ? rootResolved.name.name : rootQuery,
+      description: rootResolved.name
+        ? rootResolved.name.description
         : description,
       xenositeUrl: siteUrl(path),
       ogImageUrl: imageUrl,
       citation: modelInfo ? modelInfo.citation : "",
-      chebi: queryData.resolved_query?.name
-        ? queryData.resolved_query.name.chebi.toString()
-        : "",
-      chebiUrl: queryData.resolved_query?.name
-        ? queryData.resolved_query.name.chebiUrl
-        : "",
-      results: queryData.resolved_query?.results
-        ? queryData.resolved_query.results.map((result) => result.model)
+      chebi: rootResolved.name ? rootResolved.name.chebi.toString() : "",
+      chebiUrl: rootResolved.name ? rootResolved.name.chebiUrl : "",
+      results: rootResolved.results
+        ? rootResolved.results.map((result: any) => result.model)
         : undefined,
     };
     for (const node of getLdJson(ldJsonParams)) {
@@ -147,20 +137,30 @@ export const loader: LoaderFunction = async ({
   params,
   request,
 }: LoaderFunctionArgs) => {
-  const segments = segmentsFromRequest(request, params as Record<string, string | undefined>);
-  const focus = focusQuery(segments) || params.query || null;
+  const segments = segmentsFromRequest(
+    request,
+    params as Record<string, string | undefined>,
+  );
+  const model = params.model || "";
 
-  const { resolved_query, model } = await resolve_query({
-    model: params.model || "",
-    query: focus,
-  });
+  // One prediction per path segment so the stack can keep parents on-screen.
+  const chain = [];
+  for (const seg of segments) {
+    const { resolved_query } = await resolve_query({
+      model,
+      query: seg,
+    });
+    chain.push(resolved_query);
+  }
 
   return json(
     {
       params,
-      resolved_query,
       model,
       segments,
+      chain,
+      // Back-compat for any consumers expecting resolved_query (= root).
+      resolved_query: chain[0] || {},
     },
     { headers: HEADERS },
   );
@@ -168,18 +168,18 @@ export const loader: LoaderFunction = async ({
 
 export default function MoleculeFocusRoute() {
   const data = useLoaderData() as {
-    resolved_query: any;
-    model: any;
+    chain: any[];
+    model: string;
     segments: string[];
   };
 
-  if (!data?.resolved_query || !data?.model) {
+  if (!data?.chain?.length || !data?.model) {
     return <Loading />;
   }
 
   return (
     <MoleculeFocus
-      resolved_query={data.resolved_query}
+      chain={data.chain}
       model={data.model}
       segments={data.segments?.length ? data.segments : []}
     />

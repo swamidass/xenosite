@@ -4,35 +4,45 @@ import { MODELS, resolveModelInfo } from "~/data";
 
 type AboutModelProps = {
   model?: string | null;
+  /** Tighter styling when nested under a selected metabolite. */
+  nested?: boolean;
 };
 
 /**
- * Collapsed-by-default model description under ModelTabs.
+ * Collapsed-by-default model blurb — intentionally quiet under the tabs.
  */
-export default function AboutModel({ model }: AboutModelProps) {
+export default function AboutModel({ model, nested = false }: AboutModelProps) {
   const modelinfo = resolveModelInfo(model) || MODELS.find((x) => x.path === model);
   if (!modelinfo || model === "_") return null;
 
   return (
-    <Disclosure as="div" className="max-w-prose mx-auto my-4 px-2" defaultOpen={false}>
+    <Disclosure
+      as="div"
+      className={
+        nested
+          ? "max-w-prose mx-auto mt-1 mb-2 px-2"
+          : "max-w-prose mx-auto mt-0 mb-2 px-2"
+      }
+      defaultOpen={false}
+    >
       {({ open }) => (
         <>
-          <Disclosure.Button className="flex w-full justify-between items-center text-left text-sm text-gray-600 hover:text-gray-900 py-2">
-            <span>About this model</span>
-            <span className="text-gray-400" aria-hidden>
-              {open ? "−" : "+"}
+          <Disclosure.Button className="mx-auto flex items-center gap-1 text-[11px] tracking-wide text-gray-400 hover:text-gray-600 py-0.5">
+            <span>{open ? "Hide model info" : "Model info"}</span>
+            <span aria-hidden className="text-gray-300">
+              {open ? "▴" : "▾"}
             </span>
           </Disclosure.Button>
-          <Disclosure.Panel className="prose text-sm pb-4">
-            <h2 className="text-base font-semibold mt-0">
+          <Disclosure.Panel className="prose prose-sm text-xs text-gray-600 pb-3 pt-1">
+            <p className="font-medium text-gray-700 mt-0 mb-1">
               <Link
-                className="no-underline hover:underline"
+                className="no-underline hover:underline text-gray-700"
                 to={`/${modelinfo.path}`}
                 reloadDocument
               >
                 {modelinfo.model}
               </Link>
-            </h2>
+            </p>
             {modelinfo.info ? <modelinfo.info /> : null}
           </Disclosure.Panel>
         </>

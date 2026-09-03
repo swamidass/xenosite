@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  findMetaboliteBySmiles,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
 } from "./metabolites";
@@ -60,5 +61,24 @@ describe("rankMetabolites", () => {
     expect(shown.map((m) => m.smiles)).toEqual(["SAL", "OTHER"]);
     expect(shown[0].score).toBe(0.89);
     expect(shown[0].atom).toEqual([1, 3]);
+  });
+});
+
+describe("findMetaboliteBySmiles", () => {
+  it("returns the highest-scoring match", () => {
+    const m = findMetaboliteBySmiles(
+      [
+        { smiles: "CCO", atom: [0], score: 0.1 },
+        { smiles: "CCO", atom: [1], score: 0.8 },
+        { smiles: "CCC", atom: [2], score: 0.9 },
+      ],
+      "CCO",
+    );
+    expect(m?.score).toBe(0.8);
+    expect(m?.atom).toEqual([1]);
+  });
+
+  it("returns null when missing", () => {
+    expect(findMetaboliteBySmiles([{ smiles: "CCO", score: 1 }], "O")).toBeNull();
   });
 });

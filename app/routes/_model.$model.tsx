@@ -1,7 +1,6 @@
 import { MODELS, resolveModelInfo, XenositeModelInfo } from "~/data";
 import { Outlet, useMatches } from "@remix-run/react";
-import AboutModel from "~/components/AboutModel";
-import { ModelDescriptions, ModelTabs } from "~/components";
+import { ModelDescriptions } from "~/components";
 import { json } from "@remix-run/node";
 import type { MetaFunction, MetaArgs, LoaderFunctionArgs } from "@remix-run/node";
 import type { LdJsonParams } from "~/loaders/ld-json";
@@ -60,25 +59,13 @@ export default function Model() {
     (leaf?.id || "").includes("$query") ||
     (leaf?.pathname || "").includes("/m/");
 
+  // Model tabs / about live in root (under search). This layout only hosts content.
   if (model == "_" || !model) {
-    if (!query) {
-      return (
-        <ModelTabs>
-          <ModelDescriptions />
-        </ModelTabs>
-      );
-    }
+    if (!query) return <ModelDescriptions />;
     return <Outlet />;
   }
 
-  if (hasMolecule) {
-    return <Outlet />;
-  }
+  if (hasMolecule) return <Outlet />;
 
-  return (
-    <>
-      <ModelTabs />
-      <AboutModel model={model} />
-    </>
-  );
+  return null;
 }

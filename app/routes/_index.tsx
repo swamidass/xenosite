@@ -1,5 +1,5 @@
 import type { MetaFunction } from "@remix-run/node";
-import { ModelDescriptions, ModelTabs } from "~/components";
+import { ModelDescriptions } from "~/components";
 import { getLdJson } from "~/loaders/ld-json";
 import { commonMetaValues } from "~/utils";
 
@@ -12,9 +12,5 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Model() {
-  return (
-    <ModelTabs>
-      <ModelDescriptions />
-    </ModelTabs>
-  );
+  return <ModelDescriptions />;
 }

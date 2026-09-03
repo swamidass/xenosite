@@ -11,20 +11,18 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
-  useFetcher, 
-  useMatches, 
+  useFetcher,
+  useMatches,
   useNavigate,
   useRouteError,
 } from "@remix-run/react";
 import { useNavigation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Spinner } from "~/components";
+import { AboutModel, ModelTabs, Spinner, XDot, Gtag } from "~/components";
 import HEADERS from "~/loaders/headers";
 import { getQueryUrl } from "~/utils";
-import { XDot, Gtag } from "~/components";
 import { MODELS } from "~/data";
 import {
-  focusQuery,
   parseMoleculeFocusPath,
 } from "~/utils/metabolitePath";
 
@@ -77,8 +75,9 @@ export default function App() {
   const matches = useMatches();
   const leaf = matches[matches.length - 1];
   const parsed = parseMoleculeFocusPath(leaf?.pathname || "");
+  // Search box always reflects the root molecule, not a nested metabolite.
   const query =
-    (parsed ? focusQuery(parsed.segments) : null) ||
+    parsed?.segments?.[0] ||
     leaf?.params?.query;
   const model =
     parsed?.model ||
@@ -88,6 +87,10 @@ export default function App() {
   const transition = useNavigation();
   const message = "";
   const [new_query, setNewQuery] = useState<string | null>(query || "");
+
+  useEffect(() => {
+    setNewQuery(query || "");
+  }, [query]);
 
   useEffect(() => {
     if (new_query === query) return;
@@ -110,7 +113,6 @@ export default function App() {
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
           <SiteLogo />
           <>
-            {/* Search Input */}
             <fetcher.Form
               method="GET"
               className="mt-10 pt-10 block w-full "
@@ -125,6 +127,7 @@ export default function App() {
                 name="search"
                 placeholder="Type in a molecule name or SMILES string."
                 defaultValue={query}
+                key={query || "empty"}
               />
               {model ? (
                 <input
@@ -137,12 +140,15 @@ export default function App() {
               <input className="hidden" type="submit" />
             </fetcher.Form>
 
-            {/* Search Error Message */}
             <div className="h-8 text-center py-3">
               {message ? (
                 <div className="text-red-400 text-sm">{message}</div>
               ) : null}
             </div>
+
+            {/* Primary model menu always sits directly under the search box. */}
+            <ModelTabs segments={parsed?.segments} />
+            {model && model !== "_" ? <AboutModel model={model} /> : null}
 
             {transition.state != "idle" && new_query ? (
               <Spinner />
