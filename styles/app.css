@@ -1,3 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* SOM overlay on InteractiveMoleculeDepiction — alphas: hover > selected */
+.som-overlay {
+  --som-selected-black-alpha: 0.45;
+  --som-selected-white-alpha: 0.25;
+  --som-hover-black-alpha: 0.7;
+  --som-hover-white-alpha: 0.4;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.som-overlay__hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.som-overlay__mark--selected.som-overlay__mark--black {
+  stroke: rgba(0, 0, 0, var(--som-selected-black-alpha));
+}
+.som-overlay__mark--selected.som-overlay__mark--white {
+  stroke: rgba(255, 255, 255, var(--som-selected-white-alpha));
+}
+.som-overlay__mark--hover.som-overlay__mark--black {
+  stroke: rgba(0, 0, 0, var(--som-hover-black-alpha));
+}
+.som-overlay__mark--hover.som-overlay__mark--white {
+  stroke: rgba(255, 255, 255, var(--som-hover-white-alpha));
+}
+
+.som-overlay__mark {
+  fill: none;
+  pointer-events: none;
+}
+
+.interactive-molecule {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.interactive-molecule__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
