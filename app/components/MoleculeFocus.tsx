@@ -121,8 +121,6 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
       ? { atomIdxs: selected.atomIdxs, bondIdx: selected.bondIdx }
       : null;
 
-  const incompleteSom = !childSmiles && !selected;
-
   const applyHit = (hit: SiteHit | null) => {
     if (childSmiles) return;
     if (!hit) {
@@ -144,8 +142,9 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
     navigate(moleculeFocusUrl({ model, segments: nextSegments }));
   };
 
+  // Always preview the metabolite's SOM on this generation while hovering the card.
   const onHoverMetabolite = (m: MetaboliteRecord | null) => {
-    if (!incompleteSom || !m?.atom?.length) {
+    if (!m?.atom?.length) {
       setExternalHover(null);
       return;
     }

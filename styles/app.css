@@ -4,10 +4,10 @@
 
 /* SOM overlay on InteractiveMoleculeDepiction — alphas: hover > selected */
 .som-overlay {
-  --som-selected-black-alpha: 0.45;
-  --som-selected-white-alpha: 0.25;
-  --som-hover-black-alpha: 0.7;
-  --som-hover-white-alpha: 0.4;
+  --som-selected-black-alpha: 0.5;
+  --som-selected-white-alpha: 0.3;
+  --som-hover-black-alpha: 0.85;
+  --som-hover-white-alpha: 0.55;
   position: absolute;
   inset: 0;
   width: 100%;
@@ -33,6 +33,7 @@
 }
 .som-overlay__mark--hover.som-overlay__mark--black {
   stroke: rgba(0, 0, 0, var(--som-hover-black-alpha));
+  fill: rgba(0, 0, 0, 0.06);
 }
 .som-overlay__mark--hover.som-overlay__mark--white {
   stroke: rgba(255, 255, 255, var(--som-hover-white-alpha));
@@ -41,6 +42,8 @@
 .som-overlay__mark {
   fill: none;
   pointer-events: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .interactive-molecule {

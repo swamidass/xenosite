@@ -48,7 +48,7 @@ export function hitTestAtom(
   y: number,
   coords: [number, number][],
   scale: number,
-  radiusFactor = 0.35,
+  radiusFactor = 0.75,
 ): number | null {
   const r = scale * radiusFactor;
   const r2 = r * r;
@@ -70,7 +70,7 @@ export function hitTestBond(
   coords: [number, number][],
   bondsIdx: BondIdx[],
   scale: number,
-  radiusFactor = 0.15,
+  radiusFactor = 0.4,
 ): number | null {
   const r = scale * radiusFactor;
   let best: number | null = null;
@@ -107,8 +107,8 @@ export function resolveHit(
     bondsIdx,
     scale,
     mode,
-    atomRadiusFactor = 0.35,
-    bondRadiusFactor = 0.15,
+    atomRadiusFactor = 0.75,
+    bondRadiusFactor = 0.4,
   } = opts;
 
   const allowAtom = mode === "atom" || mode === "atom+bond" || mode === "pair";

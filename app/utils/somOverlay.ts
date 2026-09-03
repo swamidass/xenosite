@@ -1,17 +1,17 @@
 /**
  * SOM overlay mark geometry in SVG user units (scales with depiction).
+ * Sized to read clearly on typical xenopict scales (~20).
  */
 export function somStrokeWidths(scale: number): {
   black: number;
   white: number;
 } {
-  const unit = scale / 20;
-  return { black: 3 * unit, white: 2 * unit };
+  return { black: scale * 0.35, white: scale * 0.22 };
 }
 
 /** Circle radius for atom marks (SVG user units). */
 export function somAtomRadius(scale: number): number {
-  return scale * 0.25;
+  return scale * 0.55;
 }
 
 export type SomHighlight = {
@@ -31,6 +31,7 @@ export type OverlayMark =
 
 /**
  * Build overlay mark primitives for a highlight against depiction coords.
+ * Bond highlights also include endpoint atom marks so the site reads clearly.
  */
 export function buildOverlayMarks(
   highlight: SomHighlight | null | undefined,
@@ -59,6 +60,8 @@ export function buildOverlayMarks(
         x2: coords[b][0],
         y2: coords[b][1],
       });
+      marks.push({ kind: "atom", x: coords[a][0], y: coords[a][1] });
+      marks.push({ kind: "atom", x: coords[b][0], y: coords[b][1] });
       return marks;
     }
   }

@@ -7,16 +7,16 @@ import {
 } from "./somOverlay";
 
 describe("somStrokeWidths", () => {
-  it("uses 3× and 2× of scale/20", () => {
+  it("scales stroke with depiction scale", () => {
     const { black, white } = somStrokeWidths(20);
-    expect(black).toBe(3);
-    expect(white).toBe(2);
+    expect(black).toBe(7);
+    expect(white).toBe(4.4);
   });
 });
 
 describe("somAtomRadius", () => {
   it("scales with depiction scale", () => {
-    expect(somAtomRadius(20)).toBe(5);
+    expect(somAtomRadius(20)).toBe(11);
   });
 });
 
@@ -52,7 +52,11 @@ describe("buildOverlayMarks", () => {
   it("prefers a bond mark when bondIdx is set", () => {
     expect(
       buildOverlayMarks({ atomIdxs: [0, 1], bondIdx: 0 }, coords, bonds),
-    ).toEqual([{ kind: "bond", x1: 0, y1: 0, x2: 10, y2: 0 }]);
+    ).toEqual([
+      { kind: "bond", x1: 0, y1: 0, x2: 10, y2: 0 },
+      { kind: "atom", x: 0, y: 0 },
+      { kind: "atom", x: 10, y: 0 },
+    ]);
   });
 
   it("returns empty when highlight missing", () => {
