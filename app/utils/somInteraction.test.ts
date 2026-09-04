@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   effectiveMetabolitePanelSelection,
   metaboliteSelectUrl,
+  somSelectUrl,
   toggleSomHighlight,
 } from "~/utils/somInteraction";
 
@@ -79,5 +80,24 @@ describe("metaboliteSelectUrl", () => {
         childQuery: "O=C(O)c1ccccc1O",
       }),
     ).toBe("/phase1/aspirin");
+  });
+});
+
+describe("somSelectUrl", () => {
+  const generations = [
+    { model: "phase1", query: "aspirin" },
+    { model: "phase1", query: "O=C(O)c1ccccc1O" },
+  ];
+
+  it("pops the metabolite hop and applies SOM params", () => {
+    expect(
+      somSelectUrl({
+        generations,
+        depth: 0,
+        atomIdxs: [1, 3],
+        bondIdx: 2,
+        head: "hydrolysis",
+      }),
+    ).toBe("/phase1/aspirin?atom=1&atom=3&bond=2&head=hydrolysis");
   });
 });

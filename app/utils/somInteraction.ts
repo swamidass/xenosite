@@ -65,6 +65,32 @@ export function toggleSomHighlight(
 }
 
 /**
+ * Navigate to this generation with an optional SOM selection, dropping any
+ * deeper metabolite hops. Used when a child metabolite is selected and the
+ * user clicks a SOM on the parent depiction.
+ */
+export function somSelectUrl(opts: {
+  generations: FocusGeneration[];
+  depth: number;
+  atomIdxs?: number[];
+  bondIdx?: number | null;
+  head?: string | null;
+}): string {
+  const gens = opts.generations.slice(0, opts.depth + 1);
+  const path = moleculeFocusUrl({ generations: gens });
+  const search = new URLSearchParams();
+  for (const a of opts.atomIdxs || []) {
+    search.append("atom", String(a));
+  }
+  if (opts.bondIdx != null && Number.isInteger(opts.bondIdx)) {
+    search.set("bond", String(opts.bondIdx));
+  }
+  if (opts.head) search.set("head", opts.head);
+  const q = search.toString();
+  return q ? `${path}?${q}` : path;
+}
+
+/**
  * Selecting the already-active metabolite pops that hop; otherwise append.
  */
 export function metaboliteSelectUrl(opts: {

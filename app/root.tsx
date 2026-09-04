@@ -186,6 +186,7 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <MetabolitePathNav crumbs={pathCrumbs} />
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3 overflow-x-hidden">
           <SiteLogo />
           <>
@@ -231,8 +232,6 @@ export default function App() {
                 />
               ) : null}
             </div>
-
-            <MetabolitePathNav crumbs={pathCrumbs} />
 
             {/* Primary model menu: changes only the root generation's model. */}
             <ModelTabs generations={parsed?.generations} depth={0} />

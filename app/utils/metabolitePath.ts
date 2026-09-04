@@ -222,3 +222,29 @@ export function somToSearchParams(som: SomSearchParams): URLSearchParams {
   }
   return p;
 }
+
+/** Attach pathway / score so nested hops can still show how the metabolite was ranked. */
+export function withMetaboliteMetaParams(
+  params: URLSearchParams,
+  meta: { pathway?: string | null; score?: number | null },
+): URLSearchParams {
+  const p = new URLSearchParams(params);
+  if (meta.pathway) p.set("pathway", String(meta.pathway));
+  if (typeof meta.score === "number" && Number.isFinite(meta.score)) {
+    p.set("score", meta.score.toFixed(2));
+  }
+  return p;
+}
+
+export function parseMetaboliteMetaParams(params: URLSearchParams): {
+  pathway: string | null;
+  score: number | null;
+} {
+  const pathway = params.get("pathway");
+  const scoreRaw = params.get("score");
+  const score =
+    scoreRaw != null && scoreRaw !== "" && Number.isFinite(Number(scoreRaw))
+      ? Number(scoreRaw)
+      : null;
+  return { pathway: pathway || null, score };
+}

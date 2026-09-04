@@ -2,7 +2,6 @@ import { Link, useLocation, useMatches } from "@remix-run/react";
 import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { Tab } from "@headlessui/react";
-import GenerationMarker from "~/components/GenerationMarker";
 import { MODELS } from "~/data";
 import { classNames } from "~/utils";
 import {
@@ -50,15 +49,9 @@ export function ModelTabs({
         : []);
   const model = gens[depth]?.model ?? parsed?.model ?? leafParams.model;
   const selectedIndex = MODELS.findIndex((x) => x.path === model);
-  const showGenMarker = depth > 0 || gens.length > 1;
 
   return (
     <div className="w-full px-2 py-3 sm:px-0">
-      {showGenMarker ? (
-        <div className="flex justify-center mb-2">
-          <GenerationMarker depth={depth} label="Model" />
-        </div>
-      ) : null}
       <Tab.Group
         as="div"
         {...(selectedIndex >= 0 ? { selectedIndex } : {})}

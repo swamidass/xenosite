@@ -11,6 +11,7 @@ export { default as AboutModel } from "./AboutModel";
 export { default as MoleculeIdentity } from "./MoleculeIdentity";
 export { default as MetabolitePathNav } from "./MetabolitePathNav";
 export { default as GenerationMarker } from "./GenerationMarker";
+export { default as GenerationBanner } from "./GenerationBanner";
 export { default as CopyJsonButton } from "./CopyJsonButton";
 export { default as Spinner } from "./Spinner";
 export { default as XDot } from "./XDot";

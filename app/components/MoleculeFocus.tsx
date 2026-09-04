@@ -6,7 +6,7 @@ import {
 } from "@remix-run/react";
 import { useState, type ReactNode } from "react";
 import AboutModel from "~/components/AboutModel";
-import GenerationMarker from "~/components/GenerationMarker";
+import GenerationBanner from "~/components/GenerationBanner";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
 import MetabolitePanel from "~/components/MetabolitePanel";
 import MoleculeIdentity from "~/components/MoleculeIdentity";
@@ -15,15 +15,18 @@ import { resolveModelInfo } from "~/data";
 import {
   encodeHeadParam,
   moleculeFocusUrl,
+  parseMetaboliteMetaParams,
   parseMoleculeFocusPath,
   parseSomSearchParams,
   resolveHeadIndex,
   somToSearchParams,
+  withMetaboliteMetaParams,
   type FocusGeneration,
 } from "~/utils/metabolitePath";
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
+  formatPathwayLabel,
   type MetaboliteRecord,
   type SiteSelection,
 } from "~/utils/metabolites";
@@ -33,6 +36,7 @@ import {
   effectiveMetabolitePanelSelection,
   hitToSiteSelection,
   metaboliteSelectUrl,
+  somSelectUrl,
   toggleSomHighlight,
 } from "~/utils/somInteraction";
 import {
@@ -163,14 +167,34 @@ export function GenerationView({
     hover: childQuery ? null : siteHover,
   });
 
+  const metaboliteMeta = parseMetaboliteMetaParams(searchParams);
+
   const applyHit = (hit: SiteHit | null, headIndex: number) => {
-    if (childQuery) return;
     const nextHighlight: SomHighlight | null = hit
       ? {
           atomIdxs: hit.atomIdxs,
           bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
         }
       : null;
+
+    // Metabolite hop active: SOM click leaves the hop and filters the list.
+    if (childQuery) {
+      if (!nextHighlight) {
+        navigate(somSelectUrl({ generations, depth }));
+        return;
+      }
+      navigate(
+        somSelectUrl({
+          generations,
+          depth,
+          atomIdxs: nextHighlight.atomIdxs,
+          bondIdx: nextHighlight.bondIdx,
+          head: encodeHeadParam(headIndex, results),
+        }),
+      );
+      return;
+    }
+
     const toggled = toggleSomHighlight(selectedHighlight, nextHighlight);
     if (!toggled) {
       navigate({ pathname: location.pathname, search: "" }, { replace: true });
@@ -188,14 +212,15 @@ export function GenerationView({
   };
 
   const onSelectMetabolite = (m: MetaboliteRecord) => {
-    const url = metaboliteSelectUrl({
-      generations,
-      depth,
-      metaboliteSmiles: m.smiles,
-      childQuery,
-    });
     if (childQuery && childQuery === m.smiles) {
-      navigate(url);
+      navigate(
+        metaboliteSelectUrl({
+          generations,
+          depth,
+          metaboliteSmiles: m.smiles,
+          childQuery,
+        }),
+      );
       return;
     }
     const head =
@@ -208,11 +233,14 @@ export function GenerationView({
             )
           : null;
     const som = somFromMetabolite(m, resolved_query?.bonds?.idx);
-    const search = somToSearchParams({
-      atomIdxs: som?.atomIdxs,
-      bondIdx: som?.bondIdx,
-      head,
-    }).toString();
+    const search = withMetaboliteMetaParams(
+      somToSearchParams({
+        atomIdxs: som?.atomIdxs,
+        bondIdx: som?.bondIdx,
+        head,
+      }),
+      { pathway: m.pathway, score: m.score },
+    ).toString();
     navigate(
       moleculeFocusUrl({
         generations: [
@@ -252,17 +280,7 @@ export function GenerationView({
         depth === 0 ? "mx-auto relative w-full" : "mx-auto relative w-full"
       }
     >
-      {depth > 0 ? (
-        <div className="border-t-2 border-gray-300 mt-4 pt-4">
-          <div className="flex justify-center mb-3">
-            <GenerationMarker
-              depth={depth}
-              label={moleculeDisplayName(resolved_query?.name) || undefined}
-              size="md"
-            />
-          </div>
-        </div>
-      ) : null}
+      {depth > 0 ? <GenerationBanner depth={depth} className="mt-6 mb-4" /> : null}
 
       {showIdentity ? (
         <div className="px-2 pb-2">
@@ -271,6 +289,20 @@ export function GenerationView({
             showCopy
             headingLevel={depth === 0 ? 1 : 2}
           />
+          {depth > 0 &&
+          (metaboliteMeta.pathway || metaboliteMeta.score != null) ? (
+            <div className="mt-1 text-center text-xs text-gray-600">
+              {metaboliteMeta.pathway
+                ? formatPathwayLabel(metaboliteMeta.pathway)
+                : null}
+              {metaboliteMeta.pathway && metaboliteMeta.score != null
+                ? " · "
+                : null}
+              {metaboliteMeta.score != null
+                ? metaboliteMeta.score.toFixed(2)
+                : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -305,9 +337,7 @@ export function GenerationView({
                     selectionMode={mode}
                     selected={isSelectedHead ? selectedHighlight : null}
                     externalHover={isHoverHead ? hover?.highlight : null}
-                    onSelect={
-                      childQuery ? undefined : (hit) => applyHit(hit, i)
-                    }
+                    onSelect={(hit) => applyHit(hit, i)}
                     onHover={
                       childQuery
                         ? undefined

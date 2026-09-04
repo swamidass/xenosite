@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import GenerationMarker from "~/components/GenerationMarker";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import {
   formatPathwayLabel,
@@ -27,20 +26,20 @@ function labelFor(m: MetaboliteRecord): string {
 }
 
 /**
- * Top metabolites below a generation's predictions.
- * Layout matches prediction head flex wrap; unnamed metabolites leave the title blank.
+ * Metabolites below a generation's predictions.
+ * When a child hop is selected, shows only that metabolite (not "Top metabolites").
  */
 export default function MetabolitePanel({
   metabolites,
   selection,
   onSelectMetabolite,
   onHoverMetabolite,
-  depth = 0,
   selectedSmiles = null,
 }: MetabolitePanelProps) {
   const [removedSmiles, setRemovedSmiles] = useState<Set<string>>(
     () => new Set(),
   );
+  const pathSelected = !!selectedSmiles;
 
   const poolKey = useMemo(() => {
     const { shown } = rankMetabolites(metabolites, {
@@ -60,21 +59,25 @@ export default function MetabolitePanel({
   });
   const shown = pool
     .filter((m) => !removedSmiles.has(m.smiles))
-    .slice(0, METABOLITE_DISPLAY_CAP);
+    .slice(0, pathSelected ? 1 : METABOLITE_DISPLAY_CAP);
 
   if (!shown.length) return null;
 
   return (
     <section
-      className="mt-6 w-full mx-auto pt-6 border-t border-gray-300"
-      aria-label="Metabolites"
+      className={classNames(
+        "w-full mx-auto",
+        pathSelected ? "mt-4 pt-2" : "mt-6 pt-6 border-t border-gray-300",
+      )}
+      aria-label={pathSelected ? "Selected metabolite" : "Top metabolites"}
     >
-      <div className="flex flex-wrap items-center justify-center gap-2 mb-4 px-2">
-        <GenerationMarker depth={depth} />
-        <h2 className="text-sm font-semibold text-gray-700 m-0">
-          Top metabolites
-        </h2>
-      </div>
+      {pathSelected ? null : (
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-4 px-2">
+          <h2 className="text-sm font-semibold text-gray-700 m-0">
+            Top metabolites
+          </h2>
+        </div>
+      )}
       <ul className="flex mx-auto mb-4 justify-center flex-wrap gap-4 list-none p-0 m-0">
         {shown.map((m) => {
           const name = labelFor(m);
@@ -90,6 +93,9 @@ export default function MetabolitePanel({
                     : "hover:bg-gray-50",
                 )}
                 aria-pressed={selected}
+                title={
+                  selected ? "Click again to deselect" : undefined
+                }
                 onClick={() => onSelectMetabolite(m)}
                 onMouseEnter={() => onHoverMetabolite?.(m)}
                 onMouseLeave={() => onHoverMetabolite?.(null)}
@@ -115,14 +121,24 @@ export default function MetabolitePanel({
                 ) : (
                   <div className="h-4 mt-1" aria-hidden />
                 )}
-                {m.pathway ? (
-                  <div className="text-center text-[10px] text-gray-400">
-                    {formatPathwayLabel(m.pathway)}
-                  </div>
-                ) : null}
-                {typeof m.score === "number" ? (
-                  <div className="text-center text-[10px] text-gray-400">
-                    {m.score.toFixed(2)}
+                <div
+                  className={classNames(
+                    "text-center",
+                    selected
+                      ? "text-xs text-gray-700 font-medium"
+                      : "text-[10px] text-gray-400",
+                  )}
+                >
+                  {m.pathway ? (
+                    <div>{formatPathwayLabel(m.pathway)}</div>
+                  ) : null}
+                  {typeof m.score === "number" ? (
+                    <div>{m.score.toFixed(2)}</div>
+                  ) : null}
+                </div>
+                {selected ? (
+                  <div className="text-center text-[10px] text-gray-500 mt-0.5">
+                    Click to deselect
                   </div>
                 ) : null}
               </button>
