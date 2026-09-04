@@ -1,7 +1,9 @@
 /** @type {import('@remix-run/dev').AppConfig} */
 module.exports = {
   serverBuildTarget: "vercel",
-  ignoredRouteFiles: ["**/.*"],
+  // Test files under app/routes must not become real routes. Remix treats
+  // `og.test.ts` as `/og/test` and would `require("vitest")` at serverless boot.
+  ignoredRouteFiles: ["**/.*", "**/*.test.{js,jsx,ts,tsx}"],
   publicPath: "/build/",
   serverBuildPath: "api/index.js",
   serverMainFields: ["main", "module"],
