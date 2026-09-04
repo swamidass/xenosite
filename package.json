@@ -9,7 +9,7 @@
     "clean": "rm -fr public/build",
     "build:remix": "remix build",
     "build:rdkit": "cp -r ./node_modules/@rdkit/rdkit/Code/MinimalLib/dist rdkit && cp rdkit/*.wasm api",
-    "build": "yarn build:css && yarn build:sitemaps && remix build",
+    "build": "yarn test && yarn build:css && yarn build:sitemaps && remix build",
     "build:css": "tailwindcss -m -i ./styles/app.css -o app/styles/app.css",
     "build:sitemaps": "node scripts/build-sitemaps-from-inventory.js",
     "validate:sitemaps": "node scripts/validate-sitemaps.js",
