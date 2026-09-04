@@ -18,6 +18,19 @@ export type QueryResult = {
 };
 
 console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
+
+/** Query string for prediction / canonize requests. */
+export function backendQueryParams(smiles: string): URLSearchParams {
+  return new URLSearchParams({
+    query: decodeURIComponent(smiles),
+    depict: "true",
+    // atoms.cipRank for topological equivalence when matching pair sites.
+    detailed: "true",
+    // Forest metabolites for the site panel (capped/ranked in the UI).
+    metabolites: "true",
+  });
+}
+
 /**
  *
  * Call the XenoSite backend API
@@ -29,13 +42,7 @@ console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
 export const backend_api = async (smiles: string | null, url: string) => {
   if (!smiles) return {};
 
-  const req =
-    `${XENOSITE_BACKEND}${url}?` +
-    new URLSearchParams({
-      query: decodeURIComponent(smiles),
-      depict: "true",
-      detailed: "false",
-    });
+  const req = `${XENOSITE_BACKEND}${url}?` + backendQueryParams(smiles);
   console.log("Fetching " + req);
 
   return (await fetch(req, { headers: XENOSITE_HEADERS })).json().catch((_e) => null);
@@ -58,6 +65,17 @@ export const resolve_query = async (
   if (response && response.name && response.name.chebi) {
     const chebi_url = `https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:${response.name.chebi.toString()}`;
     response.name["chebiUrl"] = chebi_url;
+  }
+
+  // Best-effort metabolite name links when API attaches name.chebi
+  if (response?.results) {
+    for (const r of response.results) {
+      for (const m of r.metabolite || []) {
+        if (m?.name?.chebi && !m.name.chebiUrl) {
+          m.name.chebiUrl = `https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:${m.name.chebi.toString()}`;
+        }
+      }
+    }
   }
 
   if (!response) response = {};

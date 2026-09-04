@@ -1,7 +1,14 @@
 
 import stylesheet from "~/styles/app.css";
 import { redirect, json } from "@remix-run/node";
-import type { HeadersFunction, LinksFunction, LoaderFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import type {
+  HeadersFunction,
+  LinksFunction,
+  LoaderFunction,
+  LoaderFunctionArgs,
+  MetaFunction,
+  ShouldRevalidateFunction,
+} from "@remix-run/node";
 import {
   Link,
   Links,
@@ -11,18 +18,31 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
-  useFetcher, 
-  useMatches, 
+  useFetcher,
+  useMatches,
   useNavigate,
   useRouteError,
 } from "@remix-run/react";
 import { useNavigation } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { ModelTabs, Spinner } from "~/components";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  AboutModel,
+  Loading,
+  MetabolitePathNav,
+  ModelTabs,
+  MoleculeIdentity,
+  Spinner,
+  XDot,
+  Gtag,
+} from "~/components";
 import HEADERS from "~/loaders/headers";
 import { getQueryUrl } from "~/utils";
-import { XDot, Gtag } from "~/components";
 import { MODELS } from "~/data";
+import {
+  parseMoleculeFocusPath,
+} from "~/utils/metabolitePath";
+import { isSearchBoxNavigation } from "~/utils/navigationLoading";
+import { buildPathCrumbs } from "~/utils/pathNav";
 
 
 export const headers: HeadersFunction = ({
@@ -52,6 +72,29 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
   return json({ gaTrackingId: process.env.GA_TRACKING_ID });
 };
 
+/**
+ * Root only holds GA config — skip refetch on nested /m/ hops and SOM params.
+ */
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  currentUrl,
+  nextUrl,
+  formMethod,
+  defaultShouldRevalidate,
+}) => {
+  if (formMethod && formMethod !== "GET") return defaultShouldRevalidate;
+  const cur = parseMoleculeFocusPath(currentUrl.pathname);
+  const next = parseMoleculeFocusPath(nextUrl.pathname);
+  if (
+    cur &&
+    next &&
+    cur.model === next.model &&
+    cur.segments[0] === next.segments[0]
+  ) {
+    return false;
+  }
+  return defaultShouldRevalidate;
+};
+
 export const meta: MetaFunction = () => [
   { charSet: "utf-8" },
   { viewport: "width=device-width,initial-scale=1" },
@@ -59,11 +102,16 @@ export const meta: MetaFunction = () => [
 
 function SiteLogo() {
   return (
-    <p className="text-4xl inline font-bold pr-3 relative">
-      <span className="inset-0 absolute -top-2 -z-10">
+    <p className="text-4xl inline font-bold pr-3 relative overflow-visible z-0">
+      <span
+        className="pointer-events-none absolute -top-2 left-0 -z-[1]"
+        aria-hidden
+      >
         <XDot className="w-[4em] m-auto opacity-25" />
       </span>
-      <Link to="/" reloadDocument>XenoSite</Link>
+      <Link className="relative" to="/" reloadDocument>
+        XenoSite
+      </Link>
     </p>
   );
 }
@@ -71,23 +119,57 @@ function SiteLogo() {
 export default function App() {
   const fetcher = useFetcher();
   const matches = useMatches();
-  const query = matches[matches.length - 1].params?.query;
-  const model = matches[matches.length - 1].params?.model || (query ? "_" : "");
+  const leaf = matches[matches.length - 1];
+  const parsed = parseMoleculeFocusPath(leaf?.pathname || "");
+  // Search box always reflects the root molecule, not a nested metabolite.
+  const query =
+    parsed?.segments?.[0] ||
+    leaf?.params?.query;
+  const model =
+    parsed?.model ||
+    leaf?.params?.model ||
+    (query ? "_" : "");
   const navigate = useNavigate();
   const transition = useNavigation();
   const message = "";
-  const [new_query, setNewQuery] = useState<string | null>(query || '');
+  const [new_query, setNewQuery] = useState<string | null>(query || "");
+
+  const rootMoleculeData = useMemo(() => {
+    for (const m of matches) {
+      const d = m.data as { resolved_query?: unknown } | undefined;
+      if (d && typeof d === "object" && "resolved_query" in d) {
+        return d as {
+          resolved_query?: any;
+          query?: string;
+          model?: string;
+        };
+      }
+    }
+    return null;
+  }, [matches]);
+
+  const pathCrumbs = useMemo(() => {
+    const generations = parsed?.generations;
+    if (!generations?.length) return [];
+    return buildPathCrumbs({ generations });
+  }, [parsed?.generations]);
 
   useEffect(() => {
-      if (new_query === query) return;
+    setNewQuery(query || "");
+  }, [query]);
 
-      const debounced = setTimeout(() => {
-          navigate(getQueryUrl({model, query: new_query}));
-      }, 300);
-      return () => {
-          clearTimeout(debounced);
-      };
+  useEffect(() => {
+    if (new_query === query) return;
+
+    const debounced = setTimeout(() => {
+      navigate(getQueryUrl({ model, query: new_query }));
+    }, 300);
+    return () => {
+      clearTimeout(debounced);
+    };
   }, [new_query, model, query, navigate]);
+
+  const hasMolecule = !!rootMoleculeData?.resolved_query && !rootMoleculeData.resolved_query?.detail;
 
   return (
     <html lang="en">
@@ -96,51 +178,74 @@ export default function App() {
         <Links />
       </head>
       <body>
+        <MetabolitePathNav crumbs={pathCrumbs} />
         <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
           <SiteLogo />
+          <div className="overflow-x-hidden">
           <>
-              {/* Search Input */}
-              <fetcher.Form
-                  method="GET"
-                  className="mt-10 pt-10 block w-full "
-                  onChange={(e) => {
-                      const query = (e.target as HTMLInputElement).value;
-                      setNewQuery(query);
-                  }}
-              >
-                  <input
-                      type="text"
-                      className="placeholder:text-red-400 placeholder:text-sm text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
-                      name="search"
-                      placeholder="Type in a molecule name or SMILES string."
-                      defaultValue={query}
-                  />
-                      {model ? (
-                          <input
-                              type="text"
-                              className="hidden"
-                              name="model"
-                              defaultValue={model}
-                          />
-                      ) : null}
-                  <input className="hidden" type="submit" />
-              </fetcher.Form>
+            <fetcher.Form
+              method="GET"
+              className="mt-10 pt-10 block w-full "
+              onChange={(e) => {
+                const q = (e.target as HTMLInputElement).value;
+                setNewQuery(q);
+              }}
+            >
+              <input
+                type="text"
+                className="placeholder:text-red-400 placeholder:text-sm text-center text-2xl pb-2 border-b-2 w-full max-w-[80vw] mx-auto block focus-visible:outline-0"
+                name="search"
+                placeholder="Type in a molecule name or SMILES string."
+                defaultValue={query}
+                key={query || "empty"}
+              />
+              {model ? (
+                <input
+                  type="text"
+                  className="hidden"
+                  name="model"
+                  defaultValue={model}
+                />
+              ) : null}
+              <input className="hidden" type="submit" />
+            </fetcher.Form>
 
-              {/* Search Error Message */}
-              <div className="h-8 text-center  py-3">
-                  {message ? <div className="text-red-400 text-sm">{message}</div> : null}
-              </div>
+            <div className="h-8 text-center py-3">
+              {message ? (
+                <div className="text-red-400 text-sm">{message}</div>
+              ) : null}
+            </div>
 
-              {/* Search Model Filter & Results */}
-              <ModelTabs>
-                  {transition.state != "idle" && new_query ? 
-                      <Spinner /> :
-                      <Outlet />
-                  }
-              </ModelTabs>
+            {/* Stable identity slot under query — keeps model tabs from bouncing. */}
+            <div className="min-h-[4.5rem] flex flex-col justify-center">
+              {hasMolecule ? (
+                <MoleculeIdentity
+                  resolved_query={rootMoleculeData!.resolved_query}
+                  showCopy
+                />
+              ) : null}
+            </div>
+
+            {/* Primary model menu: changes only the root generation's model. */}
+            <ModelTabs generations={parsed?.generations} depth={0} />
+            {model && model !== "_" ? <AboutModel model={model} /> : null}
+
+            {/* Only unmount the outlet while the search box changes the root molecule.
+                Nested /m/ hops keep the same draft query and must keep the parent mounted. */}
+            {isSearchBoxNavigation(query, new_query, transition.state) ? (
+              <Spinner />
+            ) : (
+              <Suspense fallback={<Spinner />}>
+                <Outlet />
+              </Suspense>
+            )}
+            {/* Extra scroll room so metabolite/SOM layout shifts don't bounce the page. */}
+            <div className="h-[80vh] w-full" aria-hidden />
           </>
-        </div> 
+          </div>
+        </div>
 
+        <Loading />
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" ? <LiveReload /> : <Gtag />}

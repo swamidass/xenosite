@@ -1,3 +1,108 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Always light — molecule depictions are hard to read under dark UA chrome. */
+:root {
+  color-scheme: light;
+}
+
+html {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+/* SOM overlay on InteractiveMoleculeDepiction — alphas: hover > selected */
+.som-overlay {
+  --som-selected-black-alpha: 0.5;
+  --som-selected-white-alpha: 1;
+  --som-hover-black-alpha: 0.9;
+  --som-hover-white-alpha: 0.85;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.som-overlay__hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.som-overlay__mark--selected.som-overlay__mark--black {
+  stroke: rgba(0, 0, 0, var(--som-selected-black-alpha));
+}
+.som-overlay__mark--selected.som-overlay__mark--white {
+  stroke: rgba(255, 255, 255, var(--som-selected-white-alpha));
+}
+.som-overlay__mark--hover.som-overlay__mark--black {
+  stroke: rgba(0, 0, 0, var(--som-hover-black-alpha));
+  fill: rgba(0, 0, 0, 0.06);
+}
+.som-overlay__mark--hover.som-overlay__mark--white {
+  stroke: rgba(255, 255, 255, var(--som-hover-white-alpha));
+}
+
+.som-overlay__mark {
+  fill: none;
+  pointer-events: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes som-selected-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.4);
+  }
+}
+
+.som-overlay__mark--selected {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: som-selected-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .som-overlay__mark--selected {
+    animation: none;
+  }
+}
+
+.interactive-molecule {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.interactive-molecule__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Pathway / probability over PlotDot — black fill, white halo via drop-shadow. */
+.metabolite-meta-label {
+  color: #000;
+  font-weight: 600;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff)
+    drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
+    drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff);
+}

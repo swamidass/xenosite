@@ -12,5 +12,5 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Model() {
-    return <ModelDescriptions />
+  return <ModelDescriptions />;
 }

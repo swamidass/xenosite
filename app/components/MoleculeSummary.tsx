@@ -1,5 +1,6 @@
 import { capitalize } from "~/utils";
 import { resolveModelInfo } from "~/data";
+import CopyableSmiles from "~/components/CopyableSmiles";
 
 function last_name(name: string) {
     const words = name.split(".");
@@ -70,8 +71,10 @@ export default function MoleculeSummary({ resolved_query, model }: ResultSummary
               ) : null}
 
               {/* Description */}
-              <div className="pb-3 text-xs  text-gray-500">
-                {resolved_query?.smiles}
+              <div className="pb-3 text-xs text-gray-500">
+                {resolved_query?.smiles ? (
+                  <CopyableSmiles smiles={resolved_query.smiles} />
+                ) : null}
               </div>
               {resolved_name.description} 
               {/* Chebi Id */}

@@ -185,18 +185,32 @@ export type SwamidassApiData = {
   resolved_query: {
     smiles: string,
     results: {
-      name: string,
-      description: string,
+      name?: string,
+      description?: string,
       depiction?: string,
-      chebi: number,
-      chebiUrl: string,
+      chebi?: number,
+      chebiUrl?: string,
       model?: string,
+      atom?: number[],
+      bond?: number[],
+      metabolite?: {
+        smiles: string,
+        atom?: number[],
+        pathway?: string,
+        score?: number,
+        name?: {
+          name?: string,
+          chebi?: number,
+          chebiUrl?: string,
+          description?: string,
+        },
+      }[],
     }[],
     atoms: {
       num: number
     },
     bonds: {
-      idx: number[]
+      idx: [number, number][] | number[][]
     },
     name?: {
       name: string,
@@ -205,7 +219,8 @@ export type SwamidassApiData = {
       chebiUrl: string
     }
   },
-  model: string
+  model: string,
+  segments?: string[],
 }
 
 declare module "react" {

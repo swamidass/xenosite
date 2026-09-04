@@ -1,5 +1,10 @@
 import { useNavigation } from "@remix-run/react";
 
+/**
+ * Fixed corner progress indicator. Mount once in the app shell; it activates
+ * whenever Remix navigation is in flight (root search or nested metabolite
+ * prediction fetches).
+ */
 export default function Loading() {
   const navigation = useNavigation();
   const active = navigation.state !== "idle";
@@ -10,7 +15,7 @@ export default function Loading() {
       aria-valuetext={active ? "Loading" : undefined}
       aria-hidden={!active}
       className={
-        "pointer-events-none fixed left-0 bottom-0 z-50 p-4 navigation-all duration-500 ease-out" +
+        "pointer-events-none fixed left-0 bottom-0 z-50 p-4 transition-all duration-500 ease-out " +
         (active ? "translate-y-0" : "translate-y-full")
       }
     >
