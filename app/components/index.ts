@@ -13,6 +13,7 @@ export { default as MetabolitePathNav } from "./MetabolitePathNav";
 export { default as GenerationMarker } from "./GenerationMarker";
 export { default as GenerationBanner } from "./GenerationBanner";
 export { default as CopyJsonButton } from "./CopyJsonButton";
+export { default as CopyableSmiles } from "./CopyableSmiles";
 export { default as Spinner } from "./Spinner";
 export { default as XDot } from "./XDot";
 export { default as OpenGraphImage } from "./OpenGraphImage";

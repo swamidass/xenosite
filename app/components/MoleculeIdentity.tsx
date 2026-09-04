@@ -1,4 +1,5 @@
 import { Disclosure } from "@headlessui/react";
+import CopyableSmiles from "~/components/CopyableSmiles";
 import CopyJsonButton from "~/components/CopyJsonButton";
 import { moleculeDisplayName } from "~/utils/moleculeIdentity";
 import { classNames } from "~/utils";
@@ -56,14 +57,7 @@ export default function MoleculeIdentity({
       ) : null}
 
       <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-gray-600">
-        {smiles ? (
-          <code
-            className="font-mono text-[11px] sm:text-xs text-gray-600 break-all"
-            title={smiles}
-          >
-            {smiles}
-          </code>
-        ) : null}
+        {smiles ? <CopyableSmiles smiles={smiles} /> : null}
         {chebi && chebiUrl ? (
           <a
             className="underline text-gray-700 hover:text-gray-900"
