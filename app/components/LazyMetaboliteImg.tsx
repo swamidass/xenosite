@@ -9,8 +9,8 @@ type LazyMetaboliteImgProps = {
 };
 
 /**
- * Lazy plain depiction for metabolite grid cards via /depict proxy.
- * On failure, logs to the console and notifies the parent to drop the card.
+ * Lazy plain depiction for metabolite cards via /depict proxy.
+ * Uses the same CSS sizing as InteractiveMoleculeDepiction (intrinsic SVG size).
  */
 export default function LazyMetaboliteImg({
   smiles,
@@ -72,18 +72,23 @@ export default function LazyMetaboliteImg({
   if (!src) {
     return (
       <div
-        className={`min-h-[4rem] bg-gray-50 animate-pulse ${className || ""}`}
+        className={`interactive-molecule ${className || ""}`.trim()}
         aria-hidden
-      />
+      >
+        <div className="h-[6.5rem] w-[8rem] animate-pulse bg-gray-50" />
+      </div>
     );
   }
 
   return (
-    <img
-      className={`max-w-full mx-auto ${className || ""}`}
-      src={src}
-      alt={alt}
-      loading="lazy"
-    />
+    <div className={`interactive-molecule ${className || ""}`.trim()}>
+      <img
+        className="interactive-molecule__img"
+        src={src}
+        alt={alt}
+        loading="lazy"
+        draggable={false}
+      />
+    </div>
   );
 }

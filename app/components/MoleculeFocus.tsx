@@ -484,11 +484,7 @@ export function GenerationView({
   const plainStructure =
     depth > 0 && !predictionReady && hopSmiles ? (
       <div className="w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4">
-        <LazyMetaboliteImg
-          smiles={hopSmiles}
-          alt={moleculeName}
-          className="max-h-40"
-        />
+        <LazyMetaboliteImg smiles={hopSmiles} alt={moleculeName} />
       </div>
     ) : null;
 
