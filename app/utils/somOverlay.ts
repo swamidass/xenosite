@@ -6,12 +6,12 @@ export function somStrokeWidths(scale: number): {
   black: number;
   white: number;
 } {
-  return { black: scale * 0.35, white: scale * 0.22 };
+  return { black: scale * 0.18, white: scale * 0.11 };
 }
 
 /** Circle radius for atom marks (SVG user units). */
 export function somAtomRadius(scale: number): number {
-  return scale * 0.55;
+  return scale * 0.5;
 }
 
 export type SomHighlight = {

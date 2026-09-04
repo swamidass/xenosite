@@ -147,8 +147,17 @@ export default function InteractiveMoleculeDepiction({
   const hoverSource = pointerHover || externalHover;
   const hoverMarks = useMemo(() => {
     if (!meta || !hoverSource) return [];
+    // Avoid stacking a hover ring on top of the same selected site.
+    if (
+      selected &&
+      selected.bondIdx === hoverSource.bondIdx &&
+      selected.atomIdxs.length === hoverSource.atomIdxs.length &&
+      selected.atomIdxs.every((a, i) => a === hoverSource.atomIdxs[i])
+    ) {
+      return [];
+    }
     return buildOverlayMarks(hoverSource, meta.coords, bonds);
-  }, [meta, hoverSource, bonds]);
+  }, [meta, hoverSource, bonds, selected]);
 
   const vb = meta?.viewBox;
 

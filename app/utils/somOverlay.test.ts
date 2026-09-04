@@ -9,14 +9,14 @@ import {
 describe("somStrokeWidths", () => {
   it("scales stroke with depiction scale", () => {
     const { black, white } = somStrokeWidths(20);
-    expect(black).toBe(7);
-    expect(white).toBe(4.4);
+    expect(black).toBeCloseTo(3.6);
+    expect(white).toBeCloseTo(2.2);
   });
 });
 
 describe("somAtomRadius", () => {
   it("scales with depiction scale", () => {
-    expect(somAtomRadius(20)).toBe(11);
+    expect(somAtomRadius(20)).toBe(10);
   });
 });
 

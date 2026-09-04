@@ -18,8 +18,8 @@ const bonds: [number, number][] = [
 
 describe("hitTestAtom", () => {
   it("hits nearest atom within radius", () => {
-    expect(hitTestAtom(1, 1, coords, 20)).toBe(0);
-    expect(hitTestAtom(19, 1, coords, 20)).toBe(1);
+    expect(hitTestAtom(1, 1, coords, 20)?.idx).toBe(0);
+    expect(hitTestAtom(19, 1, coords, 20)?.idx).toBe(1);
   });
 
   it("returns null when far from all atoms", () => {
@@ -29,7 +29,7 @@ describe("hitTestAtom", () => {
 
 describe("hitTestBond", () => {
   it("hits a bond near the segment midpoint", () => {
-    expect(hitTestBond(10, 1, coords, bonds, 20)).toBe(0);
+    expect(hitTestBond(10, 1, coords, bonds, 20)?.idx).toBe(0);
   });
 
   it("returns null away from bonds", () => {
@@ -57,6 +57,28 @@ describe("resolveHit", () => {
     });
     expect(hit?.kind).toBe("bond");
     expect(hit?.bondIdx).toBe(0);
+  });
+
+  it("selects bond midpoints in atom+bond mode", () => {
+    // Midpoint of bond 0 is (10,0); with tighter atom radius it is outside atoms.
+    const hit = resolveHit(10, 0, {
+      coords,
+      bondsIdx: bonds,
+      scale: 20,
+      mode: "atom+bond",
+    });
+    expect(hit?.kind).toBe("bond");
+    expect(hit?.bondIdx).toBe(0);
+  });
+
+  it("still selects atoms near endpoints in atom+bond mode", () => {
+    const hit = resolveHit(1, 0, {
+      coords,
+      bondsIdx: bonds,
+      scale: 20,
+      mode: "atom+bond",
+    });
+    expect(hit).toEqual({ kind: "atom", atomIdxs: [0] });
   });
 });
 

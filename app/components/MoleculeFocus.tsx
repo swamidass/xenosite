@@ -83,7 +83,8 @@ export function GenerationView({
   showPanel = false,
 }: GenerationViewProps) {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [hover, setHover] = useState<{
     highlight: SomHighlight;
     headIndex: number;
@@ -143,16 +144,18 @@ export function GenerationView({
 
   const applyHit = (hit: SiteHit | null, headIndex: number) => {
     if (childQuery) return;
+    // Replace the search string entirely so a new SOM never stacks on the prior one.
     if (!hit) {
-      setSearchParams({}, { replace: true });
+      navigate({ pathname: location.pathname, search: "" }, { replace: true });
       return;
     }
-    setSearchParams(
-      somToSearchParams({
-        atomIdxs: hit.atomIdxs,
-        bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
-        head: encodeHeadParam(headIndex, results),
-      }),
+    const search = somToSearchParams({
+      atomIdxs: hit.atomIdxs,
+      bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
+      head: encodeHeadParam(headIndex, results),
+    }).toString();
+    navigate(
+      { pathname: location.pathname, search: search ? `?${search}` : "" },
       { replace: true },
     );
   };
