@@ -7,6 +7,6 @@ describe("backendQueryParams", () => {
     expect(p.get("query")).toBe("aspirin");
     expect(p.get("depict")).toBe("true");
     expect(p.get("metabolites")).toBe("true");
-    expect(p.get("detailed")).toBe("false");
+    expect(p.get("detailed")).toBe("true");
   });
 });

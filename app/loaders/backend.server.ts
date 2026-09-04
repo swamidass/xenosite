@@ -24,7 +24,8 @@ export function backendQueryParams(smiles: string): URLSearchParams {
   return new URLSearchParams({
     query: decodeURIComponent(smiles),
     depict: "true",
-    detailed: "false",
+    // atoms.cipRank for topological equivalence when matching pair sites.
+    detailed: "true",
     // Forest metabolites for the site panel (capped/ranked in the UI).
     metabolites: "true",
   });
