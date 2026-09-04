@@ -280,10 +280,8 @@ export function GenerationView({
         depth === 0 ? "mx-auto relative w-full" : "mx-auto relative w-full"
       }
     >
-      {depth > 0 ? <GenerationBanner depth={depth} className="mt-6 mb-4" /> : null}
-
       {showIdentity ? (
-        <div className="px-2 pb-2">
+        <div className={depth > 0 ? "px-2 pb-2 mt-6" : "px-2 pb-2"}>
           <MoleculeIdentity
             resolved_query={resolved_query}
             showCopy
@@ -358,15 +356,23 @@ export function GenerationView({
         </div>
       </div>
 
+      {/*
+        Generation N bar sits between this generation's predictions and its
+        metabolites (Gen 1: parent mol → metabolite structure / list;
+        Gen 2+: nested predictions → inferred metabolites).
+      */}
       {showPanel ? (
-        <MetabolitePanel
-          metabolites={metabolites}
-          selection={panelSelection}
-          selectedSmiles={childQuery}
-          depth={depth}
-          onSelectMetabolite={onSelectMetabolite}
-          onHoverMetabolite={onHoverMetabolite}
-        />
+        <>
+          <GenerationBanner depth={depth} className="mt-2 mb-4" />
+          <MetabolitePanel
+            metabolites={metabolites}
+            selection={panelSelection}
+            selectedSmiles={childQuery}
+            depth={depth}
+            onSelectMetabolite={onSelectMetabolite}
+            onHoverMetabolite={onHoverMetabolite}
+          />
+        </>
       ) : null}
 
       {/* Nested generations render after this generation's metabolite panel. */}
