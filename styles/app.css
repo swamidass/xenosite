@@ -61,6 +61,30 @@ body {
   stroke-linejoin: round;
 }
 
+@keyframes som-selected-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.4);
+  }
+}
+
+.som-overlay__mark--selected {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: som-selected-pulse 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .som-overlay__mark--selected {
+    animation: none;
+  }
+}
+
 .interactive-molecule {
   position: relative;
   display: inline-block;
