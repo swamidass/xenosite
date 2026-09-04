@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Always light — molecule depictions are hard to read under dark UA chrome. */
+:root {
+  color-scheme: light;
+}
+
+html {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+body {
+  background-color: #ffffff;
+  color: #111827;
+}
+
 /* SOM overlay on InteractiveMoleculeDepiction — alphas: hover > selected */
 .som-overlay {
   --som-selected-black-alpha: 0.5;
