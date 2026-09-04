@@ -14,9 +14,10 @@ help:
 	@echo "  make sitemap-inventory-rebuild   Rebuild inventory JSON from checkpoint (no API)"
 	@echo "  make sitemaps                    Build public/sitemap/*.xml.gz from inventory (or checkpoint)"
 	@echo "  make validate-sitemaps           Check gzip, XML syntax, index URLs, and robots.txt"
-	@echo "  make check-site URL=https://xenosite.org   Live SEO/sitemap smoke tests"
+	@echo "  make check-site URL=https://xenosite.org   Live HTTP + browser smoke tests"
 	@echo "  make check-site URL=http://localhost:3000"
 	@echo "  make check-site URL=https://<preview>.vercel.app"
+	@echo "  CHECK_SITE_SKIP_BROWSER=1 make check-site URL=...   HTTP only"
 	@echo "  make clean-sitemaps              Remove generated gz/index under public/sitemap"
 
 sitemap-candidates:
