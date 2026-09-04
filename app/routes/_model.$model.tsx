@@ -68,7 +68,7 @@ export default function Model() {
   const hasMolecule =
     !!query ||
     (leaf?.id || "").includes("$query") ||
-    (leaf?.pathname || "").includes("/m/");
+    !!(leaf?.params as { m1?: string } | undefined)?.m1;
 
   // Model tabs / about live in root (under search). This layout only hosts content.
   if (model == "_" || !model) {

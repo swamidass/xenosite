@@ -6,7 +6,7 @@ import type {
 } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { Loading } from "~/components";
+import { Spinner } from "~/components";
 import { MoleculeFocusRootLayout } from "~/components/MoleculeFocus";
 import { resolveModelInfo, type XenositeModelInfo } from "~/data";
 import HEADERS from "~/loaders/headers";
@@ -24,6 +24,7 @@ import {
 import {
   moleculeFocusUrl,
   parseMoleculeFocusPath,
+  smilesFromMolStubParam,
 } from "~/utils/metabolitePath";
 
 export type RootMoleculeLoaderData = {
@@ -32,10 +33,12 @@ export type RootMoleculeLoaderData = {
   resolved_query: any;
 };
 
-/** Root molecule only — nested /m/* hops load in the child route. */
+/** Root molecule only — nested hops load in child routes. */
 export async function loader({ params }: LoaderFunctionArgs) {
   const model = params.model || "";
-  const query = params.query || "";
+  const rawQuery = params.query || "";
+  // Mol stub may include `;som` — predict with SMILES only.
+  const query = smilesFromMolStubParam(rawQuery) || rawQuery;
   const { resolved_query } = await resolve_query({ model, query });
   return json(
     { model, query, resolved_query: resolved_query || {} } satisfies RootMoleculeLoaderData,
@@ -44,7 +47,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
 }
 
 /**
- * Skip refetch when only nested /m/* hops or search params change.
+ * Skip refetch when only nested hops, SOM stub, or search params change.
  */
 export const shouldRevalidate: ShouldRevalidateFunction = ({
   currentParams,
@@ -57,7 +60,8 @@ export function shouldRevalidateRootMolecule(
 ): boolean {
   return (
     currentParams.model !== nextParams.model ||
-    currentParams.query !== nextParams.query
+    smilesFromMolStubParam(currentParams.query) !==
+      smilesFromMolStubParam(nextParams.query)
   );
 }
 
@@ -139,7 +143,7 @@ export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
 
 export default function MoleculeFocusRootRoute() {
   const data = useLoaderData() as RootMoleculeLoaderData;
-  if (!data?.model || !data?.query) return <Loading />;
+  if (!data?.model || !data?.query) return <Spinner />;
   return (
     <MoleculeFocusRootLayout
       resolved_query={data.resolved_query}
