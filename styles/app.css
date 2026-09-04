@@ -6,8 +6,8 @@
 .som-overlay {
   --som-selected-black-alpha: 0.5;
   --som-selected-white-alpha: 1;
-  --som-hover-black-alpha: 0.85;
-  --som-hover-white-alpha: 0.55;
+  --som-hover-black-alpha: 0.9;
+  --som-hover-white-alpha: 0.85;
   position: absolute;
   inset: 0;
   width: 100%;

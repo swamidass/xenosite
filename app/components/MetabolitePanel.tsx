@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import { capitalize } from "~/utils";
 import {
+  formatPathwayLabel,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
   type MetaboliteRecord,
@@ -101,7 +102,7 @@ export default function MetabolitePanel({
               </div>
               {m.pathway ? (
                 <div className="text-[10px] text-center text-gray-400">
-                  {m.pathway}
+                  {formatPathwayLabel(m.pathway)}
                 </div>
               ) : null}
               {typeof m.score === "number" ? (

@@ -45,6 +45,18 @@ export type SiteSelection = {
 export const METABOLITE_SCORE_THRESHOLD = 0.01;
 export const METABOLITE_DISPLAY_CAP = 5;
 
+/** `NitrogenOxidation` → `nitrogen oxidation`; already spaced labels pass through. */
+export function formatPathwayLabel(pathway: string | null | undefined): string {
+  if (!pathway) return "";
+  return String(pathway)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function scoreOf(m: MetaboliteRecord) {
   return typeof m.score === "number" && Number.isFinite(m.score) ? m.score : 0;
 }

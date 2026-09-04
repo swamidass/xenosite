@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
+  formatPathwayLabel,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
 } from "./metabolites";
@@ -121,5 +122,13 @@ describe("collectMetabolites", () => {
     expect(list).toHaveLength(3);
     expect(list.map((m) => m.headIndex)).toEqual([0, 1, 1]);
     expect(list[1].headModel).toBe("phase1.hydrolysis");
+  });
+});
+
+describe("formatPathwayLabel", () => {
+  it("splits CamelCase into lower-case words", () => {
+    expect(formatPathwayLabel("NitrogenOxidation")).toBe("nitrogen oxidation");
+    expect(formatPathwayLabel("Hydrolysis")).toBe("hydrolysis");
+    expect(formatPathwayLabel("NDealkylation")).toBe("n dealkylation");
   });
 });

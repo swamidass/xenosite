@@ -89,6 +89,16 @@ When assembling `results[].metabolite`, **do not emit** products whose SMILES RD
 
 ---
 
+## 5. Emit both products for cleavage reactions
+
+For bond-cleavage pathways (e.g. ester **hydrolysis** of aspirin), emit **every** product fragment for that site, not only the largest one.
+
+**Example (aspirin, atoms `[1,3]`):** live `phase1.hydrolysis` returns only salicylic acid (`O=C(O)c1ccccc1O`). The complementary acetic acid (`CC(=O)O`) appears under `phase1.unstable_oxygenation` / `Dealkylation` at score ~0.01 instead. The site UI therefore shows only “one half” of the hydrolysis.
+
+**Verify:** aspirin hydrolysis metabolites for the ester site include both salicylic acid and acetic acid (or acetate).
+
+---
+
 ## Out of scope for this API pass
 
 - Bioactivation as a live site model
@@ -103,4 +113,5 @@ When assembling `results[].metabolite`, **do not emit** products whose SMILES RD
 3. `Metabolite.name` is optional and populated best-effort.
 4. Prediction path never Xenopicts the metabolite list.
 5. Metabolite lists omit SMILES RDKit cannot parse/sanitize.
-6. Prediction model routes return 200 with ONNX available (blocked on current deploy).
+6. Cleavage reactions emit all product fragments for the site.
+7. Prediction model routes return 200 with ONNX available (blocked on current deploy).
