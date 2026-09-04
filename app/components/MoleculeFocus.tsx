@@ -14,6 +14,7 @@ import GenerationBanner from "~/components/GenerationBanner";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import MetabolitePanel from "~/components/MetabolitePanel";
+import PlotDotScaleBar from "~/components/PlotDotScaleBar";
 import MoleculeIdentity from "~/components/MoleculeIdentity";
 import { ModelTabs } from "~/components/ModelTabs";
 import Spinner from "~/components/Spinner";
@@ -429,54 +430,61 @@ export function GenerationView({
           : "w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4"
       }
     >
-      <div className="flex mx-auto mb-4 justify-center flex-wrap gap-4">
-        {results.map((r: any, i: number) => {
-          const mode = selectionModeFromResult(r);
-          const isSelectedHead = selectedHeadIndex === i;
-          const isHoverHead = hover?.headIndex === i;
-          return (
-            <div key={r.model || i} className="mx-2 max-w-full">
-              {r.depiction ? (
-                <InteractiveMoleculeDepiction
-                  svg={r.depiction}
-                  alt={`${moleculeName} ${
-                    results.length > 1 ? last_name(r.model) : modelLabel
-                  } prediction`}
-                  bondsIdx={resolved_query?.bonds?.idx}
-                  selectionMode={mode}
-                  selected={isSelectedHead ? selectedHighlight : null}
-                  externalHover={isHoverHead ? hover?.highlight : null}
-                  onSelect={(hit) => applyHit(hit, i)}
-                  onHover={(hit) => {
-                    const sel = hitToSiteSelection(hit);
-                    setSiteHover(sel ? { ...sel, headIndex: i } : null);
-                  }}
-                />
-              ) : null}
-              {results.length > 1 ? (
-                <button
-                  type="button"
-                  className={classNames(
-                    "block mx-auto text-center w-100 text-xs mt-1 min-h-[2rem] px-2 rounded",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
-                    isSelectedHead
-                      ? "bg-gray-900 text-white font-medium"
-                      : "text-gray-500 hover:bg-gray-100 hover:text-gray-800",
-                  )}
-                  aria-pressed={isSelectedHead}
-                  title={
-                    isSelectedHead
-                      ? "Click to show all metabolites"
-                      : "Show metabolites from this model"
-                  }
-                  onClick={() => toggleHeadFilter(i)}
-                >
-                  {last_name(r.model)}
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
+      <div className="flex mx-auto mb-4 justify-center items-center gap-3 sm:gap-4">
+        <div className="flex justify-center flex-wrap gap-4 min-w-0">
+          {results.map((r: any, i: number) => {
+            const mode = selectionModeFromResult(r);
+            const isSelectedHead = selectedHeadIndex === i;
+            const isHoverHead = hover?.headIndex === i;
+            return (
+              <div key={r.model || i} className="mx-2 max-w-full">
+                {r.depiction ? (
+                  <InteractiveMoleculeDepiction
+                    svg={r.depiction}
+                    alt={`${moleculeName} ${
+                      results.length > 1 ? last_name(r.model) : modelLabel
+                    } prediction`}
+                    bondsIdx={resolved_query?.bonds?.idx}
+                    selectionMode={mode}
+                    selected={isSelectedHead ? selectedHighlight : null}
+                    externalHover={isHoverHead ? hover?.highlight : null}
+                    onSelect={(hit) => applyHit(hit, i)}
+                    onHover={(hit) => {
+                      const sel = hitToSiteSelection(hit);
+                      setSiteHover(sel ? { ...sel, headIndex: i } : null);
+                    }}
+                  />
+                ) : null}
+                {results.length > 1 ? (
+                  <button
+                    type="button"
+                    className={classNames(
+                      "block mx-auto text-center w-100 text-xs mt-1 min-h-[2rem] px-2 rounded",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
+                      isSelectedHead
+                        ? "bg-gray-900 text-white font-medium"
+                        : "text-gray-500 hover:bg-gray-100 hover:text-gray-800",
+                    )}
+                    aria-pressed={isSelectedHead}
+                    title={
+                      isSelectedHead
+                        ? "Click to show all metabolites"
+                        : "Show metabolites from this model"
+                    }
+                    onClick={() => toggleHeadFilter(i)}
+                  >
+                    {last_name(r.model)}
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+        {depth === 0 &&
+        hasPredictionModel(model) &&
+        results.some((r: any) => r.depiction) ? (
+          <PlotDotScaleBar className="self-center" />
+        ) : null}
       </div>
     </div>
   ) : null;
