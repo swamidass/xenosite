@@ -1,13 +1,33 @@
 /**
- * Path helpers for molecule focus stacks:
- *   /{model}/{root}
- *   /{model}/{root}/m/{met1}/m/{met2}
+ * Path helpers for molecule focus stacks with per-generation models:
+ *   /{model0}/{query0}
+ *   /{model0}/{query0}/m/{model1}/{query1}/m/{model2}/{query2}
+ *
+ * Legacy hops without an explicit model (`/m/{query}`) inherit the previous
+ * generation's model.
  */
 
-export type MoleculeFocusPath = {
+import { MODELS } from "~/data";
+
+export type FocusGeneration = {
   model: string;
-  segments: string[];
+  query: string;
 };
+
+export type MoleculeFocusPath = {
+  /** Root model (generation 0). */
+  model: string;
+  /** Queries only (compat / search box). */
+  segments: string[];
+  /** Full stack including per-hop models. */
+  generations: FocusGeneration[];
+};
+
+const MODEL_PATHS = new Set(MODELS.map((m) => m.path).concat("_"));
+
+export function isModelPath(s: string | null | undefined): boolean {
+  return !!s && MODEL_PATHS.has(s);
+}
 
 function encodeSeg(s: string) {
   return encodeURIComponent(s);
@@ -22,35 +42,63 @@ function decodeSeg(s: string) {
 }
 
 /**
- * Parse a pathname like /epoxidation/aspirin/m/CCO/m/CC into model + segments.
+ * Parse a pathname into per-generation models + queries.
  */
 export function parseMoleculeFocusPath(pathname: string): MoleculeFocusPath | null {
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length < 2) return null;
 
-  const model = parts[0];
-  const segments: string[] = [decodeSeg(parts[1])];
+  const generations: FocusGeneration[] = [
+    { model: parts[0], query: decodeSeg(parts[1]) },
+  ];
 
   let i = 2;
   while (i < parts.length) {
     if (parts[i] !== "m" || i + 1 >= parts.length) return null;
-    segments.push(decodeSeg(parts[i + 1]));
+    const a = decodeSeg(parts[i + 1]);
+    // /m/{model}/{query} when next token is a known model path and another seg follows
+    if (isModelPath(a) && i + 2 < parts.length && parts[i + 2] !== "m") {
+      generations.push({ model: a, query: decodeSeg(parts[i + 2]) });
+      i += 3;
+      continue;
+    }
+    // Legacy /m/{query} — inherit previous model
+    generations.push({
+      model: generations[generations.length - 1].model,
+      query: a,
+    });
     i += 2;
   }
 
-  return { model, segments };
+  return {
+    model: generations[0].model,
+    segments: generations.map((g) => g.query),
+    generations,
+  };
 }
 
 export function moleculeFocusUrl(opts: {
-  model: string;
-  segments: string[];
+  generations?: FocusGeneration[];
+  /** @deprecated Prefer generations. Root model when using segments. */
+  model?: string;
+  /** @deprecated Prefer generations. Queries only (all share model). */
+  segments?: string[];
   search?: string;
 }): string {
-  const { model, segments } = opts;
-  if (!segments.length) return `/${model}`;
-  let path = `/${model}/${encodeSeg(segments[0])}`;
-  for (let i = 1; i < segments.length; i++) {
-    path += `/m/${encodeSeg(segments[i])}`;
+  let generations = opts.generations;
+  if (!generations?.length) {
+    const model = opts.model || "";
+    const segments = opts.segments || [];
+    if (!segments.length) return model ? `/${model}` : "/";
+    generations = segments.map((query) => ({ model, query }));
+  }
+
+  const root = generations[0];
+  let path = `/${root.model}/${encodeSeg(root.query)}`;
+  for (let i = 1; i < generations.length; i++) {
+    const g = generations[i];
+    // Always emit explicit model for nested hops so models can differ.
+    path += `/m/${g.model}/${encodeSeg(g.query)}`;
   }
   if (opts.search) {
     const q = opts.search.startsWith("?") ? opts.search : `?${opts.search}`;
@@ -59,10 +107,32 @@ export function moleculeFocusUrl(opts: {
   return path;
 }
 
+/** Replace the model at `depth`; leave other generations unchanged. */
+export function withGenerationModel(
+  generations: FocusGeneration[],
+  depth: number,
+  model: string,
+): FocusGeneration[] {
+  return generations.map((g, i) => (i === depth ? { ...g, model } : g));
+}
+
 export function focusQuery(segments: string[]): string {
   return segments[segments.length - 1] || "";
 }
 
+export function appendMetaboliteGeneration(
+  generations: FocusGeneration[],
+  metaboliteSmiles: string,
+  model?: string,
+): FocusGeneration[] {
+  const parent = generations[generations.length - 1];
+  return [
+    ...generations,
+    { model: model || parent?.model || "", query: metaboliteSmiles },
+  ];
+}
+
+/** @deprecated Use appendMetaboliteGeneration. */
 export function appendMetaboliteSegment(
   segments: string[],
   metaboliteSmiles: string,

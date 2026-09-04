@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendMetaboliteGeneration,
   appendMetaboliteSegment,
   encodeHeadParam,
   focusQuery,
@@ -8,29 +9,56 @@ import {
   parseSomSearchParams,
   resolveHeadIndex,
   somToSearchParams,
+  withGenerationModel,
 } from "./metabolitePath";
 
 describe("parseMoleculeFocusPath / moleculeFocusUrl", () => {
-  it("round-trips root and nested paths", () => {
+  it("round-trips root paths", () => {
     const root = parseMoleculeFocusPath("/epoxidation/aspirin");
-    expect(root).toEqual({ model: "epoxidation", segments: ["aspirin"] });
+    expect(root).toEqual({
+      model: "epoxidation",
+      segments: ["aspirin"],
+      generations: [{ model: "epoxidation", query: "aspirin" }],
+    });
     expect(moleculeFocusUrl(root!)).toBe("/epoxidation/aspirin");
+  });
 
+  it("parses legacy /m/{query} hops as inheriting the prior model", () => {
     const nested = parseMoleculeFocusPath("/ugt/foo/m/CCO/m/CC");
     expect(nested).toEqual({
       model: "ugt",
       segments: ["foo", "CCO", "CC"],
+      generations: [
+        { model: "ugt", query: "foo" },
+        { model: "ugt", query: "CCO" },
+        { model: "ugt", query: "CC" },
+      ],
     });
-    expect(moleculeFocusUrl(nested!)).toBe("/ugt/foo/m/CCO/m/CC");
+    // Canonical URLs always emit explicit per-hop models.
+    expect(moleculeFocusUrl(nested!)).toBe("/ugt/foo/m/ugt/CCO/m/ugt/CC");
+  });
+
+  it("parses explicit per-hop models", () => {
+    const path = parseMoleculeFocusPath("/phase1/h/m/ugt/CCO/m/epoxidation/CC");
+    expect(path?.generations).toEqual([
+      { model: "phase1", query: "h" },
+      { model: "ugt", query: "CCO" },
+      { model: "epoxidation", query: "CC" },
+    ]);
+    expect(moleculeFocusUrl(path!)).toBe(
+      "/phase1/h/m/ugt/CCO/m/epoxidation/CC",
+    );
   });
 
   it("encodes special SMILES characters", () => {
     const url = moleculeFocusUrl({
-      model: "phase1",
-      segments: ["parent", "C(=O)O"],
+      generations: [
+        { model: "phase1", query: "parent" },
+        { model: "phase1", query: "C(=O)O" },
+      ],
     });
-    expect(url).toBe("/phase1/parent/m/C(%3DO)O");
-    expect(parseMoleculeFocusPath(url)?.segments[1]).toBe("C(=O)O");
+    expect(url).toBe("/phase1/parent/m/phase1/C(%3DO)O");
+    expect(parseMoleculeFocusPath(url)?.generations[1].query).toBe("C(=O)O");
   });
 
   it("rejects malformed /m/ chains", () => {
@@ -38,11 +66,18 @@ describe("parseMoleculeFocusPath / moleculeFocusUrl", () => {
     expect(parseMoleculeFocusPath("/epoxidation")).toBeNull();
   });
 
-  it("preserves model when swapping only the first segment", () => {
-    const path = parseMoleculeFocusPath("/epoxidation/aspirin/m/CCO")!;
+  it("withGenerationModel changes only one hop", () => {
+    const path = parseMoleculeFocusPath("/phase1/aspirin/m/ugt/CCO")!;
     expect(
-      moleculeFocusUrl({ model: "ugt", segments: path.segments }),
-    ).toBe("/ugt/aspirin/m/CCO");
+      moleculeFocusUrl({
+        generations: withGenerationModel(path.generations, 0, "quinone"),
+      }),
+    ).toBe("/quinone/aspirin/m/ugt/CCO");
+    expect(
+      moleculeFocusUrl({
+        generations: withGenerationModel(path.generations, 1, "epoxidation"),
+      }),
+    ).toBe("/phase1/aspirin/m/epoxidation/CCO");
   });
 });
 
@@ -51,7 +86,29 @@ describe("focus helpers", () => {
     expect(focusQuery(["a", "b", "c"])).toBe("c");
   });
 
-  it("appendMetaboliteSegment extends the stack", () => {
+  it("appendMetaboliteGeneration extends the stack with a model", () => {
+    expect(
+      appendMetaboliteGeneration(
+        [{ model: "phase1", query: "h" }],
+        "CCO",
+      ),
+    ).toEqual([
+      { model: "phase1", query: "h" },
+      { model: "phase1", query: "CCO" },
+    ]);
+    expect(
+      appendMetaboliteGeneration(
+        [{ model: "phase1", query: "h" }],
+        "CCO",
+        "ugt",
+      ),
+    ).toEqual([
+      { model: "phase1", query: "h" },
+      { model: "ugt", query: "CCO" },
+    ]);
+  });
+
+  it("appendMetaboliteSegment extends query segments", () => {
     expect(appendMetaboliteSegment(["a"], "b")).toEqual(["a", "b"]);
   });
 });
