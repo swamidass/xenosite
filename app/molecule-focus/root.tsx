@@ -1,19 +1,18 @@
 import type {
-  LoaderFunction,
   LoaderFunctionArgs,
   MetaArgs,
   MetaFunction,
+  ShouldRevalidateFunction,
 } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Loading } from "~/components";
-import MoleculeFocus from "~/components/MoleculeFocus";
+import { MoleculeFocusRootLayout } from "~/components/MoleculeFocus";
 import { resolveModelInfo, type XenositeModelInfo } from "~/data";
 import HEADERS from "~/loaders/headers";
 import type { LdJsonParams } from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import { resolve_query } from "~/loaders/backend.server";
-import type { SwamidassApiData } from "~/utils";
 import {
   capitalize,
   commonMetaValues,
@@ -23,63 +22,68 @@ import {
   siteUrl,
 } from "~/utils";
 import {
-  focusQuery,
   moleculeFocusUrl,
   parseMoleculeFocusPath,
 } from "~/utils/metabolitePath";
 
-function segmentsFromRequest(
-  request: Request,
-  params: Record<string, string | undefined>,
-): string[] {
-  const parsed = parseMoleculeFocusPath(new URL(request.url).pathname);
-  if (parsed?.segments?.length) return parsed.segments;
+export type RootMoleculeLoaderData = {
+  model: string;
+  query: string;
+  resolved_query: any;
+};
 
-  const root = params.query;
-  if (!root) return [];
+/** Root molecule only — nested /m/* hops load in the child route. */
+export async function loader({ params }: LoaderFunctionArgs) {
+  const model = params.model || "";
+  const query = params.query || "";
+  const { resolved_query } = await resolve_query({ model, query });
+  return json(
+    { model, query, resolved_query: resolved_query || {} } satisfies RootMoleculeLoaderData,
+    { headers: HEADERS },
+  );
+}
 
-  const splat = params["*"];
-  if (!splat) return [root];
+/**
+ * Skip refetch when only nested /m/* hops or search params change.
+ */
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  currentParams,
+  nextParams,
+}) => shouldRevalidateRootMolecule(currentParams, nextParams);
 
-  const parts = splat.split("/").filter(Boolean);
-  const segments = [root];
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i] === "m") continue;
-    try {
-      segments.push(decodeURIComponent(parts[i]));
-    } catch {
-      segments.push(parts[i]);
-    }
-  }
-  return segments;
+export function shouldRevalidateRootMolecule(
+  currentParams: { model?: string; query?: string },
+  nextParams: { model?: string; query?: string },
+): boolean {
+  return (
+    currentParams.model !== nextParams.model ||
+    currentParams.query !== nextParams.query
+  );
 }
 
 export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
-  const queryData = data as
-    | (SwamidassApiData & { segments?: string[]; chain?: any[] })
-    | undefined;
-  const segments =
-    queryData?.segments ||
-    parseMoleculeFocusPath(location.pathname)?.segments ||
-    (params.query ? [params.query] : []);
-  const rootQuery = segments[0] || (params.query as string);
-  const rootResolved =
-    queryData?.chain?.[0] || queryData?.resolved_query;
+  const queryData = data as RootMoleculeLoaderData | undefined;
+  const parsed = parseMoleculeFocusPath(location.pathname);
+  const rootQuery =
+    queryData?.query ||
+    parsed?.segments?.[0] ||
+    (params.query as string);
+  const rootResolved = queryData?.resolved_query;
   const preferredName = rootResolved?.name?.name;
-  const path = moleculeFocusUrl({
-    model: params.model as string,
-    segments:
-      preferredName && segments.length === 1
-        ? [preferredName]
-        : segments.length
-          ? segments
-          : [rootQuery],
-  });
+  const generations = parsed?.generations?.length
+    ? preferredName && parsed.generations.length === 1
+      ? [{ ...parsed.generations[0], query: preferredName }]
+      : parsed.generations
+    : [
+        {
+          model: (params.model as string) || queryData?.model || "",
+          query: preferredName || rootQuery,
+        },
+      ];
+  const path = moleculeFocusUrl({ generations });
   const imageUrl = `${siteUrl(`/og/${params.model}/${encodeURIComponent(rootQuery)}`)}`;
 
-  const modelInfo = queryData
-    ? resolveModelInfo(queryData.model)
-    : resolveModelInfo(params.model);
+  const modelInfo = resolveModelInfo(queryData?.model || params.model);
 
   let molecule = rootQuery;
   let title = `${SITE_NAME} | ${rootQuery}`;
@@ -133,55 +137,14 @@ export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
   return results;
 };
 
-export const loader: LoaderFunction = async ({
-  params,
-  request,
-}: LoaderFunctionArgs) => {
-  const segments = segmentsFromRequest(
-    request,
-    params as Record<string, string | undefined>,
-  );
-  const model = params.model || "";
-
-  // One prediction per path segment so the stack can keep parents on-screen.
-  const chain = [];
-  for (const seg of segments) {
-    const { resolved_query } = await resolve_query({
-      model,
-      query: seg,
-    });
-    chain.push(resolved_query);
-  }
-
-  return json(
-    {
-      params,
-      model,
-      segments,
-      chain,
-      // Back-compat for any consumers expecting resolved_query (= root).
-      resolved_query: chain[0] || {},
-    },
-    { headers: HEADERS },
-  );
-};
-
-export default function MoleculeFocusRoute() {
-  const data = useLoaderData() as {
-    chain: any[];
-    model: string;
-    segments: string[];
-  };
-
-  if (!data?.chain?.length || !data?.model) {
-    return <Loading />;
-  }
-
+export default function MoleculeFocusRootRoute() {
+  const data = useLoaderData() as RootMoleculeLoaderData;
+  if (!data?.model || !data?.query) return <Loading />;
   return (
-    <MoleculeFocus
-      chain={data.chain}
+    <MoleculeFocusRootLayout
+      resolved_query={data.resolved_query}
       model={data.model}
-      segments={data.segments?.length ? data.segments : []}
+      query={data.query}
     />
   );
 }

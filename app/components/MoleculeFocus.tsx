@@ -1,5 +1,10 @@
-import { useNavigate, useSearchParams } from "@remix-run/react";
-import { useState } from "react";
+import {
+  Outlet,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "@remix-run/react";
+import { useState, type ReactNode } from "react";
 import AboutModel from "~/components/AboutModel";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
 import MetabolitePanel from "~/components/MetabolitePanel";
@@ -7,12 +12,14 @@ import { ModelTabs } from "~/components/ModelTabs";
 import { capitalize } from "~/utils";
 import { resolveModelInfo } from "~/data";
 import {
-  appendMetaboliteSegment,
+  appendMetaboliteGeneration,
   encodeHeadParam,
   moleculeFocusUrl,
+  parseMoleculeFocusPath,
   parseSomSearchParams,
   resolveHeadIndex,
   somToSearchParams,
+  type FocusGeneration,
 } from "~/utils/metabolitePath";
 import {
   collectMetabolites,
@@ -53,21 +60,28 @@ export function somFromMetabolite(
   return { atomIdxs };
 }
 
-export type MoleculeFocusProps = {
-  /** Prediction for each path segment (root … leaf), same model. */
-  chain: any[];
-  model: string;
-  segments: string[];
-};
-
-type GenerationProps = {
+export type GenerationViewProps = {
   depth: number;
-  chain: any[];
+  resolved_query: any;
   model: string;
-  segments: string[];
+  generations: FocusGeneration[];
+  /** Nested Remix outlet / deeper stack. Suppresses this generation's panel. */
+  children?: ReactNode;
+  /** Show metabolite panel under this generation (leaf). */
+  showPanel?: boolean;
 };
 
-function Generation({ depth, chain, model, segments }: GenerationProps) {
+/**
+ * One generation: depiction(s), optional nested model tabs, then children or panel.
+ */
+export function GenerationView({
+  depth,
+  resolved_query,
+  model,
+  generations,
+  children,
+  showPanel = false,
+}: GenerationViewProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [hover, setHover] = useState<{
@@ -75,7 +89,6 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
     headIndex: number;
   } | null>(null);
 
-  const resolved_query = chain[depth];
   if (!resolved_query) return null;
 
   if (resolved_query.detail) {
@@ -87,10 +100,9 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
   }
 
   const results = resolved_query?.results || [];
-  // Metabolites from every head, each tagged with headIndex / headModel.
   const metabolites = collectMetabolites(results);
-  const childSmiles = segments[depth + 1] || null;
-  const childMet = findMetaboliteBySmiles(metabolites, childSmiles);
+  const childQuery = generations[depth + 1]?.query || null;
+  const childMet = findMetaboliteBySmiles(metabolites, childQuery);
 
   const resolved_name = resolved_query?.name;
   const modelLabel = resolveModelInfo(model)?.model ?? model ?? "XenoSite";
@@ -101,7 +113,6 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
   const somFromSearch = parseSomSearchParams(searchParams);
   const searchHeadIndex = resolveHeadIndex(somFromSearch.head, results);
 
-  // Path-selected metabolite owns the highlight head; else URL ?head= + atoms/bond.
   const pathHighlight = somFromMetabolite(childMet, resolved_query?.bonds?.idx);
   const searchHighlight: SomHighlight | null =
     !childMet &&
@@ -131,7 +142,7 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
       : null;
 
   const applyHit = (hit: SiteHit | null, headIndex: number) => {
-    if (childSmiles) return;
+    if (childQuery) return;
     if (!hit) {
       setSearchParams({}, { replace: true });
       return;
@@ -147,9 +158,8 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
   };
 
   const onSelectMetabolite = (m: MetaboliteRecord) => {
-    const base = segments.slice(0, depth + 1);
-    const nextSegments = appendMetaboliteSegment(base, m.smiles);
-    // Carry the source head into the URL so the parent SOM stays scoped.
+    const base = generations.slice(0, depth + 1);
+    const next = appendMetaboliteGeneration(base, m.smiles);
     const head =
       typeof m.headIndex === "number"
         ? encodeHeadParam(m.headIndex, results)
@@ -167,8 +177,7 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
     }).toString();
     navigate(
       moleculeFocusUrl({
-        model,
-        segments: nextSegments,
+        generations: next,
         search: search || undefined,
       }),
     );
@@ -186,8 +195,6 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
     }
     setHover({ highlight, headIndex: m.headIndex });
   };
-
-  const segmentsThroughHere = segments.slice(0, depth + 1);
 
   return (
     <div
@@ -220,7 +227,7 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
                     selected={isSelectedHead ? selectedHighlight : null}
                     externalHover={isHoverHead ? hover?.highlight : null}
                     onSelect={
-                      childSmiles ? undefined : (hit) => applyHit(hit, i)
+                      childQuery ? undefined : (hit) => applyHit(hit, i)
                     }
                   />
                 ) : null}
@@ -296,43 +303,121 @@ function Generation({ depth, chain, model, segments }: GenerationProps) {
 
       {depth > 0 ? (
         <>
-          <ModelTabs nested segments={segmentsThroughHere} />
+          <ModelTabs nested depth={depth} generations={generations} />
           <AboutModel nested model={model} />
         </>
       ) : null}
 
-      {childSmiles ? (
-        <div className="border-t border-gray-100">
-          <Generation
-            depth={depth + 1}
-            chain={chain}
-            model={model}
-            segments={segments}
-          />
-        </div>
-      ) : (
+      {children}
+      {showPanel && !childQuery ? (
         <MetabolitePanel
           metabolites={metabolites}
           selection={siteSelection}
           onSelectMetabolite={onSelectMetabolite}
           onHoverMetabolite={onHoverMetabolite}
         />
-      )}
+      ) : null}
     </div>
   );
 }
 
 /**
- * Generational stack: root stays visible; /m/ hops nest below with SOM on the
- * producer and a nested model menu under each selected metabolite.
+ * Root layout: generation 0 depiction + Outlet for /m/* (panel when no nested hops).
  */
+export function MoleculeFocusRootLayout({
+  resolved_query,
+  model,
+  query,
+}: {
+  resolved_query: any;
+  model: string;
+  query: string;
+}) {
+  const location = useLocation();
+  const parsed = parseMoleculeFocusPath(location.pathname);
+  const generations =
+    parsed?.generations?.length
+      ? parsed.generations
+      : [{ model, query }];
+  const hasNested = generations.length > 1;
+
+  return (
+    <GenerationView
+      depth={0}
+      resolved_query={resolved_query}
+      model={model}
+      generations={generations}
+      showPanel={!hasNested}
+    >
+      {hasNested ? <Outlet /> : null}
+    </GenerationView>
+  );
+}
+
+/**
+ * Nested /m/* stack after the root. Leaf generation shows its metabolite panel.
+ */
+export function MoleculeFocusNestedStack({
+  chain,
+  generations,
+}: {
+  chain: any[];
+  generations: FocusGeneration[];
+}) {
+  if (!chain.length) return null;
+
+  return (
+    <>
+      {chain.map((resolved, i) => {
+        const depth = i + 1;
+        const gen = generations[depth];
+        if (!gen) return null;
+        const isLeaf = i === chain.length - 1;
+        return (
+          <div
+            key={`${gen.model}:${gen.query}:${depth}`}
+            className="border-t border-gray-100"
+          >
+            <GenerationView
+              depth={depth}
+              resolved_query={resolved}
+              model={gen.model}
+              generations={generations}
+              showPanel={isLeaf}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** @deprecated Prefer MoleculeFocusRootLayout / NestedStack. */
 export default function MoleculeFocus({
   chain,
   model,
   segments,
-}: MoleculeFocusProps) {
+}: {
+  chain: any[];
+  model: string;
+  segments: string[];
+}) {
+  const generations = (segments || []).map((query) => ({ model, query }));
   if (!chain?.length) return null;
   return (
-    <Generation depth={0} chain={chain} model={model} segments={segments} />
+    <GenerationView
+      depth={0}
+      resolved_query={chain[0]}
+      model={model}
+      generations={generations}
+      showPanel={chain.length === 1}
+    >
+      {chain.length > 1 ? (
+        <MoleculeFocusNestedStack
+          chain={chain.slice(1)}
+          generations={generations}
+        />
+      ) : null}
+    </GenerationView>
   );
 }

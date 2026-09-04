@@ -1,1 +1,1 @@
-export { meta, loader, default } from "~/molecule-focus/route";
+export { default } from "~/molecule-focus/index";
