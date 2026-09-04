@@ -73,3 +73,12 @@ body {
   max-width: 100%;
   height: auto;
 }
+
+/* Pathway / probability over PlotDot — black fill, white halo via drop-shadow. */
+.metabolite-meta-label {
+  color: #000;
+  font-weight: 600;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff)
+    drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
+    drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff);
+}

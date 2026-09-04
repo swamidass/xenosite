@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
+import PlotDot from "~/components/PlotDot";
 import {
   formatPathwayLabel,
   METABOLITE_DISPLAY_CAP,
@@ -195,8 +196,8 @@ export default function MetabolitePanel({
                     to={href}
                     preventScrollReset
                     className={classNames(
-                      "block text-center rounded p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 hover:bg-gray-50",
-                      isCurrent ? "opacity-60" : null,
+                      "block text-center rounded px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 hover:bg-gray-50",
+                      isCurrent ? "ring-1 ring-gray-300" : null,
                     )}
                     aria-current={isCurrent ? "page" : undefined}
                     onMouseEnter={() => onHoverMetabolite?.(m)}
@@ -204,33 +205,49 @@ export default function MetabolitePanel({
                     onFocus={() => onHoverMetabolite?.(m)}
                     onBlur={() => onHoverMetabolite?.(null)}
                   >
-                    <LazyMetaboliteImg
-                      smiles={m.smiles}
-                      alt={name || m.smiles}
-                      onDepictError={() => {
-                        setRemovedSmiles((prev) => {
-                          if (prev.has(m.smiles)) return prev;
-                          const next = new Set(prev);
-                          next.add(m.smiles);
-                          return next;
-                        });
-                      }}
-                    />
+                    <div className="relative mx-auto w-fit max-w-full">
+                      <div className="relative z-20 -mb-3 flex flex-col items-center text-center text-[10px] leading-none">
+                        {m.pathway ? (
+                          <div className="metabolite-meta-label relative z-30">
+                            {formatPathwayLabel(m.pathway)}
+                          </div>
+                        ) : null}
+                        {typeof m.score === "number" ? (
+                          <div className="relative z-10 inline-flex items-center justify-center py-0.5">
+                            <PlotDot
+                              value={m.score}
+                              size={40}
+                              className="pointer-events-none absolute left-[-130%] top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
+                              title={`Probability ${m.score.toFixed(2)}`}
+                            />
+                            <div className="metabolite-meta-label relative z-10">
+                              {m.score.toFixed(2)}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="relative z-10 flex justify-center leading-none">
+                        <LazyMetaboliteImg
+                          smiles={m.smiles}
+                          alt={name || m.smiles}
+                          onDepictError={() => {
+                            setRemovedSmiles((prev) => {
+                              if (prev.has(m.smiles)) return prev;
+                              const next = new Set(prev);
+                              next.add(m.smiles);
+                              return next;
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
                     {name ? (
-                      <div className="text-center w-100 text-xs text-gray-500 mt-1">
+                      <div className="-mt-0.5 text-center text-xs leading-tight text-gray-500">
                         {name}
                       </div>
                     ) : (
-                      <div className="h-4 mt-1" aria-hidden />
+                      <div className="h-3" aria-hidden />
                     )}
-                    <div className="text-center text-[10px] text-gray-400">
-                      {m.pathway ? (
-                        <div>{formatPathwayLabel(m.pathway)}</div>
-                      ) : null}
-                      {typeof m.score === "number" ? (
-                        <div>{m.score.toFixed(2)}</div>
-                      ) : null}
-                    </div>
                   </Link>
                 </li>
               );
