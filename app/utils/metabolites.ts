@@ -44,7 +44,6 @@ export type SiteSelection = {
   headIndex?: number | null;
 };
 
-export const METABOLITE_SCORE_THRESHOLD = 0.01;
 export const METABOLITE_DISPLAY_CAP = 5;
 
 /** `NitrogenOxidation` → `nitrogen oxidation`; already spaced labels pass through. */
@@ -176,9 +175,9 @@ export type RankMetabolitesResult = {
 
 /**
  * Rank metabolites for display. Never returns more than `cap` entries.
- * Unselected: merge all heads, dedupe by SMILES, threshold, then top N by score.
- * Site-selected: filter (CIP-aware when `cipRank` is provided) then cap
- * (drop threshold only if site would be empty).
+ * Merge heads, dedupe by SMILES, sort by score, then take the top N.
+ * Optional site/head selection filters before ranking (CIP-aware when `cipRank`
+ * is provided).
  */
 export function rankMetabolites(
   metabolites: MetaboliteRecord[] | null | undefined,
@@ -186,22 +185,12 @@ export function rankMetabolites(
     selection?: SiteSelection | null;
     /** Per-atom CIP ranks from `atoms.cipRank` (detailed=true). */
     cipRank?: number[] | null;
-    applyThreshold?: boolean;
-    threshold?: number;
     cap?: number;
   } = {},
 ): RankMetabolitesResult {
-  const threshold = options.threshold ?? METABOLITE_SCORE_THRESHOLD;
   const cap = options.cap ?? METABOLITE_DISPLAY_CAP;
-  const applyThreshold = options.applyThreshold !== false;
   const selection = options.selection;
   const cipRank = options.cipRank;
-
-  const hasSiteSelection =
-    !!selection &&
-    ((selection.atomIdxs && selection.atomIdxs.length > 0) ||
-      !!selection.metaboliteSmiles ||
-      typeof selection.headIndex === "number");
 
   // Filter before dedupe so equivalent site records remain available to match,
   // then dedupe preferring an exact atom list for the selection when tied.
@@ -211,18 +200,9 @@ export function rankMetabolites(
   list = dedupeBySmiles(list, selection);
   list.sort((a, b) => scoreOf(b) - scoreOf(a));
 
-  let filtered = list;
-  if (applyThreshold) {
-    const above = list.filter((m) => scoreOf(m) >= threshold);
-    // Unselected: always apply threshold. Site-selected: drop it only if empty.
-    if (above.length > 0 || !hasSiteSelection) {
-      filtered = above;
-    }
-  }
-
   return {
-    shown: filtered.slice(0, cap),
-    totalMatching: filtered.length,
+    shown: list.slice(0, cap),
+    totalMatching: list.length,
   };
 }
 

@@ -22,11 +22,11 @@ const sample = [
 ];
 
 describe("rankMetabolites", () => {
-  it("returns top 5 above threshold when unselected", () => {
+  it("returns top 5 by score when unselected", () => {
     const { shown, totalMatching } = rankMetabolites(sample);
     expect(shown).toHaveLength(5);
     expect(shown.map((m) => m.smiles)).toEqual(["A", "E", "F", "G", "B"]);
-    expect(totalMatching).toBe(7); // all unique smiles ≥ 0.01; A deduped
+    expect(totalMatching).toBe(7); // all unique smiles; A deduped
   });
 
   it("unselected multi-head merges then sorts by score", () => {
@@ -63,16 +63,17 @@ describe("rankMetabolites", () => {
       selection: { atomIdxs: [0] },
     });
     expect(shown.every((m) => (m.atom || []).includes(0))).toBe(true);
-    expect(totalMatching).toBe(3); // A, C, E above threshold with atom 0
+    expect(totalMatching).toBe(3); // A, C, E with atom 0
     expect(shown[0].smiles).toBe("A");
   });
 
-  it("drops threshold when site filter would otherwise be empty", () => {
-    const { shown, totalMatching } = rankMetabolites(sample, {
-      selection: { atomIdxs: [2] },
-    });
-    expect(totalMatching).toBe(1);
-    expect(shown[0].smiles).toBe("D");
+  it("includes low-scoring site matches", () => {
+    const { shown, totalMatching } = rankMetabolites(
+      [...sample, { smiles: "LOW", atom: [2], score: 0.001 }],
+      { selection: { atomIdxs: [2] } },
+    );
+    expect(totalMatching).toBe(2); // D + LOW
+    expect(shown.map((m) => m.smiles)).toEqual(["D", "LOW"]);
   });
 
   it("dedupes by SMILES keeping the highest score", () => {
