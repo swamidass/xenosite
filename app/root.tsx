@@ -186,7 +186,7 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
+        <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3 overflow-x-hidden">
           <SiteLogo />
           <>
             <fetcher.Form

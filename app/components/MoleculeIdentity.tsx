@@ -16,6 +16,8 @@ export type MoleculeIdentityProps = {
   } | null;
   /** Include Copy JSON for this generation's API payload. */
   showCopy?: boolean;
+  /** Root uses h1; nested generations use h2. */
+  headingLevel?: 1 | 2;
   className?: string;
 };
 
@@ -26,6 +28,7 @@ export type MoleculeIdentityProps = {
 export default function MoleculeIdentity({
   resolved_query,
   showCopy = true,
+  headingLevel = 1,
   className,
 }: MoleculeIdentityProps) {
   if (!resolved_query || resolved_query.detail) return null;
@@ -35,6 +38,7 @@ export default function MoleculeIdentity({
   const description = resolved_query.name?.description;
   const chebi = resolved_query.name?.chebi;
   const chebiUrl = resolved_query.name?.chebiUrl;
+  const HeadingTag = headingLevel === 1 ? "h1" : "h2";
 
   if (!displayName && !smiles && !description) return null;
 
@@ -46,9 +50,9 @@ export default function MoleculeIdentity({
       )}
     >
       {displayName ? (
-        <h1 className="text-lg sm:text-xl font-bold text-gray-900 m-0 leading-snug">
+        <HeadingTag className="text-lg sm:text-xl font-bold text-gray-900 m-0 leading-snug">
           {displayName}
-        </h1>
+        </HeadingTag>
       ) : null}
 
       <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-gray-600">

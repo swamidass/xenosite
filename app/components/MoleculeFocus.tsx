@@ -266,7 +266,11 @@ export function GenerationView({
 
       {showIdentity ? (
         <div className="px-2 pb-2">
-          <MoleculeIdentity resolved_query={resolved_query} showCopy />
+          <MoleculeIdentity
+            resolved_query={resolved_query}
+            showCopy
+            headingLevel={depth === 0 ? 1 : 2}
+          />
         </div>
       ) : null}
 
@@ -324,8 +328,6 @@ export function GenerationView({
         </div>
       </div>
 
-      {children}
-
       {showPanel ? (
         <MetabolitePanel
           metabolites={metabolites}
@@ -336,6 +338,9 @@ export function GenerationView({
           onHoverMetabolite={onHoverMetabolite}
         />
       ) : null}
+
+      {/* Nested generations render after this generation's metabolite panel. */}
+      {children}
     </div>
   );
 }
