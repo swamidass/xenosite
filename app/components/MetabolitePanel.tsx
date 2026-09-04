@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import GenerationMarker from "~/components/GenerationMarker";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
-import { capitalize } from "~/utils";
 import {
   formatPathwayLabel,
   METABOLITE_DISPLAY_CAP,
@@ -8,40 +8,40 @@ import {
   type MetaboliteRecord,
   type SiteSelection,
 } from "~/utils/metabolites";
+import { moleculeDisplayName } from "~/utils/moleculeIdentity";
+import { classNames } from "~/utils";
 
 export type MetabolitePanelProps = {
   metabolites: MetaboliteRecord[] | null | undefined;
   selection?: SiteSelection | null;
   onSelectMetabolite: (m: MetaboliteRecord) => void;
   onHoverMetabolite?: (m: MetaboliteRecord | null) => void;
-  /** When a path metabolite is focused, hide the grid (siblings removed). */
-  hideWhenPathSelected?: boolean;
-  pathMetaboliteSmiles?: string | null;
+  /** Generation depth that owns this panel (for markers). */
+  depth?: number;
+  /** SMILES of the currently selected child metabolite (click again to unselect). */
+  selectedSmiles?: string | null;
 };
 
 function labelFor(m: MetaboliteRecord): string {
-  const n = m.name?.name;
-  if (n) return capitalize(n);
-  return m.smiles;
+  return moleculeDisplayName(m.name);
 }
 
 /**
- * Top metabolites (≤5) below the focus molecule. Click navigates; hover highlights SOM.
- * If /depict fails for a candidate, log and drop it from the list (backfill from pool).
+ * Top metabolites below a generation's predictions.
+ * Layout matches prediction head flex wrap; unnamed metabolites leave the title blank.
  */
 export default function MetabolitePanel({
   metabolites,
   selection,
   onSelectMetabolite,
   onHoverMetabolite,
-  hideWhenPathSelected,
-  pathMetaboliteSmiles,
+  depth = 0,
+  selectedSmiles = null,
 }: MetabolitePanelProps) {
   const [removedSmiles, setRemovedSmiles] = useState<Set<string>>(
     () => new Set(),
   );
 
-  // Reset when the candidate pool changes (new molecule / selection).
   const poolKey = useMemo(() => {
     const { shown } = rankMetabolites(metabolites, {
       selection,
@@ -54,10 +54,6 @@ export default function MetabolitePanel({
     setRemovedSmiles(new Set());
   }, [poolKey]);
 
-  if (hideWhenPathSelected && pathMetaboliteSmiles) {
-    return null;
-  }
-
   const { shown: pool } = rankMetabolites(metabolites, {
     selection,
     cap: METABOLITE_DISPLAY_CAP * 4,
@@ -69,50 +65,70 @@ export default function MetabolitePanel({
   if (!shown.length) return null;
 
   return (
-    <section className="mt-8 w-full max-w-3xl mx-auto px-2" aria-label="Metabolites">
-      <h2 className="text-sm font-semibold text-gray-700 mb-3 text-center">
-        Top metabolites
-      </h2>
-      <ul className="flex flex-wrap justify-center gap-4 list-none p-0 m-0">
-        {shown.map((m) => (
-          <li key={m.smiles} className="w-36 sm:w-40">
-            <button
-              type="button"
-              className="w-full text-left border border-transparent hover:border-gray-300 rounded p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-              onClick={() => onSelectMetabolite(m)}
-              onMouseEnter={() => onHoverMetabolite?.(m)}
-              onMouseLeave={() => onHoverMetabolite?.(null)}
-              onFocus={() => onHoverMetabolite?.(m)}
-              onBlur={() => onHoverMetabolite?.(null)}
-            >
-              <LazyMetaboliteImg
-                smiles={m.smiles}
-                alt={labelFor(m)}
-                onDepictError={() => {
-                  setRemovedSmiles((prev) => {
-                    if (prev.has(m.smiles)) return prev;
-                    const next = new Set(prev);
-                    next.add(m.smiles);
-                    return next;
-                  });
-                }}
-              />
-              <div className="mt-2 text-xs text-center text-gray-700 break-all">
-                {labelFor(m)}
-              </div>
-              {m.pathway ? (
-                <div className="text-[10px] text-center text-gray-400">
-                  {formatPathwayLabel(m.pathway)}
-                </div>
-              ) : null}
-              {typeof m.score === "number" ? (
-                <div className="text-[10px] text-center text-gray-400">
-                  {m.score.toFixed(2)}
-                </div>
-              ) : null}
-            </button>
-          </li>
-        ))}
+    <section
+      className="mt-6 w-full mx-auto pt-6 border-t border-gray-300"
+      aria-label="Metabolites"
+    >
+      <div className="flex flex-wrap items-center justify-center gap-2 mb-4 px-2">
+        <GenerationMarker depth={depth} />
+        <h2 className="text-sm font-semibold text-gray-700 m-0">
+          Top metabolites
+        </h2>
+      </div>
+      <ul className="flex mx-auto mb-4 justify-center flex-wrap gap-4 list-none p-0 m-0">
+        {shown.map((m) => {
+          const name = labelFor(m);
+          const selected = !!selectedSmiles && selectedSmiles === m.smiles;
+          return (
+            <li key={m.smiles} className="mx-2">
+              <button
+                type="button"
+                className={classNames(
+                  "block text-center rounded p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
+                  selected
+                    ? "ring-2 ring-gray-400 bg-gray-50"
+                    : "hover:bg-gray-50",
+                )}
+                aria-pressed={selected}
+                onClick={() => onSelectMetabolite(m)}
+                onMouseEnter={() => onHoverMetabolite?.(m)}
+                onMouseLeave={() => onHoverMetabolite?.(null)}
+                onFocus={() => onHoverMetabolite?.(m)}
+                onBlur={() => onHoverMetabolite?.(null)}
+              >
+                <LazyMetaboliteImg
+                  smiles={m.smiles}
+                  alt={name || m.smiles}
+                  onDepictError={() => {
+                    setRemovedSmiles((prev) => {
+                      if (prev.has(m.smiles)) return prev;
+                      const next = new Set(prev);
+                      next.add(m.smiles);
+                      return next;
+                    });
+                  }}
+                />
+                {name ? (
+                  <div className="text-center w-100 text-xs text-gray-500 mt-1">
+                    {name}
+                  </div>
+                ) : (
+                  <div className="h-4 mt-1" aria-hidden />
+                )}
+                {m.pathway ? (
+                  <div className="text-center text-[10px] text-gray-400">
+                    {formatPathwayLabel(m.pathway)}
+                  </div>
+                ) : null}
+                {typeof m.score === "number" ? (
+                  <div className="text-center text-[10px] text-gray-400">
+                    {m.score.toFixed(2)}
+                  </div>
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

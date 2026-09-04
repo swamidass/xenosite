@@ -6,13 +6,13 @@ import {
 } from "@remix-run/react";
 import { useState, type ReactNode } from "react";
 import AboutModel from "~/components/AboutModel";
+import GenerationMarker from "~/components/GenerationMarker";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
 import MetabolitePanel from "~/components/MetabolitePanel";
+import MoleculeIdentity from "~/components/MoleculeIdentity";
 import { ModelTabs } from "~/components/ModelTabs";
-import { capitalize } from "~/utils";
 import { resolveModelInfo } from "~/data";
 import {
-  appendMetaboliteGeneration,
   encodeHeadParam,
   moleculeFocusUrl,
   parseMoleculeFocusPath,
@@ -25,8 +25,16 @@ import {
   collectMetabolites,
   findMetaboliteBySmiles,
   type MetaboliteRecord,
+  type SiteSelection,
 } from "~/utils/metabolites";
+import { moleculeDisplayName } from "~/utils/moleculeIdentity";
 import { selectionModeFromResult, type SiteHit } from "~/utils/siteHitTest";
+import {
+  effectiveMetabolitePanelSelection,
+  hitToSiteSelection,
+  metaboliteSelectUrl,
+  toggleSomHighlight,
+} from "~/utils/somInteraction";
 import {
   normalizeBondsIdx,
   type SomHighlight,
@@ -65,14 +73,19 @@ export type GenerationViewProps = {
   resolved_query: any;
   model: string;
   generations: FocusGeneration[];
-  /** Nested Remix outlet / deeper stack. Suppresses this generation's panel. */
+  /** Nested Remix outlet / deeper stack. */
   children?: ReactNode;
-  /** Show metabolite panel under this generation (leaf). */
+  /** Show metabolite panel under this generation. */
   showPanel?: boolean;
+  /**
+   * When true, identity is rendered by the app shell (root under search).
+   * Nested generations always render their own identity.
+   */
+  identityInShell?: boolean;
 };
 
 /**
- * One generation: depiction(s), optional nested model tabs, then children or panel.
+ * One generation: identity (unless shelled), model tabs, depictions, panel.
  */
 export function GenerationView({
   depth,
@@ -81,6 +94,7 @@ export function GenerationView({
   generations,
   children,
   showPanel = false,
+  identityInShell = false,
 }: GenerationViewProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,6 +103,7 @@ export function GenerationView({
     highlight: SomHighlight;
     headIndex: number;
   } | null>(null);
+  const [siteHover, setSiteHover] = useState<SiteSelection | null>(null);
 
   if (!resolved_query) return null;
 
@@ -105,11 +120,11 @@ export function GenerationView({
   const childQuery = generations[depth + 1]?.query || null;
   const childMet = findMetaboliteBySmiles(metabolites, childQuery);
 
-  const resolved_name = resolved_query?.name;
   const modelLabel = resolveModelInfo(model)?.model ?? model ?? "XenoSite";
-  const moleculeName = resolved_name?.name
-    ? capitalize(resolved_name.name)
-    : resolved_query?.smiles ?? "Molecule";
+  const moleculeName =
+    moleculeDisplayName(resolved_query?.name) ||
+    resolved_query?.smiles ||
+    "Molecule";
 
   const somFromSearch = parseSomSearchParams(searchParams);
   const searchHeadIndex = resolveHeadIndex(somFromSearch.head, results);
@@ -133,7 +148,7 @@ export function GenerationView({
       : null
     : searchHeadIndex;
 
-  const siteSelection = childMet
+  const committedSelection: SiteSelection | null = childMet
     ? { metaboliteSmiles: childMet.smiles }
     : selectedHighlight && selectedHeadIndex != null
       ? {
@@ -142,16 +157,28 @@ export function GenerationView({
         }
       : null;
 
+  const panelSelection = effectiveMetabolitePanelSelection({
+    childQuery,
+    committed: committedSelection,
+    hover: childQuery ? null : siteHover,
+  });
+
   const applyHit = (hit: SiteHit | null, headIndex: number) => {
     if (childQuery) return;
-    // Replace the search string entirely so a new SOM never stacks on the prior one.
-    if (!hit) {
+    const nextHighlight: SomHighlight | null = hit
+      ? {
+          atomIdxs: hit.atomIdxs,
+          bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
+        }
+      : null;
+    const toggled = toggleSomHighlight(selectedHighlight, nextHighlight);
+    if (!toggled) {
       navigate({ pathname: location.pathname, search: "" }, { replace: true });
       return;
     }
     const search = somToSearchParams({
-      atomIdxs: hit.atomIdxs,
-      bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
+      atomIdxs: toggled.atomIdxs,
+      bondIdx: toggled.bondIdx,
       head: encodeHeadParam(headIndex, results),
     }).toString();
     navigate(
@@ -161,8 +188,16 @@ export function GenerationView({
   };
 
   const onSelectMetabolite = (m: MetaboliteRecord) => {
-    const base = generations.slice(0, depth + 1);
-    const next = appendMetaboliteGeneration(base, m.smiles);
+    const url = metaboliteSelectUrl({
+      generations,
+      depth,
+      metaboliteSmiles: m.smiles,
+      childQuery,
+    });
+    if (childQuery && childQuery === m.smiles) {
+      navigate(url);
+      return;
+    }
     const head =
       typeof m.headIndex === "number"
         ? encodeHeadParam(m.headIndex, results)
@@ -180,13 +215,23 @@ export function GenerationView({
     }).toString();
     navigate(
       moleculeFocusUrl({
-        generations: next,
+        generations: [
+          ...generations.slice(0, depth + 1),
+          {
+            model: generations[depth]?.model || model,
+            query: m.smiles,
+          },
+        ],
         search: search || undefined,
       }),
     );
   };
 
   const onHoverMetabolite = (m: MetaboliteRecord | null) => {
+    if (childQuery) {
+      setHover(null);
+      return;
+    }
     if (!m?.atom?.length || typeof m.headIndex !== "number") {
       setHover(null);
       return;
@@ -199,17 +244,44 @@ export function GenerationView({
     setHover({ highlight, headIndex: m.headIndex });
   };
 
+  const showIdentity = depth > 0 || !identityInShell;
+
   return (
     <div
       className={
-        depth === 0 ? "mx-auto relative w-full" : "mx-auto relative w-full mt-2"
+        depth === 0 ? "mx-auto relative w-full" : "mx-auto relative w-full"
       }
     >
+      {depth > 0 ? (
+        <div className="border-t-2 border-gray-300 mt-4 pt-4">
+          <div className="flex justify-center mb-3">
+            <GenerationMarker
+              depth={depth}
+              label={moleculeDisplayName(resolved_query?.name) || undefined}
+              size="md"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {showIdentity ? (
+        <div className="px-2 pb-2">
+          <MoleculeIdentity resolved_query={resolved_query} showCopy />
+        </div>
+      ) : null}
+
+      {depth > 0 ? (
+        <>
+          <ModelTabs depth={depth} generations={generations} />
+          <AboutModel model={model} />
+        </>
+      ) : null}
+
       <div
         className={
           depth === 0
-            ? "w-fit mx-auto relative px-4 py-6"
-            : "w-fit mx-auto relative px-4 py-3"
+            ? "w-fit max-w-full mx-auto relative px-2 py-4 sm:px-4"
+            : "w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4"
         }
       >
         <div className="flex mx-auto mb-4 justify-center flex-wrap gap-4">
@@ -218,7 +290,7 @@ export function GenerationView({
             const isSelectedHead = selectedHeadIndex === i;
             const isHoverHead = hover?.headIndex === i;
             return (
-              <div key={r.model || i} className="mx-2">
+              <div key={r.model || i} className="mx-2 max-w-full">
                 {r.depiction ? (
                   <InteractiveMoleculeDepiction
                     svg={r.depiction}
@@ -232,6 +304,13 @@ export function GenerationView({
                     onSelect={
                       childQuery ? undefined : (hit) => applyHit(hit, i)
                     }
+                    onHover={
+                      childQuery
+                        ? undefined
+                        : (hit) => {
+                            setSiteHover(hitToSiteSelection(hit));
+                          }
+                    }
                   />
                 ) : null}
                 {results.length > 1 ? (
@@ -243,79 +322,16 @@ export function GenerationView({
             );
           })}
         </div>
-
-        {depth === 0 ? (
-          <div className="prose max-w-prose mx-auto">
-            {resolved_name?.name || resolved_query?.smiles ? (
-              <>
-                {resolved_name?.name ? (
-                  <h1 className="text-xl font-bold pb-3">
-                    {capitalize(resolved_name.name)}
-                  </h1>
-                ) : null}
-                <div className="pb-3 text-xs text-gray-500">
-                  {resolved_query?.smiles}
-                </div>
-                {resolved_name?.description ? (
-                  <>
-                    {resolved_name.description}
-                    {resolved_name.chebi ? (
-                      <span>
-                        {" "}
-                        [
-                        <a
-                          className="underline"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          href={resolved_name.chebiUrl}
-                        >
-                          CHEBI
-                        </a>
-                        ]
-                      </span>
-                    ) : null}
-                  </>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-        ) : (
-          <div className="text-center text-xs text-gray-500 pb-1">
-            {resolved_name?.name
-              ? capitalize(resolved_name.name)
-              : resolved_query?.smiles}
-          </div>
-        )}
-
-        {depth === 0 ? (
-          <div className="print:hidden p-3 w-fit absolute bottom-0 right-0">
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(
-                  JSON.stringify(resolved_query, null, 2),
-                );
-              }}
-              className="print:hidden text-gray-300 w-fit hover:text-black ml-auto block hover:underline cursor-copy"
-            >
-              copy
-            </button>
-          </div>
-        ) : null}
       </div>
 
-      {depth > 0 ? (
-        <>
-          <ModelTabs nested depth={depth} generations={generations} />
-          <AboutModel nested model={model} />
-        </>
-      ) : null}
-
       {children}
-      {showPanel && !childQuery ? (
+
+      {showPanel ? (
         <MetabolitePanel
           metabolites={metabolites}
-          selection={siteSelection}
+          selection={panelSelection}
+          selectedSmiles={childQuery}
+          depth={depth}
           onSelectMetabolite={onSelectMetabolite}
           onHoverMetabolite={onHoverMetabolite}
         />
@@ -325,7 +341,8 @@ export function GenerationView({
 }
 
 /**
- * Root layout: generation 0 depiction + Outlet for /m/* (panel when no nested hops).
+ * Root layout: generation 0 depiction + Outlet for /m/* .
+ * Identity for depth 0 is rendered in the app shell under the search box.
  */
 export function MoleculeFocusRootLayout({
   resolved_query,
@@ -350,7 +367,8 @@ export function MoleculeFocusRootLayout({
       resolved_query={resolved_query}
       model={model}
       generations={generations}
-      showPanel={!hasNested}
+      showPanel
+      identityInShell
     >
       {hasNested ? <Outlet /> : null}
     </GenerationView>
@@ -377,18 +395,14 @@ export function MoleculeFocusNestedStack({
         if (!gen) return null;
         const isLeaf = i === chain.length - 1;
         return (
-          <div
+          <GenerationView
             key={`${gen.model}:${gen.query}:${depth}`}
-            className="border-t border-gray-100"
-          >
-            <GenerationView
-              depth={depth}
-              resolved_query={resolved}
-              model={gen.model}
-              generations={generations}
-              showPanel={isLeaf}
-            />
-          </div>
+            depth={depth}
+            resolved_query={resolved}
+            model={gen.model}
+            generations={generations}
+            showPanel={isLeaf}
+          />
         );
       })}
     </>

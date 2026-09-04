@@ -24,8 +24,16 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import { useNavigation } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { AboutModel, ModelTabs, Spinner, XDot, Gtag } from "~/components";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AboutModel,
+  MetabolitePathNav,
+  ModelTabs,
+  MoleculeIdentity,
+  Spinner,
+  XDot,
+  Gtag,
+} from "~/components";
 import HEADERS from "~/loaders/headers";
 import { getQueryUrl } from "~/utils";
 import { MODELS } from "~/data";
@@ -33,6 +41,7 @@ import {
   parseMoleculeFocusPath,
 } from "~/utils/metabolitePath";
 import { isSearchBoxNavigation } from "~/utils/navigationLoading";
+import { buildPathCrumbs } from "~/utils/pathNav";
 
 
 export const headers: HeadersFunction = ({
@@ -119,6 +128,40 @@ export default function App() {
   const message = "";
   const [new_query, setNewQuery] = useState<string | null>(query || "");
 
+  const rootMoleculeData = useMemo(() => {
+    for (const m of matches) {
+      const d = m.data as { resolved_query?: unknown } | undefined;
+      if (d && typeof d === "object" && "resolved_query" in d) {
+        return d as {
+          resolved_query?: any;
+          query?: string;
+          model?: string;
+        };
+      }
+    }
+    return null;
+  }, [matches]);
+
+  const nestedChain = useMemo(() => {
+    for (const m of matches) {
+      const d = m.data as { chain?: any[] } | undefined;
+      if (d && typeof d === "object" && Array.isArray(d.chain)) {
+        return d.chain;
+      }
+    }
+    return [] as any[];
+  }, [matches]);
+
+  const pathCrumbs = useMemo(() => {
+    const generations = parsed?.generations;
+    if (!generations?.length) return [];
+    const names = [
+      rootMoleculeData?.resolved_query?.name,
+      ...nestedChain.map((c) => c?.name),
+    ];
+    return buildPathCrumbs({ generations, names });
+  }, [parsed?.generations, rootMoleculeData, nestedChain]);
+
   useEffect(() => {
     setNewQuery(query || "");
   }, [query]);
@@ -133,6 +176,8 @@ export default function App() {
       clearTimeout(debounced);
     };
   }, [new_query, model, query, navigate]);
+
+  const hasMolecule = !!rootMoleculeData?.resolved_query && !rootMoleculeData.resolved_query?.detail;
 
   return (
     <html lang="en">
@@ -176,6 +221,18 @@ export default function App() {
                 <div className="text-red-400 text-sm">{message}</div>
               ) : null}
             </div>
+
+            {/* Stable identity slot under query — keeps model tabs from bouncing. */}
+            <div className="min-h-[4.5rem] flex flex-col justify-center">
+              {hasMolecule ? (
+                <MoleculeIdentity
+                  resolved_query={rootMoleculeData!.resolved_query}
+                  showCopy
+                />
+              ) : null}
+            </div>
+
+            <MetabolitePathNav crumbs={pathCrumbs} />
 
             {/* Primary model menu: changes only the root generation's model. */}
             <ModelTabs generations={parsed?.generations} depth={0} />

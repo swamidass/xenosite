@@ -8,6 +8,10 @@ export { default as InteractiveMoleculeDepiction } from "./InteractiveMoleculeDe
 export { default as MetabolitePanel } from "./MetabolitePanel";
 export { default as LazyMetaboliteImg } from "./LazyMetaboliteImg";
 export { default as AboutModel } from "./AboutModel";
+export { default as MoleculeIdentity } from "./MoleculeIdentity";
+export { default as MetabolitePathNav } from "./MetabolitePathNav";
+export { default as GenerationMarker } from "./GenerationMarker";
+export { default as CopyJsonButton } from "./CopyJsonButton";
 export { default as Spinner } from "./Spinner";
 export { default as XDot } from "./XDot";
 export { default as OpenGraphImage } from "./OpenGraphImage";

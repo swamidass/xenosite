@@ -2,6 +2,7 @@ import { Link, useLocation, useMatches } from "@remix-run/react";
 import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { Tab } from "@headlessui/react";
+import GenerationMarker from "~/components/GenerationMarker";
 import { MODELS } from "~/data";
 import { classNames } from "~/utils";
 import {
@@ -17,8 +18,6 @@ export interface ModelMenuProps {
   generations?: FocusGeneration[];
   /** Which generation's model this menu controls (0 = root). */
   depth?: number;
-  /** Compact nested menu under a selected metabolite. */
-  nested?: boolean;
   /** @deprecated Prefer generations. */
   segments?: string[];
 }
@@ -27,7 +26,6 @@ export function ModelTabs({
   children,
   generations,
   depth = 0,
-  nested = false,
   segments,
 }: ModelMenuProps): JSX.Element {
   const matches = useMatches();
@@ -52,35 +50,29 @@ export function ModelTabs({
         : []);
   const model = gens[depth]?.model ?? parsed?.model ?? leafParams.model;
   const selectedIndex = MODELS.findIndex((x) => x.path === model);
+  const showGenMarker = depth > 0 || gens.length > 1;
 
   return (
-    <div
-      className={classNames(
-        "w-full sm:px-0",
-        nested ? "px-2 py-2" : "px-2 py-4",
-      )}
-    >
+    <div className="w-full px-2 py-3 sm:px-0">
+      {showGenMarker ? (
+        <div className="flex justify-center mb-2">
+          <GenerationMarker depth={depth} label="Model" />
+        </div>
+      ) : null}
       <Tab.Group
         as="div"
         {...(selectedIndex >= 0 ? { selectedIndex } : {})}
       >
-        <Tab.List
-          className={classNames(
-            "flex flex-wrap space-x-1 rounded-xl p-1 justify-center",
-            nested && "bg-gray-50",
-          )}
-        >
+        <Tab.List className="flex flex-wrap gap-1 rounded-xl p-1 justify-center">
           {MODELS.map((x, i) => (
             <div
               className={classNames(
                 x.path === model
                   ? "bg-gray-200 text-gray-900"
                   : "text-gray-700 hover:bg-gray-100",
-                nested
-                  ? "block px-3 py-1.5 text-xs sm:m-0.5"
-                  : "block px-4 py-2 text-sm sm:m-1",
+                "block px-3 py-2 text-sm sm:px-4 sm:m-0.5 rounded-lg",
               )}
-              key={`tab-${nested ? "n" : "p"}-${depth}-${i}`}
+              key={`tab-p-${depth}-${i}`}
             >
               <Tab as={Fragment}>
                 <Link
@@ -95,6 +87,7 @@ export function ModelTabs({
                         })
                       : `/${x.path}`
                   }
+                  className="min-h-[2rem] inline-flex items-center"
                 >
                   {x.model}
                 </Link>
@@ -108,7 +101,7 @@ export function ModelTabs({
           ) : (
             <Tab.Panels>
               {MODELS.map((x, i) => (
-                <Tab.Panel key={`tab-panel-${nested ? "n" : "p"}-${depth}-${i}`}>
+                <Tab.Panel key={`tab-panel-p-${depth}-${i}`}>
                   {children}
                 </Tab.Panel>
               ))}
