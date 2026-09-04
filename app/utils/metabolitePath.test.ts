@@ -9,6 +9,7 @@ import {
   focusQuery,
   generationsFromParams,
   hopParamNames,
+  hopRouteId,
   moleculeFocusUrl,
   parseMetaboliteSlug,
   parseMolStub,
@@ -317,5 +318,12 @@ describe("resolveHeadIndex / encodeHeadParam", () => {
 
   it("encodes a readable head slug when possible", () => {
     expect(encodeHeadParam(1, results)).toBe("hydrolysis");
+  });
+});
+
+describe("hopRouteId", () => {
+  it("nests Remix route ids per hop depth", () => {
+    expect(hopRouteId(0)).toBe("routes/_model.$model.$query");
+    expect(hopRouteId(1)).toBe("routes/_model.$model.$query.$met1.$m1.$q1");
   });
 });

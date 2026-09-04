@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   applyPairAtomClick,
   effectiveMetabolitePanelSelection,
+  highlightToSiteSelection,
+  hitToSiteSelection,
   metaboliteSelectUrl,
   somSelectUrl,
   toggleSomHighlight,
@@ -50,6 +52,23 @@ describe("effectiveMetabolitePanelSelection", () => {
         hover: null,
       }),
     ).toEqual(committed);
+  });
+});
+
+describe("hit / highlight to site selection", () => {
+  it("maps hits and highlights, ignoring empty overlays", () => {
+    expect(hitToSiteSelection(null)).toBeNull();
+    expect(
+      hitToSiteSelection({ kind: "atom", atomIdxs: [1, 2] }),
+    ).toEqual({ atomIdxs: [1, 2], bondIdx: null });
+    expect(
+      hitToSiteSelection({ kind: "bond", atomIdxs: [1, 2], bondIdx: 3 }),
+    ).toEqual({ atomIdxs: [1, 2], bondIdx: 3 });
+    expect(highlightToSiteSelection(null)).toBeNull();
+    expect(highlightToSiteSelection({ atomIdxs: [], bondIdx: null })).toBeNull();
+    expect(
+      highlightToSiteSelection({ atomIdxs: [4], bondIdx: null }),
+    ).toEqual({ atomIdxs: [4], bondIdx: null });
   });
 });
 
@@ -145,6 +164,24 @@ describe("metaboliteSelectUrl", () => {
       }),
     ).toBe("/phase1/" + encodeURIComponent("aspirin;1,2"));
   });
+
+  it("stays put at the last hop when another metabolite cannot be appended", () => {
+    const generations = [
+      { model: "phase1", query: "a" },
+      { model: "ugt", query: "b" },
+      { model: "ugt", query: "c" },
+      { model: "ugt", query: "d" },
+      { model: "ugt", query: "e" },
+    ];
+    expect(
+      metaboliteSelectUrl({
+        generations,
+        depth: 4,
+        metaboliteSmiles: "f",
+        childQuery: null,
+      }),
+    ).toBe("/phase1/a/b/ugt/b/c/ugt/c/d/ugt/d/e/ugt/e");
+  });
 });
 
 describe("somSelectUrl", () => {
@@ -167,6 +204,16 @@ describe("somSelectUrl", () => {
         encodeURIComponent("aspirin;1,3;b2") +
         "?head=hydrolysis",
     );
+  });
+
+  it("omits the head query when none is provided", () => {
+    expect(
+      somSelectUrl({
+        generations: [{ model: "phase1", query: "aspirin" }],
+        depth: 0,
+        atomIdxs: [1],
+      }),
+    ).toBe("/phase1/" + encodeURIComponent("aspirin;1"));
   });
 });
 
@@ -192,5 +239,12 @@ describe("applyPairAtomClick", () => {
     expect(
       applyPairAtomClick(pair, { kind: "atom", atomIdxs: [5] }),
     ).toEqual({ atomIdxs: [5] });
+  });
+
+  it("returns null for a missing or non-integer hit", () => {
+    expect(applyPairAtomClick(null, null)).toBeNull();
+    expect(
+      applyPairAtomClick(null, { kind: "atom", atomIdxs: [1.5] }),
+    ).toBeNull();
   });
 });

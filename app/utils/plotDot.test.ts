@@ -122,6 +122,14 @@ describe("plotDotScaleLayout (xenopict overlap)", () => {
     const sorted = [...keys].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     expect(keys).toEqual(sorted);
   });
+
+  it("shades all 9 slots when dense", () => {
+    const { atoms } = plotDotScaleLayout({ dense: true });
+    expect(atoms.every((a) => a.value != null)).toBe(true);
+    expect(atoms[0]?.label).toBe("1.0");
+    expect(atoms[4]?.label).toBe("0.5");
+    expect(atoms[8]?.label).toBe("0.0");
+  });
 });
 
 describe("plotDotScaleBarSvg", () => {

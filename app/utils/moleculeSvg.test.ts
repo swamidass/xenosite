@@ -37,6 +37,25 @@ describe("parseDepictionMetadata", () => {
     expect(meta!.viewBox).toEqual({ x: 0, y: 0, width: 40, height: 30 });
   });
 
+  it("falls back to height-before-width attributes", () => {
+    const svg = `<svg height="30" width="40"><script type="application/json">{"coords":[[1,2]],"scale":10}</script></svg>`;
+    const meta = parseDepictionMetadata(svg);
+    expect(meta!.viewBox).toEqual({ x: 0, y: 0, width: 40, height: 30 });
+  });
+
+  it("returns null for invalid JSON or coords", () => {
+    expect(
+      parseDepictionMetadata(
+        `<svg viewBox="0 0 10 10"><script type="application/json">{not json}</script></svg>`,
+      ),
+    ).toBeNull();
+    expect(
+      parseDepictionMetadata(
+        `<svg viewBox="0 0 10 10"><script type="application/json">{"coords":[[1]],"scale":1}</script></svg>`,
+      ),
+    ).toBeNull();
+  });
+
   it("parses HTML-escaped JSON from deployed Xenopict SVGs", () => {
     const svg = `<svg viewBox="0 0 100 80"><script type="application/json">{&quot;coords&quot;: [[18.0, 17.8], [39.4, 5.4]], &quot;scale&quot;: 20}</script></svg>`;
     const meta = parseDepictionMetadata(svg);

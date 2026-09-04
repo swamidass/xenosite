@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   collectMetabolites,
+  exactSiteMatch,
   findMetaboliteBySmiles,
   formatPathwayLabel,
   matchFormationEdge,
+  metaboliteMatchIndex,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
   siteAtomsMatch,
@@ -146,6 +148,30 @@ describe("collectMetabolites", () => {
     expect(list).toHaveLength(3);
     expect(list.map((m) => m.headIndex)).toEqual([0, 1, 1]);
     expect(list[1].headModel).toBe("phase1.hydrolysis");
+  });
+
+  it("skips records without smiles", () => {
+    expect(
+      collectMetabolites([
+        { metabolite: [{ score: 1 }, { smiles: "CCO" }] },
+      ]),
+    ).toEqual([
+      expect.objectContaining({ smiles: "CCO", headIndex: 0 }),
+    ]);
+  });
+});
+
+describe("exactSiteMatch / metaboliteMatchIndex", () => {
+  it("requires every selected atom to appear in the site", () => {
+    expect(exactSiteMatch([0, 1], [0])).toBe(true);
+    expect(exactSiteMatch([0, 1], [0, 2])).toBe(false);
+  });
+
+  it("returns the CIP-aware index among same-smiles matches", () => {
+    const a = { smiles: "CCO", atom: [0], score: 0.9, headIndex: 0 };
+    const b = { smiles: "CCO", atom: [0], score: 0.8, headIndex: 0 };
+    expect(metaboliteMatchIndex([a, b], b)).toBe(1);
+    expect(metaboliteMatchIndex([a], { smiles: "CCC", atom: [0] })).toBe(0);
   });
 });
 
@@ -296,5 +322,25 @@ describe("validateChildFormationEdge / matchFormationEdge", () => {
         cip,
       ).ok,
     ).toBe(true);
+  });
+
+  it("rejects a missing SMILES or an out-of-range matchIndex", () => {
+    expect(validateChildFormationEdge(mets, { smiles: "" }).reason).toMatch(
+      /missing child SMILES/,
+    );
+    expect(
+      matchFormationEdge(mets, {
+        smiles: "Oc1cccc(O)c1",
+        headIndex: 0,
+        matchIndex: 9,
+      }),
+    ).toBeNull();
+    expect(
+      validateChildFormationEdge(mets, {
+        smiles: "Oc1cccc(O)c1",
+        headIndex: 0,
+        matchIndex: 9,
+      }).reason,
+    ).toMatch(/out of range/);
   });
 });
