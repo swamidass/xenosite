@@ -25,8 +25,9 @@ describe("rankMetabolites", () => {
   it("returns top 5 by score when unselected", () => {
     const { shown, totalMatching } = rankMetabolites(sample);
     expect(shown).toHaveLength(5);
-    expect(shown.map((m) => m.smiles)).toEqual(["A", "E", "F", "G", "B"]);
-    expect(totalMatching).toBe(7); // all unique smiles; A deduped
+    // Same SMILES with different pathways (A/ox vs A/dup) are both kept.
+    expect(shown.map((m) => m.smiles)).toEqual(["A", "A", "E", "F", "G"]);
+    expect(totalMatching).toBe(8);
   });
 
   it("unselected multi-head merges then sorts by score", () => {
@@ -63,8 +64,9 @@ describe("rankMetabolites", () => {
       selection: { atomIdxs: [0] },
     });
     expect(shown.every((m) => (m.atom || []).includes(0))).toBe(true);
-    expect(totalMatching).toBe(3); // A, C, E with atom 0
+    expect(totalMatching).toBe(4); // A/ox, A/dup, C, E
     expect(shown[0].smiles).toBe("A");
+    expect(shown[0].score).toBe(0.99);
   });
 
   it("includes low-scoring site matches", () => {
@@ -76,16 +78,34 @@ describe("rankMetabolites", () => {
     expect(shown.map((m) => m.smiles)).toEqual(["D", "LOW"]);
   });
 
-  it("dedupes by SMILES keeping the highest score", () => {
+  it("dedupes only when smiles, pathway, and SOM all match", () => {
     const { shown, totalMatching } = rankMetabolites([
-      { smiles: "SAL", atom: [0], score: 0.05 },
-      { smiles: "SAL", atom: [1, 3], score: 0.89 },
-      { smiles: "OTHER", atom: [2], score: 0.3 },
+      { smiles: "SAL", atom: [0], pathway: "ox", score: 0.05 },
+      { smiles: "SAL", atom: [1, 3], pathway: "ox", score: 0.89 }, // different SOM
+      { smiles: "SAL", atom: [0], pathway: "red", score: 0.4 }, // different pathway
+      { smiles: "SAL", atom: [0], pathway: "ox", score: 0.02 }, // true dup of first
+      { smiles: "OTHER", atom: [2], pathway: "ox", score: 0.3 },
     ]);
+    expect(totalMatching).toBe(4);
+    expect(shown.map((m) => [m.smiles, m.pathway, m.atom, m.score])).toEqual([
+      ["SAL", "ox", [1, 3], 0.89],
+      ["SAL", "red", [0], 0.4],
+      ["OTHER", "ox", [2], 0.3],
+      ["SAL", "ox", [0], 0.05],
+    ]);
+  });
+
+  it("keeps both cleavage products that share a SOM", () => {
+    const { shown, totalMatching } = rankMetabolites(
+      [
+        { smiles: "C=O", atom: [0, 1], pathway: "Dealkylation", score: 0.47 },
+        { smiles: "CO", atom: [0, 1], pathway: "Dealkylation", score: 0.47 },
+        { smiles: "OTHER", atom: [2], pathway: "ox", score: 0.1 },
+      ],
+      { selection: { atomIdxs: [0, 1] } },
+    );
     expect(totalMatching).toBe(2);
-    expect(shown.map((m) => m.smiles)).toEqual(["SAL", "OTHER"]);
-    expect(shown[0].score).toBe(0.89);
-    expect(shown[0].atom).toEqual([1, 3]);
+    expect(shown.map((m) => m.smiles).sort()).toEqual(["C=O", "CO"]);
   });
 });
 
@@ -200,15 +220,16 @@ describe("rankMetabolites CIP selection", () => {
     expect(shown[0].smiles).toBe("o12");
   });
 
-  it("prefers the exact atom list when duplicate SMILES exist", () => {
-    const { shown } = rankMetabolites(
+  it("keeps same SMILES at CIP-equivalent but distinct SOMs", () => {
+    const { shown, totalMatching } = rankMetabolites(
       [
-        { smiles: "o12", atom: [1, 2], score: 0.31 },
-        { smiles: "o12", atom: [1, 6], score: 0.31 },
+        { smiles: "o12", atom: [1, 2], pathway: "QuinoneFormation", score: 0.31 },
+        { smiles: "o12", atom: [1, 6], pathway: "QuinoneFormation", score: 0.31 },
       ],
       { selection: { atomIdxs: [1, 6] }, cipRank: phenolCip },
     );
-    expect(shown[0].atom).toEqual([1, 6]);
+    expect(totalMatching).toBe(2);
+    expect(shown.map((m) => m.atom)).toEqual([[1, 2], [1, 6]]);
   });
 });
 

@@ -134,36 +134,30 @@ function matchesSelection(
 }
 
 /**
- * Dedupe by SMILES (highest score). When scores tie and a site selection is
- * present, prefer the record whose atoms exactly match the selection.
+ * Collapse true duplicates only: same SMILES + pathway + SOM.
+ * Different structures, pathways, or sites are kept separately (e.g. both
+ * cleavage products at one site, or the same SMILES from different sites).
  */
-function dedupeBySmiles(
-  list: MetaboliteRecord[],
-  selection?: SiteSelection | null,
-): MetaboliteRecord[] {
-  const preferAtoms = selection?.atomIdxs?.length
-    ? selection.atomIdxs
-    : null;
+function metaboliteIdentityKey(m: MetaboliteRecord): string {
+  const smiles = String(m.smiles || "");
+  const pathway = String(m.pathway || "");
+  const som = (m.atom || [])
+    .map(Number)
+    .filter((n) => Number.isInteger(n) && n >= 0)
+    .sort((a, b) => a - b)
+    .join(",");
+  return `${smiles}\0${pathway}\0${som}`;
+}
+
+function dedupeMetabolites(list: MetaboliteRecord[]): MetaboliteRecord[] {
   const best = new Map<string, MetaboliteRecord>();
   for (const m of list) {
-    const key = String(m.smiles || "");
-    if (!key) continue;
+    if (!m.smiles) continue;
+    const key = metaboliteIdentityKey(m);
     const prev = best.get(key);
-    if (!prev) {
+    if (!prev || scoreOf(m) > scoreOf(prev)) {
       best.set(key, m);
-      continue;
     }
-    const scoreDiff = scoreOf(m) - scoreOf(prev);
-    if (scoreDiff > 0) {
-      best.set(key, m);
-      continue;
-    }
-    if (scoreDiff < 0 || !preferAtoms) continue;
-    const siteNew = (m.atom || []).map(Number);
-    const sitePrev = (prev.atom || []).map(Number);
-    const exactNew = exactSiteMatch(siteNew, preferAtoms);
-    const exactPrev = exactSiteMatch(sitePrev, preferAtoms);
-    if (exactNew && !exactPrev) best.set(key, m);
   }
   return [...best.values()];
 }
@@ -175,7 +169,7 @@ export type RankMetabolitesResult = {
 
 /**
  * Rank metabolites for display. Never returns more than `cap` entries.
- * Merge heads, dedupe by SMILES, sort by score, then take the top N.
+ * Merge heads, dedupe identical smiles+pathway+SOM, sort by score, take top N.
  * Optional site/head selection filters before ranking (CIP-aware when `cipRank`
  * is provided).
  */
@@ -192,12 +186,10 @@ export function rankMetabolites(
   const selection = options.selection;
   const cipRank = options.cipRank;
 
-  // Filter before dedupe so equivalent site records remain available to match,
-  // then dedupe preferring an exact atom list for the selection when tied.
   let list = (metabolites || []).filter((m) =>
     matchesSelection(m, selection, cipRank),
   );
-  list = dedupeBySmiles(list, selection);
+  list = dedupeMetabolites(list);
   list.sort((a, b) => scoreOf(b) - scoreOf(a));
 
   return {
