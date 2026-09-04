@@ -9,8 +9,8 @@ import {
 describe("somStrokeWidths", () => {
   it("scales stroke with depiction scale", () => {
     const { black, white } = somStrokeWidths(20);
-    expect(black).toBeCloseTo(3.6);
-    expect(white).toBeCloseTo(2.2);
+    expect(black).toBeCloseTo(5.2);
+    expect(white).toBeCloseTo(3.2);
   });
 });
 
