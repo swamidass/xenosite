@@ -13,6 +13,7 @@
  *
  * Usage:
  *   make sitemap-inventory
+ *   make sitemap-inventory-force
  *   SITEMAP_MIN_SCORE=0.25 SITEMAP_WORKERS=32 node scripts/sitemap-inventory.js
  */
 const fs = require("fs");
