@@ -529,7 +529,9 @@ export function GenerationView({
 
       {showPanel && predictionReady ? (
         <>
-          <GenerationBanner depth={depth} className="mt-2 mb-2" />
+          {metabolites.length > 0 ? (
+            <GenerationBanner depth={depth} className="mt-2 mb-2" />
+          ) : null}
           <MetabolitePanel
             metabolites={metabolites}
             selection={panelSelection}
