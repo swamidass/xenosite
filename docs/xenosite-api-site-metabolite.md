@@ -75,14 +75,24 @@ In `depictor` (or right after predictions are assembled, before return):
 
 **Verify:** Unit tests that (a) ChEBI hits attach `name`, (b) misses stay `None`, (c) enrichment never constructs `Xenopict` for metabolites, (d) existing depiction tests still pass and now assert embedded JSON when `depict=true`.
 
-**Deploy status:** Unknown — prediction endpoints 503; cannot inspect live `results[].metabolite[].name`.
+**Deploy status:** Live `metabolites=true` responses populate `name` for some ChEBI hits (e.g. phase1/aspirin); many metabolites remain unnamed.
+
+---
+
+## 4. Drop RDKit-invalid metabolite SMILES
+
+When assembling `results[].metabolite`, **do not emit** products whose SMILES RDKit cannot parse/sanitize (e.g. pentavalent aromatic N-oxides like `NC(CC1=CN(O)=CN1)C(=O)O`). Prefer a charge-separated form (`…[n+]([O-])…`) or omit the product.
+
+**Why:** `/v1/depict` and prediction routes reject these with 422; the site must not offer undepictable / unresolvable metabolites. The frontend also filters known-bad patterns and drops depict failures, but the forest should not emit them.
+
+**Verify:** Histidine (`h`) phase1 NitrogenOxidation products include the charged N-oxide form and **not** `…CN(O)=CN…`.
 
 ---
 
 ## Out of scope for this API pass
 
 - Bioactivation as a live site model
-- Changing metabolite ranking/threshold (frontend: top 5, score ≥ 0.05)
+- Changing metabolite ranking/threshold (frontend: top 5, score ≥ 0.01)
 - Path URLs / `/m/` drill-down (frontend only)
 - Frontend overlay / hit-test UI
 
@@ -92,4 +102,5 @@ In `depictor` (or right after predictions are assembled, before return):
 2. Plain `/v1/depict` SVG also includes that JSON (optional but preferred for consistency).
 3. `Metabolite.name` is optional and populated best-effort.
 4. Prediction path never Xenopicts the metabolite list.
-5. Prediction model routes return 200 with ONNX available (blocked on current deploy).
+5. Metabolite lists omit SMILES RDKit cannot parse/sanitize.
+6. Prediction model routes return 200 with ONNX available (blocked on current deploy).

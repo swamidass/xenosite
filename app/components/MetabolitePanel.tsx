@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import { capitalize } from "~/utils";
 import {
+  METABOLITE_DISPLAY_CAP,
   rankMetabolites,
   type MetaboliteRecord,
   type SiteSelection,
@@ -24,6 +26,7 @@ function labelFor(m: MetaboliteRecord): string {
 
 /**
  * Top metabolites (≤5) below the focus molecule. Click navigates; hover highlights SOM.
+ * Candidates that fail depiction (RDKit-invalid SMILES) are dropped and backfilled.
  */
 export default function MetabolitePanel({
   metabolites,
@@ -33,11 +36,34 @@ export default function MetabolitePanel({
   hideWhenPathSelected,
   pathMetaboliteSmiles,
 }: MetabolitePanelProps) {
+  const [undepictable, setUndepictable] = useState<Set<string>>(() => new Set());
+
+  // Reset when the candidate pool changes (new molecule / selection).
+  const poolKey = useMemo(() => {
+    const { shown } = rankMetabolites(metabolites, {
+      selection,
+      cap: METABOLITE_DISPLAY_CAP * 4,
+    });
+    return shown.map((m) => m.smiles).join("|");
+  }, [metabolites, selection]);
+
+  useEffect(() => {
+    setUndepictable(new Set());
+  }, [poolKey]);
+
   if (hideWhenPathSelected && pathMetaboliteSmiles) {
     return null;
   }
 
-  const { shown } = rankMetabolites(metabolites, { selection });
+  const { shown: pool } = rankMetabolites(metabolites, {
+    selection,
+    cap: METABOLITE_DISPLAY_CAP * 4,
+  });
+  const shown = pool
+    .filter((m) => !undepictable.has(m.smiles))
+    .slice(0, METABOLITE_DISPLAY_CAP);
+
+  if (!shown.length && !pool.length) return null;
   if (!shown.length) return null;
 
   return (
@@ -60,6 +86,14 @@ export default function MetabolitePanel({
               <LazyMetaboliteImg
                 smiles={m.smiles}
                 alt={labelFor(m)}
+                onDepictError={() => {
+                  setUndepictable((prev) => {
+                    if (prev.has(m.smiles)) return prev;
+                    const next = new Set(prev);
+                    next.add(m.smiles);
+                    return next;
+                  });
+                }}
               />
               <div className="mt-2 text-xs text-center text-gray-700 break-all">
                 {labelFor(m)}

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type LazyMetaboliteImgProps = {
   smiles: string;
   alt: string;
   className?: string;
+  /** Called when /depict fails (e.g. RDKit-invalid SMILES). */
+  onDepictError?: () => void;
 };
 
 /**
@@ -13,9 +15,12 @@ export default function LazyMetaboliteImg({
   smiles,
   alt,
   className,
+  onDepictError,
 }: LazyMetaboliteImgProps) {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const onErrorRef = useRef(onDepictError);
+  onErrorRef.current = onDepictError;
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +36,9 @@ export default function LazyMetaboliteImg({
         setSrc("data:image/svg+xml;utf8," + encodeURIComponent(svg));
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (cancelled) return;
+        setFailed(true);
+        onErrorRef.current?.();
       });
 
     return () => {
@@ -40,13 +47,7 @@ export default function LazyMetaboliteImg({
   }, [smiles]);
 
   if (failed) {
-    return (
-      <div
-        className={`text-xs text-gray-400 text-center p-2 ${className || ""}`}
-      >
-        {smiles}
-      </div>
-    );
+    return null;
   }
 
   if (!src) {

@@ -54,42 +54,20 @@ function OverlayMarks({
     <>
       {marks.map((m, i) => {
         const key = `${tone}-${i}`;
-        if (m.kind === "atom") {
-          return (
-            <g key={key}>
-              <circle
-                className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--black`}
-                cx={m.x}
-                cy={m.y}
-                r={r}
-                strokeWidth={strokes.black}
-              />
-              <circle
-                className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--white`}
-                cx={m.x}
-                cy={m.y}
-                r={r}
-                strokeWidth={strokes.white}
-              />
-            </g>
-          );
-        }
         return (
           <g key={key}>
-            <line
+            <circle
               className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--black`}
-              x1={m.x1}
-              y1={m.y1}
-              x2={m.x2}
-              y2={m.y2}
+              cx={m.x}
+              cy={m.y}
+              r={r}
               strokeWidth={strokes.black}
             />
-            <line
+            <circle
               className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--white`}
-              x1={m.x1}
-              y1={m.y1}
-              x2={m.x2}
-              y2={m.y2}
+              cx={m.x}
+              cy={m.y}
+              r={r}
               strokeWidth={strokes.white}
             />
           </g>

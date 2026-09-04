@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
+  isUnparseableMetaboliteSmiles,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
 } from "./metabolites";
@@ -22,7 +23,26 @@ describe("rankMetabolites", () => {
     const { shown, totalMatching } = rankMetabolites(sample);
     expect(shown).toHaveLength(5);
     expect(shown.map((m) => m.smiles)).toEqual(["A", "E", "F", "G", "B"]);
-    expect(totalMatching).toBe(7); // all unique smiles ≥ 0.05; A deduped
+    expect(totalMatching).toBe(7); // all unique smiles ≥ 0.01; A deduped
+  });
+
+  it("unselected multi-head merges then sorts by score", () => {
+    const { shown, totalMatching } = rankMetabolites([
+      { smiles: "H0a", score: 0.4, atom: [0], headIndex: 0 },
+      { smiles: "H0b", score: 0.9, atom: [1], headIndex: 0 },
+      { smiles: "H1a", score: 0.3, atom: [2], headIndex: 1 },
+      { smiles: "H2a", score: 0.2, atom: [3], headIndex: 2 },
+      { smiles: "H0c", score: 0.8, atom: [4], headIndex: 0 },
+      { smiles: "H1b", score: 0.1, atom: [5], headIndex: 1 },
+    ]);
+    expect(totalMatching).toBe(6);
+    expect(shown.map((m) => m.smiles)).toEqual([
+      "H0b",
+      "H0c",
+      "H0a",
+      "H1a",
+      "H2a",
+    ]);
   });
 
   it("never exceeds display cap", () => {
@@ -62,6 +82,20 @@ describe("rankMetabolites", () => {
     expect(shown.map((m) => m.smiles)).toEqual(["SAL", "OTHER"]);
     expect(shown[0].score).toBe(0.89);
     expect(shown[0].atom).toEqual([1, 3]);
+  });
+
+  it("drops RDKit-invalid pentavalent N-oxide SMILES", () => {
+    const bad = "NC(CC1=CN(O)=CN1)C(=O)O";
+    const good = "NC(Cc1c[n+]([O-])c[nH]1)C(=O)O";
+    expect(isUnparseableMetaboliteSmiles(bad)).toBe(true);
+    expect(isUnparseableMetaboliteSmiles(good)).toBe(false);
+    const { shown, totalMatching } = rankMetabolites([
+      { smiles: bad, atom: [5], score: 0.9 },
+      { smiles: good, atom: [5], score: 0.9 },
+      { smiles: "CCO", atom: [0], score: 0.5 },
+    ]);
+    expect(totalMatching).toBe(2);
+    expect(shown.map((m) => m.smiles)).toEqual([good, "CCO"]);
   });
 });
 

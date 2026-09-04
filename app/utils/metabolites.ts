@@ -42,8 +42,20 @@ export type SiteSelection = {
   metaboliteSmiles?: string | null;
 };
 
-export const METABOLITE_SCORE_THRESHOLD = 0.05;
+export const METABOLITE_SCORE_THRESHOLD = 0.01;
 export const METABOLITE_DISPLAY_CAP = 5;
+
+/**
+ * Forest sometimes emits SMILES RDKit cannot parse (e.g. pentavalent aromatic
+ * N-oxides like `…N(O)=…`). Those must not appear in the metabolite panel;
+ * the API should drop them too — this is a frontend safety net.
+ */
+export function isUnparseableMetaboliteSmiles(smiles: string): boolean {
+  if (!smiles) return true;
+  // Pentavalent N-oxide without formal charges — RDKit: valence > permitted
+  if (/N\(O\)=/.test(smiles) || /=N\(O\)/.test(smiles)) return true;
+  return false;
+}
 
 function scoreOf(m: MetaboliteRecord) {
   return typeof m.score === "number" && Number.isFinite(m.score) ? m.score : 0;
@@ -53,7 +65,7 @@ function dedupeBySmiles(list: MetaboliteRecord[]): MetaboliteRecord[] {
   const best = new Map<string, MetaboliteRecord>();
   for (const m of list) {
     const key = String(m.smiles || "");
-    if (!key) continue;
+    if (!key || isUnparseableMetaboliteSmiles(key)) continue;
     const prev = best.get(key);
     if (!prev || scoreOf(m) > scoreOf(prev)) {
       best.set(key, m);
@@ -76,74 +88,6 @@ function matchesSelection(
   return atoms.every((a) => site.includes(a));
 }
 
-function groupByHead(
-  list: MetaboliteRecord[],
-): Map<number, MetaboliteRecord[]> {
-  const map = new Map<number, MetaboliteRecord[]>();
-  for (const m of list) {
-    const h = typeof m.headIndex === "number" ? m.headIndex : 0;
-    const arr = map.get(h);
-    if (arr) arr.push(m);
-    else map.set(h, [m]);
-  }
-  for (const arr of map.values()) {
-    arr.sort((a, b) => scoreOf(b) - scoreOf(a));
-  }
-  return map;
-}
-
-/**
- * Unselected multi-head default: at least the best metabolite from every head
- * that has any, then fill remaining cap slots with next-best overall
- * (preferring scores ≥ threshold).
- */
-function rankAcrossHeads(
-  list: MetaboliteRecord[],
-  threshold: number,
-  cap: number,
-): MetaboliteRecord[] {
-  const byHead = groupByHead(list);
-  if (byHead.size <= 1) {
-    const above = list.filter((m) => scoreOf(m) >= threshold);
-    return (above.length ? above : list).slice(0, cap);
-  }
-
-  const picked: MetaboliteRecord[] = [];
-  const used = new Set<string>();
-
-  // Best from each head (so every head is represented when possible).
-  const headWinners = [...byHead.entries()]
-    .map(([headIndex, mets]) => ({ headIndex, m: mets[0] }))
-    .filter((x) => x.m)
-    .sort((a, b) => scoreOf(b.m) - scoreOf(a.m));
-
-  for (const { m } of headWinners) {
-    if (picked.length >= cap) break;
-    const key = `${m.headIndex ?? 0}:${m.smiles}`;
-    if (used.has(key)) continue;
-    used.add(key);
-    picked.push(m);
-  }
-
-  // Fill remaining slots: prefer ≥ threshold, then any leftover by score.
-  const rest = list
-    .slice()
-    .sort((a, b) => scoreOf(b) - scoreOf(a));
-  const prefer = [
-    ...rest.filter((m) => scoreOf(m) >= threshold),
-    ...rest.filter((m) => scoreOf(m) < threshold),
-  ];
-  for (const m of prefer) {
-    if (picked.length >= cap) break;
-    const key = `${m.headIndex ?? 0}:${m.smiles}`;
-    if (used.has(key)) continue;
-    used.add(key);
-    picked.push(m);
-  }
-
-  return picked;
-}
-
 export type RankMetabolitesResult = {
   shown: MetaboliteRecord[];
   totalMatching: number;
@@ -151,8 +95,7 @@ export type RankMetabolitesResult = {
 
 /**
  * Rank metabolites for display. Never returns more than `cap` entries.
- * Unselected multi-head: best from each head, then fill remaining slots.
- * Unselected single-head: threshold then top N.
+ * Unselected: merge all heads, dedupe by SMILES, threshold, then top N by score.
  * Site-selected: filter then cap (drop threshold only if site would be empty).
  */
 export function rankMetabolites(
@@ -174,29 +117,24 @@ export function rankMetabolites(
     ((selection.atomIdxs && selection.atomIdxs.length > 0) ||
       !!selection.metaboliteSmiles);
 
-  let list = metabolites || [];
+  // Merge across heads (callers pass a flat list), then dedupe by SMILES.
+  let list = dedupeBySmiles(metabolites || []);
+  list = list.filter((m) => matchesSelection(m, selection));
+  list.sort((a, b) => scoreOf(b) - scoreOf(a));
 
-  if (hasSiteSelection) {
-    // Site filter across all heads; dedupe smiles to the best score.
-    list = dedupeBySmiles(list).filter((m) => matchesSelection(m, selection));
-    list.sort((a, b) => scoreOf(b) - scoreOf(a));
-    let filtered = list;
-    if (applyThreshold) {
-      const above = list.filter((m) => scoreOf(m) >= threshold);
-      if (above.length > 0) filtered = above;
-      // else keep site-filtered list regardless of threshold
+  let filtered = list;
+  if (applyThreshold) {
+    const above = list.filter((m) => scoreOf(m) >= threshold);
+    // Unselected: always apply threshold. Site-selected: drop it only if empty.
+    if (above.length > 0 || !hasSiteSelection) {
+      filtered = above;
     }
-    return {
-      shown: filtered.slice(0, cap),
-      totalMatching: filtered.length,
-    };
   }
 
-  // No site selection — keep per-head identity so every head can contribute.
-  const shown = rankAcrossHeads(list, threshold, cap);
-  // totalMatching: unique smiles after global dedupe for "how many exist" sense
-  const totalMatching = dedupeBySmiles(list).length;
-  return { shown, totalMatching };
+  return {
+    shown: filtered.slice(0, cap),
+    totalMatching: filtered.length,
+  };
 }
 
 /**

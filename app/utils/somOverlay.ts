@@ -21,24 +21,18 @@ export type SomHighlight = {
 
 export type OverlayMark =
   | { kind: "atom"; x: number; y: number }
-  | {
-      kind: "bond";
-      x1: number;
-      y1: number;
-      x2: number;
-      y2: number;
-    };
+  | { kind: "bond"; x: number; y: number };
 
 /**
  * Build overlay mark primitives for a highlight against depiction coords.
- * Bond highlights also include endpoint atom marks so the site reads clearly.
+ * Bond sites: one circle at the bond midpoint (XenoSite convention).
  */
 export function buildOverlayMarks(
   highlight: SomHighlight | null | undefined,
   coords: [number, number][],
   bondsIdx: [number, number][],
 ): OverlayMark[] {
-  if (!highlight?.atomIdxs?.length) return [];
+  if (!highlight) return [];
   const marks: OverlayMark[] = [];
 
   if (
@@ -55,18 +49,14 @@ export function buildOverlayMarks(
     ) {
       marks.push({
         kind: "bond",
-        x1: coords[a][0],
-        y1: coords[a][1],
-        x2: coords[b][0],
-        y2: coords[b][1],
+        x: (coords[a][0] + coords[b][0]) / 2,
+        y: (coords[a][1] + coords[b][1]) / 2,
       });
-      marks.push({ kind: "atom", x: coords[a][0], y: coords[a][1] });
-      marks.push({ kind: "atom", x: coords[b][0], y: coords[b][1] });
       return marks;
     }
   }
 
-  for (const idx of highlight.atomIdxs) {
+  for (const idx of highlight.atomIdxs || []) {
     if (idx < 0 || idx >= coords.length) continue;
     marks.push({ kind: "atom", x: coords[idx][0], y: coords[idx][1] });
   }

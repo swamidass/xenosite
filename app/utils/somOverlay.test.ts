@@ -49,14 +49,10 @@ describe("buildOverlayMarks", () => {
     ]);
   });
 
-  it("prefers a bond mark when bondIdx is set", () => {
+  it("places a circle at the bond midpoint when bondIdx is set", () => {
     expect(
       buildOverlayMarks({ atomIdxs: [0, 1], bondIdx: 0 }, coords, bonds),
-    ).toEqual([
-      { kind: "bond", x1: 0, y1: 0, x2: 10, y2: 0 },
-      { kind: "atom", x: 0, y: 0 },
-      { kind: "atom", x: 10, y: 0 },
-    ]);
+    ).toEqual([{ kind: "bond", x: 5, y: 0 }]);
   });
 
   it("returns empty when highlight missing", () => {
