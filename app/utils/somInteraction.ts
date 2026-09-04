@@ -6,7 +6,10 @@ import type { SiteSelection } from "~/utils/metabolites";
 import type { SiteHit } from "~/utils/siteHitTest";
 import type { SomHighlight } from "~/utils/somOverlay";
 import {
+  canAppendMetaboliteHop,
   moleculeFocusUrl,
+  selectMetaboliteGeneration,
+  withGenerationSom,
   type FocusGeneration,
 } from "~/utils/metabolitePath";
 
@@ -32,15 +35,18 @@ export function highlightToSiteSelection(
 }
 
 /**
- * Panel selection: committed path/URL wins; hover previews only when no
- * downstream metabolite is selected.
+ * Panel selection: committed path/URL wins; hover previews when present.
+ * When a child hop is selected, only hover filters the browse grid (null =
+ * show the full ranked list for "Show metabolites").
  */
 export function effectiveMetabolitePanelSelection(opts: {
   childQuery?: string | null;
   committed: SiteSelection | null;
   hover: SiteSelection | null;
+  /** @deprecated Unused — kept for call-site compat. */
+  siteSelection?: SiteSelection | null;
 }): SiteSelection | null {
-  if (opts.childQuery) return opts.committed;
+  if (opts.childQuery) return opts.hover ?? null;
   return opts.hover || opts.committed;
 }
 
@@ -90,9 +96,8 @@ export function applyPairAtomClick(
 }
 
 /**
- * Navigate to this generation with an optional SOM selection, dropping any
- * deeper metabolite hops. Used when a child metabolite is selected and the
- * user clicks a SOM on the parent depiction.
+ * Navigate to this generation with an optional SOM on its mol stub, dropping
+ * any deeper metabolite hops. Head filter may remain as `?head=` when provided.
  */
 export function somSelectUrl(opts: {
   generations: FocusGeneration[];
@@ -101,41 +106,58 @@ export function somSelectUrl(opts: {
   bondIdx?: number | null;
   head?: string | null;
 }): string {
-  const gens = opts.generations.slice(0, opts.depth + 1);
+  const gens = withGenerationSom(
+    opts.generations,
+    opts.depth,
+    opts.atomIdxs,
+    opts.bondIdx,
+  );
   const path = moleculeFocusUrl({ generations: gens });
+  if (!opts.head) return path;
   const search = new URLSearchParams();
-  for (const a of opts.atomIdxs || []) {
-    search.append("atom", String(a));
-  }
-  if (opts.bondIdx != null && Number.isInteger(opts.bondIdx)) {
-    search.set("bond", String(opts.bondIdx));
-  }
-  if (opts.head) search.set("head", opts.head);
-  const q = search.toString();
-  return q ? `${path}?${q}` : path;
+  search.set("head", opts.head);
+  return `${path}?${search}`;
 }
 
 /**
- * Selecting the already-active metabolite pops that hop; otherwise append.
+ * Selecting the already-active metabolite pops that hop; otherwise select/replace
+ * the child hop, preserving an existing child's prediction model.
+ * Formation site is written onto the parent mol stub.
  */
 export function metaboliteSelectUrl(opts: {
   generations: FocusGeneration[];
   depth: number;
   metaboliteSmiles: string;
   childQuery?: string | null;
+  headIndex?: number | null;
+  site?: number[];
+  matchIndex?: number | null;
+  search?: string;
 }): string {
-  const { generations, depth, metaboliteSmiles, childQuery } = opts;
+  const {
+    generations,
+    depth,
+    metaboliteSmiles,
+    childQuery,
+    headIndex,
+    site,
+    matchIndex,
+    search,
+  } = opts;
   const base = generations.slice(0, depth + 1);
   if (childQuery && childQuery === metaboliteSmiles) {
     return moleculeFocusUrl({ generations: base });
   }
+  if (!canAppendMetaboliteHop(depth) && !generations[depth + 1]) {
+    return moleculeFocusUrl({ generations: base });
+  }
   return moleculeFocusUrl({
-    generations: [
-      ...base,
-      {
-        model: base[base.length - 1]?.model || "",
-        query: metaboliteSmiles,
-      },
-    ],
+    generations: selectMetaboliteGeneration(
+      generations,
+      depth,
+      metaboliteSmiles,
+      { headIndex, site, matchIndex },
+    ),
+    search,
   });
 }

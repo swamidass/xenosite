@@ -21,14 +21,25 @@ describe("effectiveMetabolitePanelSelection", () => {
     ).toEqual(hover);
   });
 
-  it("ignores hover when a downstream metabolite is selected", () => {
+  it("uses hover to filter while a downstream metabolite is selected", () => {
+    const site = { atomIdxs: [1, 4], bondIdx: null };
     expect(
       effectiveMetabolitePanelSelection({
         childQuery: "O=C(O)c1ccccc1O",
         committed: { metaboliteSmiles: "O=C(O)c1ccccc1O" },
-        hover,
+        hover: site,
       }),
-    ).toEqual({ metaboliteSmiles: "O=C(O)c1ccccc1O" });
+    ).toEqual(site);
+  });
+
+  it("shows the full list when a child is selected and nothing is hovered", () => {
+    expect(
+      effectiveMetabolitePanelSelection({
+        childQuery: "O=C(O)c1ccccc1O",
+        committed: { metaboliteSmiles: "O=C(O)c1ccccc1O" },
+        hover: null,
+      }),
+    ).toBeNull();
   });
 
   it("falls back to committed when not hovering", () => {
@@ -61,26 +72,78 @@ describe("metaboliteSelectUrl", () => {
     { model: "phase1", query: "O=C(O)c1ccccc1O" },
   ];
 
-  it("appends a new metabolite hop", () => {
+  it("appends a metabolite leaf and writes som onto the parent stub", () => {
     expect(
       metaboliteSelectUrl({
         generations: generations.slice(0, 1),
         depth: 0,
         metaboliteSmiles: "O=C(O)c1ccccc1O",
         childQuery: null,
+        headIndex: 0,
+        site: [1, 2],
       }),
-    ).toBe("/phase1/aspirin/m/phase1/O%3DC(O)c1ccccc1O");
+    ).toBe(
+      "/phase1/" +
+        encodeURIComponent("aspirin;1,2") +
+        "/" +
+        encodeURIComponent("O=C(O)c1ccccc1O;0"),
+    );
+  });
+
+  it("replacing a child keeps the nested prediction model", () => {
+    expect(
+      metaboliteSelectUrl({
+        generations,
+        depth: 0,
+        metaboliteSmiles: "CCO",
+        childQuery: "O=C(O)c1ccccc1O",
+        headIndex: 1,
+        site: [0],
+        matchIndex: 1,
+      }),
+    ).toBe(
+      "/phase1/" +
+        encodeURIComponent("aspirin;0") +
+        "/" +
+        encodeURIComponent("CCO;1;1") +
+        "/phase1/CCO",
+    );
+  });
+
+  it("drops following generations but keeps the immediate child's model", () => {
+    expect(
+      metaboliteSelectUrl({
+        generations: [
+          { model: "phase1", query: "phenol", som: [1, 2] },
+          { model: "ugt", query: "Oc1cccc(O)c1", headIndex: 0 },
+          { model: "epoxidation", query: "CCOc1ccccc1", headIndex: 0 },
+        ],
+        depth: 0,
+        metaboliteSmiles: "CCO",
+        childQuery: "Oc1cccc(O)c1",
+        headIndex: 1,
+        site: [3],
+      }),
+    ).toBe(
+      "/phase1/" +
+        encodeURIComponent("phenol;3") +
+        "/" +
+        encodeURIComponent("CCO;1") +
+        "/ugt/CCO",
+    );
   });
 
   it("unselects by clicking the selected metabolite again", () => {
     expect(
       metaboliteSelectUrl({
-        generations: generations.slice(0, 1),
+        generations: [
+          { model: "phase1", query: "aspirin", som: [1, 2] },
+        ],
         depth: 0,
         metaboliteSmiles: "O=C(O)c1ccccc1O",
         childQuery: "O=C(O)c1ccccc1O",
       }),
-    ).toBe("/phase1/aspirin");
+    ).toBe("/phase1/" + encodeURIComponent("aspirin;1,2"));
   });
 });
 
@@ -90,7 +153,7 @@ describe("somSelectUrl", () => {
     { model: "phase1", query: "O=C(O)c1ccccc1O" },
   ];
 
-  it("pops the metabolite hop and applies SOM params", () => {
+  it("pops the metabolite hop and encodes SOM on the mol stub", () => {
     expect(
       somSelectUrl({
         generations,
@@ -99,7 +162,11 @@ describe("somSelectUrl", () => {
         bondIdx: 2,
         head: "hydrolysis",
       }),
-    ).toBe("/phase1/aspirin?atom=1&atom=3&bond=2&head=hydrolysis");
+    ).toBe(
+      "/phase1/" +
+        encodeURIComponent("aspirin;1,3;b2") +
+        "?head=hydrolysis",
+    );
   });
 });
 

@@ -3,8 +3,11 @@ import {
   collectMetabolites,
   findMetaboliteBySmiles,
   formatPathwayLabel,
+  matchFormationEdge,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
+  siteAtomsMatch,
+  validateChildFormationEdge,
 } from "./metabolites";
 
 const sample = [
@@ -125,10 +128,151 @@ describe("collectMetabolites", () => {
   });
 });
 
+describe("rankMetabolites head filter", () => {
+  it("filters by headIndex for multi-head models", () => {
+    const { shown, totalMatching } = rankMetabolites(
+      [
+        { smiles: "A", atom: [0], score: 0.9, headIndex: 0 },
+        { smiles: "B", atom: [1], score: 0.8, headIndex: 1 },
+        { smiles: "C", atom: [2], score: 0.7, headIndex: 0 },
+      ],
+      { selection: { headIndex: 0 } },
+    );
+    expect(totalMatching).toBe(2);
+    expect(shown.map((m) => m.smiles)).toEqual(["A", "C"]);
+  });
+
+  it("combines headIndex with atom selection", () => {
+    const { shown } = rankMetabolites(
+      [
+        { smiles: "A", atom: [0], score: 0.9, headIndex: 0 },
+        { smiles: "B", atom: [0], score: 0.8, headIndex: 1 },
+      ],
+      { selection: { headIndex: 1, atomIdxs: [0] } },
+    );
+    expect(shown.map((m) => m.smiles)).toEqual(["B"]);
+  });
+});
+
 describe("formatPathwayLabel", () => {
   it("splits CamelCase into lower-case words", () => {
     expect(formatPathwayLabel("NitrogenOxidation")).toBe("nitrogen oxidation");
     expect(formatPathwayLabel("Hydrolysis")).toBe("hydrolysis");
     expect(formatPathwayLabel("NDealkylation")).toBe("n dealkylation");
+  });
+});
+
+describe("siteAtomsMatch / CIP equivalence", () => {
+  // Phenol Oc1ccccc1 — orthos 2 and 6 share cipRank 4; metas 3 and 5 share 2.
+  const phenolCip = [0, 6, 4, 2, 1, 2, 4];
+
+  it("matches exact sites without CIP", () => {
+    expect(siteAtomsMatch([1, 2], [1, 2])).toBe(true);
+    expect(siteAtomsMatch([1, 2], [1, 6])).toBe(false);
+  });
+
+  it("treats same CIP rank atoms as interchangeable", () => {
+    expect(siteAtomsMatch([1, 2], [1, 6], phenolCip)).toBe(true);
+    expect(siteAtomsMatch([1, 6], [1, 2], phenolCip)).toBe(true);
+    expect(siteAtomsMatch([1, 2], [6], phenolCip)).toBe(true);
+  });
+
+  it("does not match unrelated pairs even with CIP", () => {
+    expect(siteAtomsMatch([1, 2], [2, 6], phenolCip)).toBe(false);
+    expect(siteAtomsMatch([1, 4], [1, 6], phenolCip)).toBe(false);
+  });
+});
+
+describe("rankMetabolites CIP selection", () => {
+  const phenolCip = [0, 6, 4, 2, 1, 2, 4];
+  const quinoneMets = [
+    { smiles: "o12", atom: [1, 2], score: 0.31, pathway: "QuinoneFormation" },
+    { smiles: "o14", atom: [1, 4], score: 0.25, pathway: "QuinoneFormation" },
+  ];
+
+  it("finds the metabolite when only one equivalent ortho is listed", () => {
+    const { shown, totalMatching } = rankMetabolites(quinoneMets, {
+      selection: { atomIdxs: [1, 6] },
+      cipRank: phenolCip,
+    });
+    expect(totalMatching).toBe(1);
+    expect(shown[0].smiles).toBe("o12");
+  });
+
+  it("prefers the exact atom list when duplicate SMILES exist", () => {
+    const { shown } = rankMetabolites(
+      [
+        { smiles: "o12", atom: [1, 2], score: 0.31 },
+        { smiles: "o12", atom: [1, 6], score: 0.31 },
+      ],
+      { selection: { atomIdxs: [1, 6] }, cipRank: phenolCip },
+    );
+    expect(shown[0].atom).toEqual([1, 6]);
+  });
+});
+
+describe("validateChildFormationEdge / matchFormationEdge", () => {
+  const mets = [
+    {
+      smiles: "Oc1cccc(O)c1",
+      pathway: "Hydroxylation",
+      atom: [1, 2],
+      score: 0.4,
+      headIndex: 0,
+    },
+    {
+      smiles: "Oc1cccc(O)c1",
+      pathway: "Other",
+      atom: [1, 6],
+      score: 0.2,
+      headIndex: 0,
+    },
+  ];
+  // CIP: atoms 2 and 6 are equivalent ranks for ortho pair disambiguation tests.
+  const cip = [0, 1, 2, 3, 4, 5, 2];
+
+  it("matches smiles+head+site with CIP equivalence", () => {
+    expect(
+      matchFormationEdge(
+        mets,
+        { smiles: "Oc1cccc(O)c1", headIndex: 0, atomIdxs: [1, 6] },
+        cip,
+      )?.pathway,
+    ).toBe("Hydroxylation"); // both sites CIP-match [1,2] and [1,6]; highest score wins
+  });
+
+  it("matchIndex picks among CIP-equivalent hits", () => {
+    expect(
+      matchFormationEdge(
+        mets,
+        {
+          smiles: "Oc1cccc(O)c1",
+          headIndex: 0,
+          atomIdxs: [1, 6],
+          matchIndex: 1,
+        },
+        cip,
+      )?.pathway,
+    ).toBe("Other");
+  });
+
+  it("fails validation when smiles/head/site do not match", () => {
+    expect(
+      validateChildFormationEdge(mets, { smiles: "missing" }).ok,
+    ).toBe(false);
+    expect(
+      validateChildFormationEdge(
+        mets,
+        { smiles: "Oc1cccc(O)c1", headIndex: 9 },
+        cip,
+      ).ok,
+    ).toBe(false);
+    expect(
+      validateChildFormationEdge(
+        mets,
+        { smiles: "Oc1cccc(O)c1", headIndex: 0, atomIdxs: [1, 2] },
+        cip,
+      ).ok,
+    ).toBe(true);
   });
 });

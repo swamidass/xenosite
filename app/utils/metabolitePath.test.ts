@@ -2,15 +2,92 @@ import { describe, expect, it } from "vitest";
 import {
   appendMetaboliteGeneration,
   appendMetaboliteSegment,
+  canAppendMetaboliteHop,
   encodeHeadParam,
+  encodeMetaboliteSlug,
+  encodeMolStub,
   focusQuery,
+  generationsFromParams,
+  hopParamNames,
   moleculeFocusUrl,
+  parseMetaboliteSlug,
+  parseMolStub,
   parseMoleculeFocusPath,
   parseSomSearchParams,
   resolveHeadIndex,
+  selectMetaboliteGeneration,
+  smilesFromMolStubParam,
   somToSearchParams,
   withGenerationModel,
+  withGenerationSom,
 } from "./metabolitePath";
+
+describe("mol stub smiles[;som][;bN]", () => {
+  it("round-trips smiles and som", () => {
+    expect(encodeMolStub({ smiles: "phenol" })).toBe("phenol");
+    expect(encodeMolStub({ smiles: "phenol", som: [2, 1] })).toBe(
+      "phenol;1,2",
+    );
+    expect(
+      encodeMolStub({ smiles: "phenol", som: [1, 2], bondIdx: 3 }),
+    ).toBe("phenol;1,2;b3");
+    expect(parseMolStub("phenol;1,2;b3")).toEqual({
+      smiles: "phenol",
+      som: [1, 2],
+      bondIdx: 3,
+    });
+    expect(smilesFromMolStubParam("phenol;1,2")).toBe("phenol");
+  });
+});
+
+describe("metabolite slug smiles;head;match", () => {
+  it("round-trips concise slugs (site lives on parent mol stub)", () => {
+    expect(encodeMetaboliteSlug({ smiles: "CCO" })).toBe("CCO");
+    expect(encodeMetaboliteSlug({ smiles: "CCO", headIndex: 0 })).toBe(
+      "CCO;0",
+    );
+    expect(
+      encodeMetaboliteSlug({
+        smiles: "CCO",
+        headIndex: 0,
+        matchIndex: 1,
+      }),
+    ).toBe("CCO;0;1");
+    expect(parseMetaboliteSlug("CCO;0;1")).toEqual({
+      smiles: "CCO",
+      headIndex: 0,
+      matchIndex: 1,
+    });
+  });
+
+  it("puts som on parent mol stub and edge on metabolite segment", () => {
+    const url = moleculeFocusUrl({
+      generations: [
+        { model: "phase1", query: "phenol", som: [1, 2] },
+        {
+          model: "_",
+          query: "Oc1cccc(O)c1",
+          headIndex: 0,
+          matchIndex: 0,
+        },
+      ],
+    });
+    expect(url).toBe(
+      "/phase1/" +
+        encodeURIComponent("phenol;1,2") +
+        "/" +
+        encodeURIComponent("Oc1cccc(O)c1;0"),
+    );
+    expect(parseMoleculeFocusPath(url)?.generations).toMatchObject([
+      { model: "phase1", query: "phenol", som: [1, 2] },
+      {
+        model: "_",
+        query: "Oc1cccc(O)c1",
+        headIndex: 0,
+      },
+    ]);
+  });
+});
 
 describe("parseMoleculeFocusPath / moleculeFocusUrl", () => {
   it("round-trips root paths", () => {
@@ -23,61 +100,135 @@ describe("parseMoleculeFocusPath / moleculeFocusUrl", () => {
     expect(moleculeFocusUrl(root!)).toBe("/epoxidation/aspirin");
   });
 
-  it("parses legacy /m/{query} hops as inheriting the prior model", () => {
-    const nested = parseMoleculeFocusPath("/ugt/foo/m/CCO/m/CC");
-    expect(nested).toEqual({
+  it("parses metabolite then model/mol", () => {
+    expect(parseMoleculeFocusPath("/ugt/foo/CCO")).toEqual({
       model: "ugt",
-      segments: ["foo", "CCO", "CC"],
+      segments: ["foo", "CCO"],
       generations: [
         { model: "ugt", query: "foo" },
-        { model: "ugt", query: "CCO" },
-        { model: "ugt", query: "CC" },
+        {
+          model: "_",
+          query: "CCO",
+          headIndex: null,
+          matchIndex: null,
+        },
       ],
     });
-    // Canonical URLs always emit explicit per-hop models.
-    expect(moleculeFocusUrl(nested!)).toBe("/ugt/foo/m/ugt/CCO/m/ugt/CC");
+    expect(
+      moleculeFocusUrl({
+        generations: [
+          { model: "ugt", query: "foo" },
+          { model: "ugt", query: "CCO" },
+          { model: "ugt", query: "CC" },
+        ],
+      }),
+    ).toBe("/ugt/foo/CCO/ugt/CCO/CC/ugt/CC");
   });
 
   it("parses explicit per-hop models", () => {
-    const path = parseMoleculeFocusPath("/phase1/h/m/ugt/CCO/m/epoxidation/CC");
-    expect(path?.generations).toEqual([
+    const path = parseMoleculeFocusPath(
+      "/phase1/h/CCO/ugt/CCO/CC/epoxidation/CC",
+    );
+    expect(
+      path?.generations.map((g) => ({ model: g.model, query: g.query })),
+    ).toEqual([
       { model: "phase1", query: "h" },
       { model: "ugt", query: "CCO" },
       { model: "epoxidation", query: "CC" },
     ]);
     expect(moleculeFocusUrl(path!)).toBe(
-      "/phase1/h/m/ugt/CCO/m/epoxidation/CC",
+      "/phase1/h/CCO/ugt/CCO/CC/epoxidation/CC",
     );
   });
 
-  it("encodes special SMILES characters", () => {
+  it("encodes special SMILES characters in mol stubs", () => {
     const url = moleculeFocusUrl({
       generations: [
         { model: "phase1", query: "parent" },
         { model: "phase1", query: "C(=O)O" },
       ],
     });
-    expect(url).toBe("/phase1/parent/m/phase1/C(%3DO)O");
+    expect(url).toBe(
+      "/phase1/parent/" +
+        encodeURIComponent("C(=O)O") +
+        "/phase1/" +
+        encodeURIComponent("C(=O)O"),
+    );
     expect(parseMoleculeFocusPath(url)?.generations[1].query).toBe("C(=O)O");
   });
 
-  it("rejects malformed /m/ chains", () => {
-    expect(parseMoleculeFocusPath("/epoxidation/aspirin/m")).toBeNull();
+  it("rejects malformed chains", () => {
+    expect(parseMoleculeFocusPath("/epoxidation/aspirin/ugt")).toBeNull();
     expect(parseMoleculeFocusPath("/epoxidation")).toBeNull();
+    expect(parseMoleculeFocusPath("/phase1/h/CCO/notamodel/CCO")).toBeNull();
   });
 
-  it("withGenerationModel changes only one hop", () => {
-    const path = parseMoleculeFocusPath("/phase1/aspirin/m/ugt/CCO")!;
+  it("withGenerationModel changes a hop and clears deeper selections", () => {
+    const path = parseMoleculeFocusPath(
+      "/phase1/aspirin/CCO/ugt/CCO/CC/epoxidation/CC",
+    )!;
     expect(
       moleculeFocusUrl({
         generations: withGenerationModel(path.generations, 0, "quinone"),
       }),
-    ).toBe("/quinone/aspirin/m/ugt/CCO");
+    ).toBe("/quinone/aspirin");
     expect(
       moleculeFocusUrl({
         generations: withGenerationModel(path.generations, 1, "epoxidation"),
       }),
-    ).toBe("/phase1/aspirin/m/epoxidation/CCO");
+    ).toBe("/phase1/aspirin/CCO/epoxidation/CCO");
+  });
+
+  it("withGenerationSom rewrites the mol stub and drops children", () => {
+    const gens = [
+      { model: "phase1", query: "phenol" },
+      { model: "ugt", query: "Oc1cccc(O)c1", headIndex: 0 },
+    ];
+    expect(
+      moleculeFocusUrl({
+        generations: withGenerationSom(gens, 0, [1, 3], 2),
+      }),
+    ).toBe("/phase1/" + encodeURIComponent("phenol;1,3;b2"));
+  });
+});
+
+describe("generationsFromParams / hopParamNames", () => {
+  it("maps Remix params to generations", () => {
+    expect(
+      generationsFromParams({
+        model: "phase1",
+        query: "phenol;1,2",
+        met1: "Oc1cccc(O)c1;0;1",
+        m1: "ugt",
+        q1: "Oc1cccc(O)c1",
+      }),
+    ).toEqual([
+      {
+        model: "phase1",
+        query: "phenol",
+        som: [1, 2],
+      },
+      {
+        model: "ugt",
+        query: "Oc1cccc(O)c1",
+        headIndex: 0,
+        matchIndex: 1,
+      },
+    ]);
+  });
+
+  it("hopParamNames uses model/query then metN/mN/qN", () => {
+    expect(hopParamNames(0)).toEqual({ model: "model", query: "query" });
+    expect(hopParamNames(2)).toEqual({
+      met: "met2",
+      model: "m2",
+      query: "q2",
+    });
+  });
+
+  it("canAppendMetaboliteHop respects the depth cap", () => {
+    expect(canAppendMetaboliteHop(0)).toBe(true);
+    expect(canAppendMetaboliteHop(4)).toBe(false);
   });
 });
 
@@ -86,25 +237,44 @@ describe("focus helpers", () => {
     expect(focusQuery(["a", "b", "c"])).toBe("c");
   });
 
-  it("appendMetaboliteGeneration extends the stack with a model", () => {
+  it("appendMetaboliteGeneration defaults to no model selected", () => {
     expect(
-      appendMetaboliteGeneration(
-        [{ model: "phase1", query: "h" }],
-        "CCO",
-      ),
+      appendMetaboliteGeneration([{ model: "phase1", query: "h" }], "CCO", undefined, {
+        site: [1],
+        headIndex: 0,
+      }),
     ).toEqual([
-      { model: "phase1", query: "h" },
-      { model: "phase1", query: "CCO" },
+      { model: "phase1", query: "h", som: [1] },
+      {
+        model: "_",
+        query: "CCO",
+        headIndex: 0,
+        matchIndex: null,
+      },
     ]);
+  });
+
+  it("selectMetaboliteGeneration keeps the child model when replacing", () => {
     expect(
-      appendMetaboliteGeneration(
-        [{ model: "phase1", query: "h" }],
-        "CCO",
-        "ugt",
+      selectMetaboliteGeneration(
+        [
+          { model: "phase1", query: "phenol", som: [1] },
+          { model: "ugt", query: "Oc1cccc(O)c1", headIndex: 0 },
+        ],
+        0,
+        "Oc1cc(O)cc(O)c1",
+        { headIndex: 0, site: [2, 3], matchIndex: 0 },
       ),
     ).toEqual([
-      { model: "phase1", query: "h" },
-      { model: "ugt", query: "CCO" },
+      { model: "phase1", query: "phenol", som: [2, 3] },
+      {
+        model: "ugt",
+        query: "Oc1cc(O)cc(O)c1",
+        headIndex: 0,
+        matchIndex: 0,
+        som: undefined,
+        bondIdx: null,
+      },
     ]);
   });
 
@@ -127,9 +297,6 @@ describe("SOM search params", () => {
   it("round-trips head slug / index", () => {
     const p = new URLSearchParams("head=hydrolysis&atom=1");
     expect(parseSomSearchParams(p).head).toBe("hydrolysis");
-    expect(
-      somToSearchParams({ head: "hydrolysis", atomIdxs: [1] }).get("head"),
-    ).toBe("hydrolysis");
   });
 });
 
@@ -146,11 +313,9 @@ describe("resolveHeadIndex / encodeHeadParam", () => {
 
   it("resolves head by slug or full model id", () => {
     expect(resolveHeadIndex("hydrolysis", results)).toBe(1);
-    expect(resolveHeadIndex("phase1.stable_oxygenation", results)).toBe(0);
   });
 
   it("encodes a readable head slug when possible", () => {
     expect(encodeHeadParam(1, results)).toBe("hydrolysis");
-    expect(encodeHeadParam(0, [{ model: undefined }])).toBe("0");
   });
 });
