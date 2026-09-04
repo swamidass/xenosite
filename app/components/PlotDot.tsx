@@ -1,4 +1,4 @@
-import { plotDotCircles } from "~/utils/plotDot";
+import { PLOT_DOT_VIEW, plotDotCircles } from "~/utils/plotDot";
 import { classNames } from "~/utils";
 
 export type PlotDotProps = {
@@ -27,8 +27,7 @@ export default function PlotDot({
 }: PlotDotProps) {
   const z = Number.isFinite(value) ? value : 0;
   const circles = plotDotCircles(z, { levels, diverging });
-  // Unit radii reach 1; slight pad so the outer disc isn't clipped.
-  const view = 2.05;
+  const view = PLOT_DOT_VIEW;
   const cx = view / 2;
   const cy = view / 2;
 
