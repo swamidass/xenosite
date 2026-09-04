@@ -27,7 +27,7 @@ function labelFor(m: MetaboliteRecord): string {
 
 /**
  * Metabolites below a generation's predictions.
- * When a child hop is selected, shows only that metabolite (not "Top metabolites").
+ * When a child hop is selected, shows only that metabolite for deselect.
  */
 export default function MetabolitePanel({
   metabolites,
@@ -65,19 +65,9 @@ export default function MetabolitePanel({
 
   return (
     <section
-      className={classNames(
-        "w-full mx-auto",
-        pathSelected ? "mt-4 pt-2" : "mt-6 pt-6 border-t border-gray-300",
-      )}
-      aria-label={pathSelected ? "Selected metabolite" : "Top metabolites"}
+      className="w-full mx-auto mt-4"
+      aria-label={pathSelected ? "Selected metabolite" : "Metabolites"}
     >
-      {pathSelected ? null : (
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-4 px-2">
-          <h2 className="text-sm font-semibold text-gray-700 m-0">
-            Top metabolites
-          </h2>
-        </div>
-      )}
       <ul className="flex mx-auto mb-4 justify-center flex-wrap gap-4 list-none p-0 m-0">
         {shown.map((m) => {
           const name = labelFor(m);
