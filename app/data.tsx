@@ -25,7 +25,7 @@ export type XenositeModelInfo = {
 export const MODELS: XenositeModelInfo[] = [
     {
       model: "Phase 1",
-      endpoint: "/v0/phase1",
+      endpoint: "/v1/phase1",
       path: "phase1",
       citation: "https://doi.org/10.1021/acs.jcim.9b00836",
       title: "The Metabolic Rainbow: Deep Learning Phase I Metabolism in Five Colors",
@@ -66,7 +66,7 @@ export const MODELS: XenositeModelInfo[] = [
     },
     {
       model: "Reactivity",
-      endpoint: "/v0/reactivity",
+      endpoint: "/v1/reactivity",
       path: "reactivity",
       citation: "https://doi.org/10.1021/acs.chemrestox.5b00017",
       title: "Site of Reactivity Models Predict Molecular Reactivity of Diverse Chemicals with Glutathione",
@@ -112,7 +112,7 @@ export const MODELS: XenositeModelInfo[] = [
     },
     {
       model: "Epoxidation",
-      endpoint: "/v0/epoxidation",
+      endpoint: "/v1/epoxidation",
       path: "epoxidation",
       citation: "https://doi.org/10.1021/acscentsci.5b00131",
       title: "Modeling Epoxidation of Drug-like Molecules with a Deep Machine Learning Network",
@@ -147,7 +147,7 @@ export const MODELS: XenositeModelInfo[] = [
     },
     {
       model: "Quinonation",
-      endpoint: "/v0/quinone",
+      endpoint: "/v1/quinone",
       path: "quinone",
       citation: "https://doi.org/10.1021/acs.chemrestox.6b00385",
       title: "Deep Learning to Predict the Formation of Quinone Species in Drug Metabolism",
@@ -185,7 +185,7 @@ export const MODELS: XenositeModelInfo[] = [
     },
     {
       model: "N-Dealkylation",
-      endpoint: "/v0/ndealk",
+      endpoint: "/v1/ndealk",
       path: "ndealk",
       citation: "https://doi.org/10.1021/acs.chemrestox.7b00191",
       title: "Computationally Assessing the Bioactivation of Drugs by N-Dealkylation",
@@ -221,7 +221,7 @@ export const MODELS: XenositeModelInfo[] = [
     },
     {
       model: "UGT Conjugation",
-      endpoint: "/v0/ugt",
+      endpoint: "/v1/ugt",
       path: "ugt",
       citation: "https://doi.org/10.1093/bioinformatics/btw350",
       title: "A Simple Model Predicts UGT-Mediated Metabolism",

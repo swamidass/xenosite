@@ -59,7 +59,7 @@ export const resolve_query = async (
   params: QueryParameters,
 ): Promise<QueryResult> => {
   const { model, query } = params;
-  const url = model != "_" ? "/v0/" + model : "/v1/canonize";
+  const url = model != "_" ? "/v1/" + model : "/v1/canonize";
   let response = await backend_api(query, url);
 
   if (response && response.name && response.name.chebi) {

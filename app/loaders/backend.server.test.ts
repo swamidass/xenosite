@@ -21,32 +21,31 @@ describe("backend_api / resolve_query", () => {
   });
 
   it("returns {} when smiles is empty", async () => {
-    expect(await backend_api(null, "/v0/phase1")).toEqual({});
-    expect(await backend_api("", "/v0/phase1")).toEqual({});
+    expect(await backend_api(null, "/v1/phase1")).toEqual({});
+    expect(await backend_api("", "/v1/phase1")).toEqual({});
   });
 
   it("attaches Chebi URLs on the molecule and metabolites", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        json: async () => ({
-          name: { chebi: 15365, name: "aspirin" },
-          results: [
-            {
-              metabolite: [
-                { smiles: "CCO", name: { chebi: 1 } },
-                { smiles: "CC", name: { chebi: 2, chebiUrl: "already" } },
-              ],
-            },
-          ],
-        }),
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        name: { chebi: 15365, name: "aspirin" },
+        results: [
+          {
+            metabolite: [
+              { smiles: "CCO", name: { chebi: 1 } },
+              { smiles: "CC", name: { chebi: 2, chebiUrl: "already" } },
+            ],
+          },
+        ],
       }),
-    );
+    });
+    vi.stubGlobal("fetch", fetchMock);
     const { resolved_query, model } = await resolve_query({
       model: "phase1",
       query: "aspirin",
     });
     expect(model).toBe("phase1");
+    expect(String(fetchMock.mock.calls[0]![0])).toContain("/v1/phase1");
     expect(resolved_query.name.chebiUrl).toContain("CHEBI:15365");
     expect(resolved_query.results[0].metabolite[0].name.chebiUrl).toContain(
       "CHEBI:1",
