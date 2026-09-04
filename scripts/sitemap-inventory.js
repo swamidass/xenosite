@@ -186,7 +186,7 @@ function interestScore(payload) {
 
 async function fetchModel(model, query) {
   const url =
-    `${BACKEND}/v0/${model}?` +
+    `${BACKEND}/v1/${model}?` +
     new URLSearchParams({
       query,
       depict: "false",
