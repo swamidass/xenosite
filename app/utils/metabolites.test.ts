@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
-  isUnparseableMetaboliteSmiles,
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
 } from "./metabolites";
@@ -82,20 +81,6 @@ describe("rankMetabolites", () => {
     expect(shown.map((m) => m.smiles)).toEqual(["SAL", "OTHER"]);
     expect(shown[0].score).toBe(0.89);
     expect(shown[0].atom).toEqual([1, 3]);
-  });
-
-  it("drops RDKit-invalid pentavalent N-oxide SMILES", () => {
-    const bad = "NC(CC1=CN(O)=CN1)C(=O)O";
-    const good = "NC(Cc1c[n+]([O-])c[nH]1)C(=O)O";
-    expect(isUnparseableMetaboliteSmiles(bad)).toBe(true);
-    expect(isUnparseableMetaboliteSmiles(good)).toBe(false);
-    const { shown, totalMatching } = rankMetabolites([
-      { smiles: bad, atom: [5], score: 0.9 },
-      { smiles: good, atom: [5], score: 0.9 },
-      { smiles: "CCO", atom: [0], score: 0.5 },
-    ]);
-    expect(totalMatching).toBe(2);
-    expect(shown.map((m) => m.smiles)).toEqual([good, "CCO"]);
   });
 });
 

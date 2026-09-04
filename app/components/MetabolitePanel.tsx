@@ -26,7 +26,7 @@ function labelFor(m: MetaboliteRecord): string {
 
 /**
  * Top metabolites (≤5) below the focus molecule. Click navigates; hover highlights SOM.
- * Candidates that fail depiction (RDKit-invalid SMILES) are dropped and backfilled.
+ * If /depict fails for a candidate, log and drop it from the list (backfill from pool).
  */
 export default function MetabolitePanel({
   metabolites,
@@ -36,7 +36,9 @@ export default function MetabolitePanel({
   hideWhenPathSelected,
   pathMetaboliteSmiles,
 }: MetabolitePanelProps) {
-  const [undepictable, setUndepictable] = useState<Set<string>>(() => new Set());
+  const [removedSmiles, setRemovedSmiles] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   // Reset when the candidate pool changes (new molecule / selection).
   const poolKey = useMemo(() => {
@@ -48,7 +50,7 @@ export default function MetabolitePanel({
   }, [metabolites, selection]);
 
   useEffect(() => {
-    setUndepictable(new Set());
+    setRemovedSmiles(new Set());
   }, [poolKey]);
 
   if (hideWhenPathSelected && pathMetaboliteSmiles) {
@@ -60,10 +62,9 @@ export default function MetabolitePanel({
     cap: METABOLITE_DISPLAY_CAP * 4,
   });
   const shown = pool
-    .filter((m) => !undepictable.has(m.smiles))
+    .filter((m) => !removedSmiles.has(m.smiles))
     .slice(0, METABOLITE_DISPLAY_CAP);
 
-  if (!shown.length && !pool.length) return null;
   if (!shown.length) return null;
 
   return (
@@ -87,7 +88,7 @@ export default function MetabolitePanel({
                 smiles={m.smiles}
                 alt={labelFor(m)}
                 onDepictError={() => {
-                  setUndepictable((prev) => {
+                  setRemovedSmiles((prev) => {
                     if (prev.has(m.smiles)) return prev;
                     const next = new Set(prev);
                     next.add(m.smiles);

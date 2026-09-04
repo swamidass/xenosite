@@ -5,11 +5,12 @@ type LazyMetaboliteImgProps = {
   alt: string;
   className?: string;
   /** Called when /depict fails (e.g. RDKit-invalid SMILES). */
-  onDepictError?: () => void;
+  onDepictError?: (error: Error) => void;
 };
 
 /**
  * Lazy plain depiction for metabolite grid cards via /depict proxy.
+ * On failure, logs to the console and notifies the parent to drop the card.
  */
 export default function LazyMetaboliteImg({
   smiles,
@@ -30,15 +31,33 @@ export default function LazyMetaboliteImg({
     const url = `/depict?${new URLSearchParams({ query: smiles })}`;
     fetch(url)
       .then(async (res) => {
-        if (!res.ok) throw new Error(String(res.status));
+        if (!res.ok) {
+          let detail = "";
+          try {
+            detail = (await res.text()).slice(0, 200);
+          } catch {
+            /* ignore */
+          }
+          throw new Error(
+            detail
+              ? `depict ${res.status}: ${detail}`
+              : `depict failed with status ${res.status}`,
+          );
+        }
         const svg = await res.text();
         if (cancelled) return;
         setSrc("data:image/svg+xml;utf8," + encodeURIComponent(svg));
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
+        const error =
+          err instanceof Error ? err : new Error(String(err ?? "depict failed"));
+        console.error(
+          `[metabolite depict] RDKit/depict failed for SMILES ${smiles}`,
+          error,
+        );
         setFailed(true);
-        onErrorRef.current?.();
+        onErrorRef.current?.(error);
       });
 
     return () => {

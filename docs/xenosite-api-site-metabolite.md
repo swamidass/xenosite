@@ -83,7 +83,7 @@ In `depictor` (or right after predictions are assembled, before return):
 
 When assembling `results[].metabolite`, **do not emit** products whose SMILES RDKit cannot parse/sanitize (e.g. pentavalent aromatic N-oxides like `NC(CC1=CN(O)=CN1)C(=O)O`). Prefer a charge-separated form (`…[n+]([O-])…`) or omit the product.
 
-**Why:** `/v1/depict` and prediction routes reject these with 422; the site must not offer undepictable / unresolvable metabolites. The frontend also filters known-bad patterns and drops depict failures, but the forest should not emit them.
+**Why:** `/v1/depict` and prediction routes reject these with 422; the site must not offer undepictable / unresolvable metabolites. The frontend drops a metabolite from the panel when `/depict` fails (and logs the error); the forest should not emit them.
 
 **Verify:** Histidine (`h`) phase1 NitrogenOxidation products include the charged N-oxide form and **not** `…CN(O)=CN…`.
 

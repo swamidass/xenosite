@@ -45,18 +45,6 @@ export type SiteSelection = {
 export const METABOLITE_SCORE_THRESHOLD = 0.01;
 export const METABOLITE_DISPLAY_CAP = 5;
 
-/**
- * Forest sometimes emits SMILES RDKit cannot parse (e.g. pentavalent aromatic
- * N-oxides like `…N(O)=…`). Those must not appear in the metabolite panel;
- * the API should drop them too — this is a frontend safety net.
- */
-export function isUnparseableMetaboliteSmiles(smiles: string): boolean {
-  if (!smiles) return true;
-  // Pentavalent N-oxide without formal charges — RDKit: valence > permitted
-  if (/N\(O\)=/.test(smiles) || /=N\(O\)/.test(smiles)) return true;
-  return false;
-}
-
 function scoreOf(m: MetaboliteRecord) {
   return typeof m.score === "number" && Number.isFinite(m.score) ? m.score : 0;
 }
@@ -65,7 +53,7 @@ function dedupeBySmiles(list: MetaboliteRecord[]): MetaboliteRecord[] {
   const best = new Map<string, MetaboliteRecord>();
   for (const m of list) {
     const key = String(m.smiles || "");
-    if (!key || isUnparseableMetaboliteSmiles(key)) continue;
+    if (!key) continue;
     const prev = best.get(key);
     if (!prev || scoreOf(m) > scoreOf(prev)) {
       best.set(key, m);
