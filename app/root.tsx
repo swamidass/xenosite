@@ -146,8 +146,8 @@ export default function App() {
               ) : null}
             </div>
 
-            {/* Primary model menu always sits directly under the search box. */}
-            <ModelTabs segments={parsed?.segments} />
+            {/* Primary model menu: changes only the root generation's model. */}
+            <ModelTabs generations={parsed?.generations} depth={0} />
             {model && model !== "_" ? <AboutModel model={model} /> : null}
 
             {transition.state != "idle" && new_query ? (

@@ -7,30 +7,50 @@ import { classNames } from "~/utils";
 import {
   moleculeFocusUrl,
   parseMoleculeFocusPath,
+  withGenerationModel,
+  type FocusGeneration,
 } from "~/utils/metabolitePath";
 
 export interface ModelMenuProps {
   children?: ReactNode;
-  /** Path segments after model (root query + /m/ hops). Preserved across tab changes. */
-  segments?: string[];
+  /** Full generation stack; tab changes only `depth`'s model. */
+  generations?: FocusGeneration[];
+  /** Which generation's model this menu controls (0 = root). */
+  depth?: number;
   /** Compact nested menu under a selected metabolite. */
   nested?: boolean;
+  /** @deprecated Prefer generations. */
+  segments?: string[];
 }
 
 export function ModelTabs({
   children,
-  segments,
+  generations,
+  depth = 0,
   nested = false,
+  segments,
 }: ModelMenuProps): JSX.Element {
   const matches = useMatches();
   const location = useLocation();
   const leafParams = matches[matches.length - 1]?.params ?? {};
   const parsed = parseMoleculeFocusPath(location.pathname);
-  const model = parsed?.model ?? leafParams.model;
-  const segs =
-    segments ??
-    parsed?.segments ??
-    (leafParams.query ? [leafParams.query] : []);
+  const gens: FocusGeneration[] =
+    generations ??
+    parsed?.generations ??
+    (segments?.length
+      ? segments.map((query) => ({
+          model: parsed?.model ?? leafParams.model ?? "",
+          query,
+        }))
+      : leafParams.query
+        ? [
+            {
+              model: leafParams.model ?? "",
+              query: leafParams.query,
+            },
+          ]
+        : []);
+  const model = gens[depth]?.model ?? parsed?.model ?? leafParams.model;
   const selectedIndex = MODELS.findIndex((x) => x.path === model);
 
   return (
@@ -60,13 +80,19 @@ export function ModelTabs({
                   ? "block px-3 py-1.5 text-xs sm:m-0.5"
                   : "block px-4 py-2 text-sm sm:m-1",
               )}
-              key={`tab-${nested ? "n" : "p"}-${i}`}
+              key={`tab-${nested ? "n" : "p"}-${depth}-${i}`}
             >
               <Tab as={Fragment}>
                 <Link
                   to={
-                    segs.length
-                      ? moleculeFocusUrl({ model: x.path, segments: segs })
+                    gens.length
+                      ? moleculeFocusUrl({
+                          generations: withGenerationModel(
+                            gens,
+                            depth,
+                            x.path,
+                          ),
+                        })
                       : `/${x.path}`
                   }
                 >
@@ -82,7 +108,7 @@ export function ModelTabs({
           ) : (
             <Tab.Panels>
               {MODELS.map((x, i) => (
-                <Tab.Panel key={`tab-panel-${nested ? "n" : "p"}-${i}`}>
+                <Tab.Panel key={`tab-panel-${nested ? "n" : "p"}-${depth}-${i}`}>
                   {children}
                 </Tab.Panel>
               ))}
