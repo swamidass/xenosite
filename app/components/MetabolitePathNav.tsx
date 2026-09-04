@@ -1,5 +1,4 @@
 import { Link } from "@remix-run/react";
-import { generationMarkerLabel } from "~/utils/generationMarker";
 import type { PathCrumb } from "~/utils/pathNav";
 import { classNames } from "~/utils";
 
@@ -10,6 +9,7 @@ export type MetabolitePathNavProps = {
 
 /**
  * Sticky top path bar for metabolite generation stacks.
+ * Crumbs are Substrate / Generation N only (no molecule names).
  */
 export default function MetabolitePathNav({
   crumbs,
@@ -27,7 +27,7 @@ export default function MetabolitePathNav({
     >
       <ol className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 list-none m-0 px-3 py-2.5 max-w-screen-xl mx-auto min-h-[2.5rem]">
         {crumbs.map((c, i) => (
-          <li key={`${c.depth}-${c.label}`} className="flex items-center gap-2 text-sm">
+          <li key={c.depth} className="flex items-center gap-2 text-sm">
             {i > 0 ? (
               <span className="text-gray-500" aria-hidden>
                 /
@@ -37,27 +37,17 @@ export default function MetabolitePathNav({
               <span
                 title={c.title}
                 aria-current="page"
-                className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 gap-y-0.5"
+                className="font-semibold whitespace-nowrap"
               >
-                <span className="font-semibold whitespace-nowrap">
-                  {generationMarkerLabel(c.depth)}
-                </span>
-                <span className="text-gray-300 truncate max-w-[10rem] sm:max-w-[14rem]">
-                  {c.label}
-                </span>
+                {c.label}
               </span>
             ) : (
               <Link
                 to={c.href}
                 title={c.title}
-                className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 gap-y-0.5 min-h-[2rem] text-gray-200 hover:text-white underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
+                className="min-h-[2rem] inline-flex items-center font-medium whitespace-nowrap text-gray-200 hover:text-white underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
               >
-                <span className="font-medium whitespace-nowrap">
-                  {generationMarkerLabel(c.depth)}
-                </span>
-                <span className="text-gray-400 truncate max-w-[10rem] sm:max-w-[14rem]">
-                  {c.label}
-                </span>
+                {c.label}
               </Link>
             )}
           </li>

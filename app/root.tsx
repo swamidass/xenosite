@@ -24,9 +24,10 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import { useNavigation } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   AboutModel,
+  Loading,
   MetabolitePathNav,
   ModelTabs,
   MoleculeIdentity,
@@ -147,25 +148,11 @@ export default function App() {
     return null;
   }, [matches]);
 
-  const nestedChain = useMemo(() => {
-    for (const m of matches) {
-      const d = m.data as { chain?: any[] } | undefined;
-      if (d && typeof d === "object" && Array.isArray(d.chain)) {
-        return d.chain;
-      }
-    }
-    return [] as any[];
-  }, [matches]);
-
   const pathCrumbs = useMemo(() => {
     const generations = parsed?.generations;
     if (!generations?.length) return [];
-    const names = [
-      rootMoleculeData?.resolved_query?.name,
-      ...nestedChain.map((c) => c?.name),
-    ];
-    return buildPathCrumbs({ generations, names });
-  }, [parsed?.generations, rootMoleculeData, nestedChain]);
+    return buildPathCrumbs({ generations });
+  }, [parsed?.generations]);
 
   useEffect(() => {
     setNewQuery(query || "");
@@ -248,12 +235,17 @@ export default function App() {
             {isSearchBoxNavigation(query, new_query, transition.state) ? (
               <Spinner />
             ) : (
-              <Outlet />
+              <Suspense fallback={<Spinner />}>
+                <Outlet />
+              </Suspense>
             )}
+            {/* Extra scroll room so metabolite/SOM layout shifts don't bounce the page. */}
+            <div className="h-[80vh] w-full" aria-hidden />
           </>
           </div>
         </div>
 
+        <Loading />
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" ? <LiveReload /> : <Gtag />}

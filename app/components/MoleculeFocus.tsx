@@ -2,36 +2,55 @@ import {
   Outlet,
   useLocation,
   useNavigate,
+  useNavigation,
+  useParams,
+  useOutlet,
+  useOutletContext,
   useSearchParams,
 } from "@remix-run/react";
-import { useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import AboutModel from "~/components/AboutModel";
 import GenerationBanner from "~/components/GenerationBanner";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
+import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import MetabolitePanel from "~/components/MetabolitePanel";
 import MoleculeIdentity from "~/components/MoleculeIdentity";
 import { ModelTabs } from "~/components/ModelTabs";
+import Spinner from "~/components/Spinner";
 import { resolveModelInfo } from "~/data";
 import {
-  encodeHeadParam,
+  EMPTY_HOP_OUTLET_CONTEXT,
+  type HopOutletContext,
+} from "~/molecule-focus/hopOutletContext";
+import {
+  canAppendMetaboliteHop,
+  generationsFromParams,
+  hasPredictionModel,
   moleculeFocusUrl,
-  parseMetaboliteMetaParams,
   parseMoleculeFocusPath,
   parseSomSearchParams,
   resolveHeadIndex,
+  encodeHeadParam,
   somToSearchParams,
-  withMetaboliteMetaParams,
   type FocusGeneration,
 } from "~/utils/metabolitePath";
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
   formatPathwayLabel,
+  matchFormationEdge,
+  metaboliteMatchIndex,
+  validateChildFormationEdge,
   type MetaboliteRecord,
   type SiteSelection,
 } from "~/utils/metabolites";
 import { moleculeDisplayName } from "~/utils/moleculeIdentity";
-import { selectionModeFromResult, type SelectionMode, type SiteHit } from "~/utils/siteHitTest";
+import { isNestedPredictionNavigation } from "~/utils/navigationLoading";
+import {
+  selectionModeFromResult,
+  type SelectionMode,
+  type SiteHit,
+} from "~/utils/siteHitTest";
 import {
   applyPairAtomClick,
   effectiveMetabolitePanelSelection,
@@ -44,6 +63,12 @@ import {
   normalizeBondsIdx,
   type SomHighlight,
 } from "~/utils/somOverlay";
+import { classNames } from "~/utils";
+
+type FormationMeta = {
+  pathway?: string | null;
+  score?: number | null;
+};
 
 function last_name(name: string) {
   const words = name.split(".");
@@ -86,19 +111,27 @@ export type GenerationViewProps = {
   resolved_query: any;
   model: string;
   generations: FocusGeneration[];
-  /** Nested Remix outlet / deeper stack. */
+  /** @deprecated Prefer nestOutlet — nested hops use Remix Outlet. */
   children?: ReactNode;
   /** Show metabolite panel under this generation. */
   showPanel?: boolean;
+  /**
+   * Formation pathway/score for this hop (URL search and/or parent list).
+   */
+  formationMeta?: FormationMeta | null;
   /**
    * When true, identity is rendered by the app shell (root under search).
    * Nested generations always render their own identity.
    */
   identityInShell?: boolean;
+  /** Render Remix `<Outlet context={…} />` for the next hop (default true). */
+  nestOutlet?: boolean;
+  /** First paint while navigating into a child hop that is not mounted yet. */
+  pendingChild?: boolean;
 };
 
 /**
- * One generation: identity (unless shelled), model tabs, depictions, panel.
+ * One generation at any depth — shared by root and every nested hop route.
  */
 export function GenerationView({
   depth,
@@ -107,16 +140,101 @@ export function GenerationView({
   generations,
   children,
   showPanel = false,
+  formationMeta = null,
   identityInShell = false,
+  nestOutlet = true,
+  pendingChild = false,
 }: GenerationViewProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const parentCtx =
+    useOutletContext<HopOutletContext>() || EMPTY_HOP_OUTLET_CONTEXT;
+
   const [hover, setHover] = useState<{
     highlight: SomHighlight;
     headIndex: number;
   } | null>(null);
   const [siteHover, setSiteHover] = useState<SiteSelection | null>(null);
+
+  const results = resolved_query?.results || [];
+  const metabolites = collectMetabolites(results);
+  const childQuery = generations[depth + 1]?.query || null;
+  const childGen = generations[depth + 1] || null;
+  const cipRank = resolved_query?.atoms?.cipRank;
+  const selfGen = generations[depth] || null;
+
+  // Child edge: metabolite segment + this generation's mol-stub SOM (no callback).
+  const edgeForChild = childGen
+    ? {
+        smiles: childGen.query,
+        headIndex: childGen.headIndex,
+        atomIdxs: selfGen?.som,
+        matchIndex: childGen.matchIndex,
+      }
+    : null;
+  const childMet = edgeForChild
+    ? matchFormationEdge(
+        metabolites,
+        {
+          smiles: edgeForChild.smiles,
+          headIndex: edgeForChild.headIndex,
+          atomIdxs: edgeForChild.atomIdxs,
+          matchIndex: edgeForChild.matchIndex,
+        },
+        cipRank,
+      )
+    : findMetaboliteBySmiles(metabolites, childQuery);
+
+  const hopOutletContext = useMemo<HopOutletContext>(
+    () => ({
+      formationForChild: childMet
+        ? { pathway: childMet.pathway, score: childMet.score }
+        : null,
+    }),
+    [childMet],
+  );
+
+  // Late validation: smiles+head+parent-som (CIP-aware) must match.
+  useEffect(() => {
+    if (!childQuery || !resolved_query || resolved_query.detail) return;
+    if (!hasPredictionModel(model)) return;
+    if (!Array.isArray(resolved_query.results)) return;
+    if (!edgeForChild) return;
+
+    const parentMets = collectMetabolites(resolved_query.results);
+    const result = validateChildFormationEdge(
+      parentMets,
+      {
+        smiles: edgeForChild.smiles,
+        headIndex: edgeForChild.headIndex,
+        atomIdxs: edgeForChild.atomIdxs,
+        matchIndex: edgeForChild.matchIndex,
+      },
+      resolved_query?.atoms?.cipRank,
+    );
+    if (result.ok) return;
+
+    const parentUrl = moleculeFocusUrl({
+      generations: generations.slice(0, depth + 1),
+    });
+    console.warn(
+      `[xenosite] invalid nested hop at depth ${depth + 1}; redirecting to ${parentUrl}:`,
+      result.reason,
+    );
+    navigate(parentUrl, { replace: true, preventScrollReset: true });
+  }, [
+    childQuery,
+    edgeForChild?.smiles,
+    edgeForChild?.headIndex,
+    edgeForChild?.atomIdxs?.join(","),
+    edgeForChild?.matchIndex,
+    model,
+    resolved_query,
+    generations,
+    depth,
+    navigate,
+  ]);
 
   if (!resolved_query) return null;
 
@@ -127,11 +245,6 @@ export function GenerationView({
       </div>
     );
   }
-
-  const results = resolved_query?.results || [];
-  const metabolites = collectMetabolites(results);
-  const childQuery = generations[depth + 1]?.query || null;
-  const childMet = findMetaboliteBySmiles(metabolites, childQuery);
 
   const modelLabel = resolveModelInfo(model)?.model ?? model ?? "XenoSite";
   const moleculeName =
@@ -145,87 +258,118 @@ export function GenerationView({
   const modeForHead = (i: number | null | undefined) =>
     typeof i === "number" ? selectionModeFromResult(results[i] || {}) : null;
 
-  const pathHighlight = somFromMetabolite(
+  const childHighlight = somFromMetabolite(
     childMet,
     resolved_query?.bonds?.idx,
     modeForHead(childMet?.headIndex),
   );
-  const searchHighlight: SomHighlight | null =
-    !childMet &&
-    depth === 0 &&
-    searchHeadIndex != null &&
-    (somFromSearch.atomIdxs?.length || somFromSearch.bondIdx != null)
-      ? {
-          atomIdxs: somFromSearch.atomIdxs || [],
-          // Pair / atom multisite URLs never use bond midpoints.
-          bondIdx:
-            modeForHead(searchHeadIndex) === "pair" ||
-            modeForHead(searchHeadIndex) === "atom"
-              ? null
-              : somFromSearch.bondIdx,
-        }
-      : null;
+  // Own mol stub encodes SOM — parent highlights without child JS.
+  const stubHighlight: SomHighlight | null = selfGen?.som?.length
+    ? {
+        atomIdxs: selfGen.som,
+        bondIdx:
+          modeForHead(
+            childMet?.headIndex ?? searchHeadIndex,
+          ) === "pair" ||
+          modeForHead(childMet?.headIndex ?? searchHeadIndex) === "atom"
+            ? null
+            : selfGen.bondIdx ?? null,
+      }
+    : null;
 
-  const selectedHighlight = pathHighlight || searchHighlight;
+  const selectedHighlight = childHighlight || stubHighlight;
   const selectedHeadIndex = childMet
     ? typeof childMet.headIndex === "number"
       ? childMet.headIndex
       : null
     : searchHeadIndex;
 
-  const committedSelection: SiteSelection | null = childMet
-    ? { metaboliteSmiles: childMet.smiles }
-    : selectedHighlight && selectedHeadIndex != null
-      ? {
-          atomIdxs: selectedHighlight.atomIdxs,
-          bondIdx: selectedHighlight.bondIdx,
-        }
-      : null;
+  const committedSelection: SiteSelection | null = (() => {
+    if (childMet) return { metaboliteSmiles: childMet.smiles };
+    if (selectedHeadIndex == null && !selectedHighlight) return null;
+    return {
+      atomIdxs: selectedHighlight?.atomIdxs,
+      bondIdx: selectedHighlight?.bondIdx ?? null,
+      headIndex: selectedHeadIndex,
+    };
+  })();
 
   const panelSelection = effectiveMetabolitePanelSelection({
     childQuery,
     committed: committedSelection,
-    hover: childQuery ? null : siteHover,
+    hover: siteHover,
   });
 
-  const metaboliteMeta = parseMetaboliteMetaParams(searchParams);
+  // Formation chrome for *this* hop: parent matches metabolite + parent som.
+  const formationPathway =
+    formationMeta?.pathway ?? parentCtx.formationForChild?.pathway ?? null;
+  const formationScore =
+    typeof formationMeta?.score === "number"
+      ? formationMeta.score
+      : typeof parentCtx.formationForChild?.score === "number"
+        ? parentCtx.formationForChild.score
+        : null;
+
+  const hrefForMetabolite = (m: MetaboliteRecord) => {
+    if (!canAppendMetaboliteHop(depth) && !childQuery) {
+      return location.pathname + location.search;
+    }
+    const site = (m.atom || [])
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 0);
+    const matchIndex = metaboliteMatchIndex(metabolites, m, cipRank);
+    return metaboliteSelectUrl({
+      generations,
+      depth,
+      metaboliteSmiles: m.smiles,
+      childQuery,
+      headIndex: typeof m.headIndex === "number" ? m.headIndex : null,
+      site: site.length ? site : undefined,
+      matchIndex: matchIndex > 0 ? matchIndex : null,
+    });
+  };
+
+  const clearHref = childQuery
+    ? metaboliteSelectUrl({
+        generations,
+        depth,
+        metaboliteSmiles: childQuery,
+        childQuery,
+      })
+    : null;
+
+  const toggleHeadFilter = (headIndex: number) => {
+    if (childQuery) return;
+    if (selectedHeadIndex === headIndex) {
+      navigate(
+        { pathname: location.pathname, search: "" },
+        { replace: true, preventScrollReset: true },
+      );
+      return;
+    }
+    const search = somToSearchParams({
+      head: encodeHeadParam(headIndex, results),
+    }).toString();
+    navigate(
+      { pathname: location.pathname, search: search ? `?${search}` : "" },
+      { replace: true, preventScrollReset: true },
+    );
+  };
 
   const navigateSom = (
     highlight: SomHighlight | null,
     headIndex: number,
   ) => {
     const head = encodeHeadParam(headIndex, results);
-    if (!highlight) {
-      if (childQuery) {
-        navigate(somSelectUrl({ generations, depth }));
-      } else {
-        navigate(
-          { pathname: location.pathname, search: "" },
-          { replace: true },
-        );
-      }
-      return;
-    }
-    const search = somToSearchParams({
-      atomIdxs: highlight.atomIdxs,
-      bondIdx: highlight.bondIdx,
-      head,
-    }).toString();
-    if (childQuery) {
-      navigate(
-        somSelectUrl({
-          generations,
-          depth,
-          atomIdxs: highlight.atomIdxs,
-          bondIdx: highlight.bondIdx,
-          head,
-        }),
-      );
-      return;
-    }
     navigate(
-      { pathname: location.pathname, search: search ? `?${search}` : "" },
-      { replace: true },
+      somSelectUrl({
+        generations,
+        depth,
+        atomIdxs: highlight?.atomIdxs,
+        bondIdx: highlight?.bondIdx,
+        head: highlight ? head : undefined,
+      }),
+      { replace: !childQuery },
     );
   };
 
@@ -233,7 +377,6 @@ export function GenerationView({
     const mode = modeForHead(headIndex);
 
     if (mode === "pair") {
-      // Empty click clears. Otherwise accumulate up to two atom sites.
       const current = childQuery ? null : selectedHighlight;
       const next = applyPairAtomClick(current, hit);
       navigateSom(next, headIndex);
@@ -256,59 +399,7 @@ export function GenerationView({
     navigateSom(toggled, headIndex);
   };
 
-  const onSelectMetabolite = (m: MetaboliteRecord) => {
-    if (childQuery && childQuery === m.smiles) {
-      navigate(
-        metaboliteSelectUrl({
-          generations,
-          depth,
-          metaboliteSmiles: m.smiles,
-          childQuery,
-        }),
-      );
-      return;
-    }
-    const head =
-      typeof m.headIndex === "number"
-        ? encodeHeadParam(m.headIndex, results)
-        : m.headModel
-          ? encodeHeadParam(
-              resolveHeadIndex(m.headModel, results) ?? 0,
-              results,
-            )
-          : null;
-    const som = somFromMetabolite(
-      m,
-      resolved_query?.bonds?.idx,
-      modeForHead(m.headIndex),
-    );
-    const search = withMetaboliteMetaParams(
-      somToSearchParams({
-        atomIdxs: som?.atomIdxs,
-        bondIdx: som?.bondIdx,
-        head,
-      }),
-      { pathway: m.pathway, score: m.score },
-    ).toString();
-    navigate(
-      moleculeFocusUrl({
-        generations: [
-          ...generations.slice(0, depth + 1),
-          {
-            model: generations[depth]?.model || model,
-            query: m.smiles,
-          },
-        ],
-        search: search || undefined,
-      }),
-    );
-  };
-
   const onHoverMetabolite = (m: MetaboliteRecord | null) => {
-    if (childQuery) {
-      setHover(null);
-      return;
-    }
     if (!m?.atom?.length || typeof m.headIndex !== "number") {
       setHover(null);
       return;
@@ -326,116 +417,147 @@ export function GenerationView({
   };
 
   const showIdentity = depth > 0 || !identityInShell;
+  const predictionReady = depth === 0 || hasPredictionModel(model);
+  const hopSmiles =
+    generations[depth]?.query || resolved_query?.smiles || "";
 
-  return (
+  const predictionBlock = predictionReady ? (
     <div
       className={
-        depth === 0 ? "mx-auto relative w-full" : "mx-auto relative w-full"
+        depth === 0
+          ? "w-fit max-w-full mx-auto relative px-2 py-4 sm:px-4"
+          : "w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4"
       }
     >
-      {showIdentity ? (
-        <div className={depth > 0 ? "px-2 pb-2 mt-6" : "px-2 pb-2"}>
-          <MoleculeIdentity
-            resolved_query={resolved_query}
-            showCopy
-            headingLevel={depth === 0 ? 1 : 2}
-          />
-          {depth > 0 &&
-          (metaboliteMeta.pathway || metaboliteMeta.score != null) ? (
-            <div className="mt-1 text-center text-xs text-gray-600">
-              {metaboliteMeta.pathway
-                ? formatPathwayLabel(metaboliteMeta.pathway)
-                : null}
-              {metaboliteMeta.pathway && metaboliteMeta.score != null
-                ? " · "
-                : null}
-              {metaboliteMeta.score != null
-                ? metaboliteMeta.score.toFixed(2)
-                : null}
+      <div className="flex mx-auto mb-4 justify-center flex-wrap gap-4">
+        {results.map((r: any, i: number) => {
+          const mode = selectionModeFromResult(r);
+          const isSelectedHead = selectedHeadIndex === i;
+          const isHoverHead = hover?.headIndex === i;
+          return (
+            <div key={r.model || i} className="mx-2 max-w-full">
+              {r.depiction ? (
+                <InteractiveMoleculeDepiction
+                  svg={r.depiction}
+                  alt={`${moleculeName} ${
+                    results.length > 1 ? last_name(r.model) : modelLabel
+                  } prediction`}
+                  bondsIdx={resolved_query?.bonds?.idx}
+                  selectionMode={mode}
+                  selected={isSelectedHead ? selectedHighlight : null}
+                  externalHover={isHoverHead ? hover?.highlight : null}
+                  onSelect={(hit) => applyHit(hit, i)}
+                  onHover={(hit) => {
+                    const sel = hitToSiteSelection(hit);
+                    setSiteHover(sel ? { ...sel, headIndex: i } : null);
+                  }}
+                />
+              ) : null}
+              {results.length > 1 ? (
+                <button
+                  type="button"
+                  className={classNames(
+                    "block mx-auto text-center w-100 text-xs mt-1 min-h-[2rem] px-2 rounded",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
+                    isSelectedHead
+                      ? "bg-gray-900 text-white font-medium"
+                      : "text-gray-500 hover:bg-gray-100 hover:text-gray-800",
+                  )}
+                  aria-pressed={isSelectedHead}
+                  title={
+                    isSelectedHead
+                      ? "Click to show all metabolites"
+                      : "Show metabolites from this model"
+                  }
+                  onClick={() => toggleHeadFilter(i)}
+                >
+                  {last_name(r.model)}
+                </button>
+              ) : null}
             </div>
-          ) : null}
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
+  const plainStructure =
+    depth > 0 && !predictionReady && hopSmiles ? (
+      <div className="w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4">
+        <LazyMetaboliteImg
+          smiles={hopSmiles}
+          alt={moleculeName}
+          className="max-h-40"
+        />
+      </div>
+    ) : null;
+
+  const identityBlock = showIdentity ? (
+    <div className={depth > 0 ? "px-2 pb-2 mt-6" : "px-2 pb-2"}>
+      <MoleculeIdentity
+        resolved_query={resolved_query}
+        showCopy
+        headingLevel={depth === 0 ? 1 : 2}
+      />
+      {depth > 0 && (formationPathway || formationScore != null) ? (
+        <div className="mt-1 text-center text-xs text-gray-600">
+          {formationPathway ? formatPathwayLabel(formationPathway) : null}
+          {formationPathway && formationScore != null ? " · " : null}
+          {formationScore != null ? formationScore.toFixed(2) : null}
         </div>
       ) : null}
+    </div>
+  ) : null;
+
+  const nestedOutlet = nestOutlet ? (
+    <Suspense fallback={<Spinner />}>
+      {pendingChild ? <Spinner /> : <Outlet context={hopOutletContext} />}
+    </Suspense>
+  ) : (
+    children
+  );
+
+  return (
+    <div className="mx-auto relative w-full">
+      {identityBlock}
 
       {depth > 0 ? (
         <>
           <ModelTabs depth={depth} generations={generations} />
-          <AboutModel model={model} />
+          {predictionReady ? <AboutModel model={model} /> : null}
+          {predictionReady ? predictionBlock : plainStructure}
         </>
-      ) : null}
+      ) : (
+        predictionBlock
+      )}
 
-      <div
-        className={
-          depth === 0
-            ? "w-fit max-w-full mx-auto relative px-2 py-4 sm:px-4"
-            : "w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4"
-        }
-      >
-        <div className="flex mx-auto mb-4 justify-center flex-wrap gap-4">
-          {results.map((r: any, i: number) => {
-            const mode = selectionModeFromResult(r);
-            const isSelectedHead = selectedHeadIndex === i;
-            const isHoverHead = hover?.headIndex === i;
-            return (
-              <div key={r.model || i} className="mx-2 max-w-full">
-                {r.depiction ? (
-                  <InteractiveMoleculeDepiction
-                    svg={r.depiction}
-                    alt={`${moleculeName} ${
-                      results.length > 1 ? last_name(r.model) : modelLabel
-                    } prediction`}
-                    bondsIdx={resolved_query?.bonds?.idx}
-                    selectionMode={mode}
-                    selected={isSelectedHead ? selectedHighlight : null}
-                    externalHover={isHoverHead ? hover?.highlight : null}
-                    onSelect={(hit) => applyHit(hit, i)}
-                    onHover={
-                      childQuery
-                        ? undefined
-                        : (hit) => {
-                            setSiteHover(hitToSiteSelection(hit));
-                          }
-                    }
-                  />
-                ) : null}
-                {results.length > 1 ? (
-                  <div className="text-center w-100 text-xs text-gray-500">
-                    {last_name(r.model)}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/*
-        Generation N bar sits between this generation's predictions and its
-        metabolites (Gen 1: parent mol → metabolite structure / list;
-        Gen 2+: nested predictions → inferred metabolites).
-      */}
-      {showPanel ? (
+      {showPanel && predictionReady ? (
         <>
-          <GenerationBanner depth={depth} className="mt-2 mb-4" />
+          <GenerationBanner depth={depth} className="mt-2 mb-2" />
           <MetabolitePanel
             metabolites={metabolites}
             selection={panelSelection}
+            cipRank={cipRank}
             selectedSmiles={childQuery}
             depth={depth}
-            onSelectMetabolite={onSelectMetabolite}
+            lockLayout={!!siteHover}
+            canSelectNextGeneration={
+              canAppendMetaboliteHop(depth) || !!childQuery
+            }
+            hrefForMetabolite={hrefForMetabolite}
+            clearHref={clearHref}
             onHoverMetabolite={onHoverMetabolite}
           />
         </>
       ) : null}
 
-      {/* Nested generations render after this generation's metabolite panel. */}
-      {children}
+      {nestedOutlet}
     </div>
   );
 }
 
 /**
- * Root layout: generation 0 depiction + Outlet for /m/* .
+ * Root layout: generation 0 + Outlet for nested hops.
  * Identity for depth 0 is rendered in the app shell under the search box.
  */
 export function MoleculeFocusRootLayout({
@@ -448,12 +570,24 @@ export function MoleculeFocusRootLayout({
   query: string;
 }) {
   const location = useLocation();
-  const parsed = parseMoleculeFocusPath(location.pathname);
-  const generations =
-    parsed?.generations?.length
+  const navigation = useNavigation();
+  const params = useParams();
+  const generations = useMemo(() => {
+    const fromParams = generationsFromParams(params);
+    if (fromParams.length) return fromParams;
+    const parsed = parseMoleculeFocusPath(location.pathname);
+    return parsed?.generations?.length
       ? parsed.generations
       : [{ model, query }];
+  }, [params, location.pathname, model, query]);
+
   const hasNested = generations.length > 1;
+  const nestedPredictionPending = isNestedPredictionNavigation(
+    location.pathname,
+    navigation.location?.pathname,
+    navigation.state,
+    parseMoleculeFocusPath,
+  );
 
   return (
     <GenerationView
@@ -463,47 +597,13 @@ export function MoleculeFocusRootLayout({
       generations={generations}
       showPanel
       identityInShell
-    >
-      {hasNested ? <Outlet /> : null}
-    </GenerationView>
+      nestOutlet={hasNested || nestedPredictionPending}
+      pendingChild={nestedPredictionPending && !hasNested}
+    />
   );
 }
 
-/**
- * Nested /m/* stack after the root. Leaf generation shows its metabolite panel.
- */
-export function MoleculeFocusNestedStack({
-  chain,
-  generations,
-}: {
-  chain: any[];
-  generations: FocusGeneration[];
-}) {
-  if (!chain.length) return null;
-
-  return (
-    <>
-      {chain.map((resolved, i) => {
-        const depth = i + 1;
-        const gen = generations[depth];
-        if (!gen) return null;
-        const isLeaf = i === chain.length - 1;
-        return (
-          <GenerationView
-            key={`${gen.model}:${gen.query}:${depth}`}
-            depth={depth}
-            resolved_query={resolved}
-            model={gen.model}
-            generations={generations}
-            showPanel={isLeaf}
-          />
-        );
-      })}
-    </>
-  );
-}
-
-/** @deprecated Prefer MoleculeFocusRootLayout / NestedStack. */
+/** @deprecated Prefer MoleculeFocusRootLayout + hop routes. */
 export default function MoleculeFocus({
   chain,
   model,
@@ -513,7 +613,7 @@ export default function MoleculeFocus({
   model: string;
   segments: string[];
 }) {
-  const generations = (segments || []).map((query) => ({ model, query }));
+  const generations = (segments || []).map((q) => ({ model, query: q }));
   if (!chain?.length) return null;
   return (
     <GenerationView
@@ -521,14 +621,8 @@ export default function MoleculeFocus({
       resolved_query={chain[0]}
       model={model}
       generations={generations}
-      showPanel={chain.length === 1}
-    >
-      {chain.length > 1 ? (
-        <MoleculeFocusNestedStack
-          chain={chain.slice(1)}
-          generations={generations}
-        />
-      ) : null}
-    </GenerationView>
+      showPanel
+      nestOutlet={false}
+    />
   );
 }
