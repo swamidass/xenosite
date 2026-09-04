@@ -31,8 +31,9 @@ import {
   type SiteSelection,
 } from "~/utils/metabolites";
 import { moleculeDisplayName } from "~/utils/moleculeIdentity";
-import { selectionModeFromResult, type SiteHit } from "~/utils/siteHitTest";
+import { selectionModeFromResult, type SelectionMode, type SiteHit } from "~/utils/siteHitTest";
 import {
+  applyPairAtomClick,
   effectiveMetabolitePanelSelection,
   hitToSiteSelection,
   metaboliteSelectUrl,
@@ -51,16 +52,24 @@ function last_name(name: string) {
   return lastName;
 }
 
-/** Map a metabolite's parent atoms to an overlay highlight (bond if possible). */
+/**
+ * Map a metabolite's parent atoms to an overlay highlight.
+ * Bond midpoint only for bond / atom+bond models — pair (multisite) models
+ * keep a circle on each atom.
+ */
 export function somFromMetabolite(
   m: MetaboliteRecord | null | undefined,
   bondsIdx: unknown,
+  mode?: SelectionMode | null,
 ): SomHighlight | null {
   if (!m?.atom?.length) return null;
   const atomIdxs = m.atom
     .map(Number)
     .filter((n) => Number.isInteger(n) && n >= 0);
   if (!atomIdxs.length) return null;
+  if (mode === "pair" || mode === "atom") {
+    return { atomIdxs };
+  }
   const bonds = normalizeBondsIdx(bondsIdx);
   if (atomIdxs.length === 2 && bonds.length) {
     const [a, b] = atomIdxs;
@@ -133,7 +142,14 @@ export function GenerationView({
   const somFromSearch = parseSomSearchParams(searchParams);
   const searchHeadIndex = resolveHeadIndex(somFromSearch.head, results);
 
-  const pathHighlight = somFromMetabolite(childMet, resolved_query?.bonds?.idx);
+  const modeForHead = (i: number | null | undefined) =>
+    typeof i === "number" ? selectionModeFromResult(results[i] || {}) : null;
+
+  const pathHighlight = somFromMetabolite(
+    childMet,
+    resolved_query?.bonds?.idx,
+    modeForHead(childMet?.headIndex),
+  );
   const searchHighlight: SomHighlight | null =
     !childMet &&
     depth === 0 &&
@@ -141,7 +157,12 @@ export function GenerationView({
     (somFromSearch.atomIdxs?.length || somFromSearch.bondIdx != null)
       ? {
           atomIdxs: somFromSearch.atomIdxs || [],
-          bondIdx: somFromSearch.bondIdx,
+          // Pair / atom multisite URLs never use bond midpoints.
+          bondIdx:
+            modeForHead(searchHeadIndex) === "pair" ||
+            modeForHead(searchHeadIndex) === "atom"
+              ? null
+              : somFromSearch.bondIdx,
         }
       : null;
 
@@ -169,7 +190,56 @@ export function GenerationView({
 
   const metaboliteMeta = parseMetaboliteMetaParams(searchParams);
 
+  const navigateSom = (
+    highlight: SomHighlight | null,
+    headIndex: number,
+  ) => {
+    const head = encodeHeadParam(headIndex, results);
+    if (!highlight) {
+      if (childQuery) {
+        navigate(somSelectUrl({ generations, depth }));
+      } else {
+        navigate(
+          { pathname: location.pathname, search: "" },
+          { replace: true },
+        );
+      }
+      return;
+    }
+    const search = somToSearchParams({
+      atomIdxs: highlight.atomIdxs,
+      bondIdx: highlight.bondIdx,
+      head,
+    }).toString();
+    if (childQuery) {
+      navigate(
+        somSelectUrl({
+          generations,
+          depth,
+          atomIdxs: highlight.atomIdxs,
+          bondIdx: highlight.bondIdx,
+          head,
+        }),
+      );
+      return;
+    }
+    navigate(
+      { pathname: location.pathname, search: search ? `?${search}` : "" },
+      { replace: true },
+    );
+  };
+
   const applyHit = (hit: SiteHit | null, headIndex: number) => {
+    const mode = modeForHead(headIndex);
+
+    if (mode === "pair") {
+      // Empty click clears. Otherwise accumulate up to two atom sites.
+      const current = childQuery ? null : selectedHighlight;
+      const next = applyPairAtomClick(current, hit);
+      navigateSom(next, headIndex);
+      return;
+    }
+
     const nextHighlight: SomHighlight | null = hit
       ? {
           atomIdxs: hit.atomIdxs,
@@ -177,38 +247,13 @@ export function GenerationView({
         }
       : null;
 
-    // Metabolite hop active: SOM click leaves the hop and filters the list.
     if (childQuery) {
-      if (!nextHighlight) {
-        navigate(somSelectUrl({ generations, depth }));
-        return;
-      }
-      navigate(
-        somSelectUrl({
-          generations,
-          depth,
-          atomIdxs: nextHighlight.atomIdxs,
-          bondIdx: nextHighlight.bondIdx,
-          head: encodeHeadParam(headIndex, results),
-        }),
-      );
+      navigateSom(nextHighlight, headIndex);
       return;
     }
 
     const toggled = toggleSomHighlight(selectedHighlight, nextHighlight);
-    if (!toggled) {
-      navigate({ pathname: location.pathname, search: "" }, { replace: true });
-      return;
-    }
-    const search = somToSearchParams({
-      atomIdxs: toggled.atomIdxs,
-      bondIdx: toggled.bondIdx,
-      head: encodeHeadParam(headIndex, results),
-    }).toString();
-    navigate(
-      { pathname: location.pathname, search: search ? `?${search}` : "" },
-      { replace: true },
-    );
+    navigateSom(toggled, headIndex);
   };
 
   const onSelectMetabolite = (m: MetaboliteRecord) => {
@@ -232,7 +277,11 @@ export function GenerationView({
               results,
             )
           : null;
-    const som = somFromMetabolite(m, resolved_query?.bonds?.idx);
+    const som = somFromMetabolite(
+      m,
+      resolved_query?.bonds?.idx,
+      modeForHead(m.headIndex),
+    );
     const search = withMetaboliteMetaParams(
       somToSearchParams({
         atomIdxs: som?.atomIdxs,
@@ -264,7 +313,11 @@ export function GenerationView({
       setHover(null);
       return;
     }
-    const highlight = somFromMetabolite(m, resolved_query?.bonds?.idx);
+    const highlight = somFromMetabolite(
+      m,
+      resolved_query?.bonds?.idx,
+      modeForHead(m.headIndex),
+    );
     if (!highlight) {
       setHover(null);
       return;

@@ -65,6 +65,31 @@ export function toggleSomHighlight(
 }
 
 /**
+ * Pair / multisite models: click atoms to build a 1–2 atom selection.
+ * Clicking a selected atom removes it; a third atom starts a new pair.
+ */
+export function applyPairAtomClick(
+  current: SomHighlight | null | undefined,
+  hit: SiteHit | null,
+): SomHighlight | null {
+  if (!hit) return null;
+  const idx = hit.atomIdxs[0];
+  if (idx == null || !Number.isInteger(idx)) return null;
+  const cur = [...(current?.atomIdxs || [])].filter((n) => Number.isInteger(n));
+  const pos = cur.indexOf(idx);
+  if (pos >= 0) {
+    cur.splice(pos, 1);
+    return cur.length ? { atomIdxs: cur } : null;
+  }
+  if (cur.length >= 2) {
+    return { atomIdxs: [idx] };
+  }
+  cur.push(idx);
+  cur.sort((a, b) => a - b);
+  return { atomIdxs: cur };
+}
+
+/**
  * Navigate to this generation with an optional SOM selection, dropping any
  * deeper metabolite hops. Used when a child metabolite is selected and the
  * user clicks a SOM on the parent depiction.

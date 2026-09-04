@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPairAtomClick,
   effectiveMetabolitePanelSelection,
   metaboliteSelectUrl,
   somSelectUrl,
@@ -99,5 +100,30 @@ describe("somSelectUrl", () => {
         head: "hydrolysis",
       }),
     ).toBe("/phase1/aspirin?atom=1&atom=3&bond=2&head=hydrolysis");
+  });
+});
+
+describe("applyPairAtomClick", () => {
+  it("builds a two-atom selection across clicks", () => {
+    const first = applyPairAtomClick(null, {
+      kind: "atom",
+      atomIdxs: [2],
+    });
+    expect(first).toEqual({ atomIdxs: [2] });
+    const second = applyPairAtomClick(first, {
+      kind: "atom",
+      atomIdxs: [0],
+    });
+    expect(second).toEqual({ atomIdxs: [0, 2] });
+  });
+
+  it("toggles an atom off and starts over after two", () => {
+    const pair = { atomIdxs: [0, 2] };
+    expect(
+      applyPairAtomClick(pair, { kind: "atom", atomIdxs: [0] }),
+    ).toEqual({ atomIdxs: [2] });
+    expect(
+      applyPairAtomClick(pair, { kind: "atom", atomIdxs: [5] }),
+    ).toEqual({ atomIdxs: [5] });
   });
 });

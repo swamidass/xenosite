@@ -101,11 +101,16 @@ export const meta: MetaFunction = () => [
 
 function SiteLogo() {
   return (
-    <p className="text-4xl inline font-bold pr-3 relative">
-      <span className="inset-0 absolute -top-2 -z-10">
+    <p className="text-4xl inline font-bold pr-3 relative overflow-visible z-0">
+      <span
+        className="pointer-events-none absolute -top-2 left-0 -z-[1]"
+        aria-hidden
+      >
         <XDot className="w-[4em] m-auto opacity-25" />
       </span>
-      <Link to="/" reloadDocument>XenoSite</Link>
+      <Link className="relative" to="/" reloadDocument>
+        XenoSite
+      </Link>
     </p>
   );
 }
@@ -187,8 +192,9 @@ export default function App() {
       </head>
       <body>
         <MetabolitePathNav crumbs={pathCrumbs} />
-        <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3 overflow-x-hidden">
+        <div className="max-w-screen-xl mx-auto mt-10 xl:px-0 px-3">
           <SiteLogo />
+          <div className="overflow-x-hidden">
           <>
             <fetcher.Form
               method="GET"
@@ -245,6 +251,7 @@ export default function App() {
               <Outlet />
             )}
           </>
+          </div>
         </div>
 
         <ScrollRestoration />
