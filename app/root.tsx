@@ -1,7 +1,14 @@
 
 import stylesheet from "~/styles/app.css";
 import { redirect, json } from "@remix-run/node";
-import type { HeadersFunction, LinksFunction, LoaderFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import type {
+  HeadersFunction,
+  LinksFunction,
+  LoaderFunction,
+  LoaderFunctionArgs,
+  MetaFunction,
+  ShouldRevalidateFunction,
+} from "@remix-run/node";
 import {
   Link,
   Links,
@@ -25,6 +32,7 @@ import { MODELS } from "~/data";
 import {
   parseMoleculeFocusPath,
 } from "~/utils/metabolitePath";
+import { isSearchBoxNavigation } from "~/utils/navigationLoading";
 
 
 export const headers: HeadersFunction = ({
@@ -52,6 +60,29 @@ export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) =>
       throw redirect(url);
   }
   return json({ gaTrackingId: process.env.GA_TRACKING_ID });
+};
+
+/**
+ * Root only holds GA config — skip refetch on nested /m/ hops and SOM params.
+ */
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  currentUrl,
+  nextUrl,
+  formMethod,
+  defaultShouldRevalidate,
+}) => {
+  if (formMethod && formMethod !== "GET") return defaultShouldRevalidate;
+  const cur = parseMoleculeFocusPath(currentUrl.pathname);
+  const next = parseMoleculeFocusPath(nextUrl.pathname);
+  if (
+    cur &&
+    next &&
+    cur.model === next.model &&
+    cur.segments[0] === next.segments[0]
+  ) {
+    return false;
+  }
+  return defaultShouldRevalidate;
 };
 
 export const meta: MetaFunction = () => [
@@ -150,7 +181,9 @@ export default function App() {
             <ModelTabs generations={parsed?.generations} depth={0} />
             {model && model !== "_" ? <AboutModel model={model} /> : null}
 
-            {transition.state != "idle" && new_query ? (
+            {/* Only unmount the outlet while the search box changes the root molecule.
+                Nested /m/ hops keep the same draft query and must keep the parent mounted. */}
+            {isSearchBoxNavigation(query, new_query, transition.state) ? (
               <Spinner />
             ) : (
               <Outlet />

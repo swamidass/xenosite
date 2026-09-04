@@ -2,7 +2,12 @@ import { MODELS, resolveModelInfo, XenositeModelInfo } from "~/data";
 import { Outlet, useMatches } from "@remix-run/react";
 import { ModelDescriptions } from "~/components";
 import { json } from "@remix-run/node";
-import type { MetaFunction, MetaArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type {
+  MetaFunction,
+  MetaArgs,
+  LoaderFunctionArgs,
+  ShouldRevalidateFunction,
+} from "@remix-run/node";
 import type { LdJsonParams } from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import { SITE_NAME, commonMetaValues, isMetaLeaf, siteUrl } from "~/utils";
@@ -49,6 +54,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   return json({});
 }
+
+/** Model layout is static per `params.model` — skip refetch on nested hops. */
+export const shouldRevalidate: ShouldRevalidateFunction = ({
+  currentParams,
+  nextParams,
+}) => currentParams.model !== nextParams.model;
 
 export default function Model() {
   const matches = useMatches();
