@@ -165,7 +165,7 @@ export default function MetabolitePanel({
       }}
     >
       {chrome.showToggle ? (
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mb-2 px-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mb-2 px-2 print:hidden">
           <button
             type="button"
             className="text-xs text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline min-h-[2rem] px-1"
@@ -192,6 +192,20 @@ export default function MetabolitePanel({
 
       {chrome.showGrid ? (
         <>
+          {/* Keep a fixed hint slot above the grid so select/deselect doesn't jump layout. */}
+          <div className="mb-2 px-3 min-h-[2.5rem] flex items-center justify-center print:hidden">
+            <p
+              className={classNames(
+                "m-0 text-center text-xs text-gray-400",
+                hasSelection && "invisible",
+              )}
+              aria-hidden={hasSelection || undefined}
+            >
+              {canSelectNextGeneration
+                ? "Select a metabolite to form the next generation."
+                : "Maximum generation reached — metabolites here can't start another hop."}
+            </p>
+          </div>
           <ul
             className={classNames(
               "flex mx-auto justify-center flex-wrap gap-4 list-none p-0 m-0",
@@ -279,7 +293,7 @@ export default function MetabolitePanel({
               </p>
               <button
                 type="button"
-                className="text-xs text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline min-h-[2rem] px-1"
+                className="text-xs text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline min-h-[2rem] px-1 print:hidden"
                 onClick={() => {
                   anchorTopRef.current = null;
                   setShowAll((v) => !v);
@@ -288,13 +302,6 @@ export default function MetabolitePanel({
                 {showAll ? "Show top only" : "Show all"}
               </button>
             </div>
-          ) : null}
-          {!hasSelection ? (
-            <p className="mb-4 px-3 text-center text-xs text-gray-400">
-              {canSelectNextGeneration
-                ? "Select a metabolite to form the next generation."
-                : "Maximum generation reached — metabolites here can't start another hop."}
-            </p>
           ) : null}
         </>
       ) : null}
