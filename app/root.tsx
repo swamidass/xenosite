@@ -154,15 +154,22 @@ export default function App() {
     return buildPathCrumbs({ generations });
   }, [parsed?.generations]);
 
-  useEffect(() => {
-    setNewQuery(query || "");
-  }, [query]);
-
+  /**
+   * Search box debounce — keep this pattern.
+   *
+   * Uncontrolled input + draft state (`new_query`) only; navigate after 300ms.
+   * Do NOT: key={query}, sync new_query from URL on every query change, or
+   * make the input controlled from the route param. Those remount/reset the
+   * field on each debounce hop and steal focus mid-typing.
+   */
   useEffect(() => {
     if (new_query === query) return;
 
     const debounced = setTimeout(() => {
-      navigate(getQueryUrl({ model, query: new_query }));
+      // Keep scroll while typing; a jump mid-query makes short pages unusable.
+      navigate(getQueryUrl({ model, query: new_query }), {
+        preventScrollReset: true,
+      });
     }, 300);
     return () => {
       clearTimeout(debounced);
@@ -197,7 +204,6 @@ export default function App() {
                 name="search"
                 placeholder="Type in a molecule name or SMILES string."
                 defaultValue={query}
-                key={query || "empty"}
               />
               {model ? (
                 <input

@@ -32,7 +32,6 @@ export default function AboutModel({ model }: AboutModelProps) {
               <Link
                 className="no-underline hover:underline text-gray-700"
                 to={`/${modelinfo.path}`}
-                reloadDocument
               >
                 {modelinfo.model}
               </Link>

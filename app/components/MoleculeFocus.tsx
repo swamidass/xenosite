@@ -370,7 +370,8 @@ export function GenerationView({
         bondIdx: highlight?.bondIdx,
         head: highlight ? head : undefined,
       }),
-      { replace: !childQuery },
+      // SOM stub updates must not ScrollRestoration-jump (esp. short pages).
+      { replace: !childQuery, preventScrollReset: true },
     );
   };
 
