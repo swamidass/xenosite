@@ -39,6 +39,16 @@ describe("mol stub smiles[;som][;bN]", () => {
     });
     expect(smilesFromMolStubParam("phenol;1,2")).toBe("phenol");
   });
+
+  it("keeps CXSMILES semicolons inside |$...$| when peeling som", () => {
+    const cx = "*C1C=C(O)C=CC1=O |$GSH;;;;;;;;$|";
+    expect(parseMolStub(`${cx};2`)).toEqual({ smiles: cx, som: [2] });
+    expect(parseMolStub(encodeURIComponent(`${cx};1,2;b0`))).toEqual({
+      smiles: cx,
+      som: [1, 2],
+      bondIdx: 0,
+    });
+  });
 });
 
 describe("metabolite slug smiles;head;match", () => {
@@ -56,6 +66,26 @@ describe("metabolite slug smiles;head;match", () => {
     ).toBe("CCO;0;1");
     expect(parseMetaboliteSlug("CCO;0;1")).toEqual({
       smiles: "CCO",
+      headIndex: 0,
+      matchIndex: 1,
+    });
+  });
+
+  it("round-trips CXSMILES with embedded semicolons in atom labels", () => {
+    const cx = "*C1C=C(O)C=CC1=O |$GSH;;;;;;;;$|";
+    const encoded = encodeMetaboliteSlug({ smiles: cx, headIndex: 0 });
+    expect(encoded).toBe(`${cx};0`);
+    expect(parseMetaboliteSlug(encoded)).toEqual({
+      smiles: cx,
+      headIndex: 0,
+      matchIndex: null,
+    });
+    expect(
+      parseMetaboliteSlug(
+        encodeMetaboliteSlug({ smiles: cx, headIndex: 0, matchIndex: 1 }),
+      ),
+    ).toEqual({
+      smiles: cx,
       headIndex: 0,
       matchIndex: 1,
     });

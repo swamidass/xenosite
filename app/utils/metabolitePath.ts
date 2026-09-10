@@ -7,6 +7,10 @@
  * `{mol}` stub: `smiles` or `smiles;1,2` (optional `;bN` bond). SOM lives on the
  * owning generation's stub so the parent highlights without a child callback.
  * `{metabolite}`: `smiles;head;match` — pathway/score resolved from parent results.
+ *
+ * Path fields still use `;`, but parsers peel known suffixes from the **end**.
+ * CXSMILES atom labels embed `;` inside `|…|` (e.g. `|$GSH;;;;;;;;$|`); splitting
+ * from the front would corrupt the molecule string.
  */
 
 import { MODELS } from "~/data";
@@ -93,26 +97,31 @@ function parseBondPart(raw: string): number | null {
 export function parseMolStub(raw: string): MolStub {
   const decoded = decodeSeg(raw);
   const parts = decoded.split(";");
-  const smiles = parts[0] || "";
   let som: number[] | undefined;
   let bondIdx: number | null = null;
 
-  for (let i = 1; i < parts.length; i++) {
-    const part = parts[i];
-    if (!part) continue;
-    const bond = parseBondPart(part);
+  // Peel stub fields from the end — CXSMILES may embed ';' inside |$...$|.
+  while (parts.length > 1) {
+    const last = parts[parts.length - 1] || "";
+    const bond = parseBondPart(last);
     if (bond != null) {
       bondIdx = bond;
+      parts.pop();
       continue;
     }
-    if (/^[\d,]+$/.test(part)) {
-      const atoms = parseAtomList(part);
-      if (atoms.length) som = atoms;
+    if (last && /^[\d,]+$/.test(last)) {
+      const atoms = parseAtomList(last);
+      if (atoms.length) {
+        som = atoms;
+        parts.pop();
+        continue;
+      }
     }
+    break;
   }
 
   return {
-    smiles,
+    smiles: parts.join(";") || "",
     ...(som?.length ? { som } : {}),
     ...(bondIdx != null ? { bondIdx } : {}),
   };
@@ -147,16 +156,25 @@ export type MetaboliteSlug = {
 
 export function parseMetaboliteSlug(raw: string): MetaboliteSlug {
   const decoded = decodeSeg(raw);
-  const [smiles = "", headPart, matchPart] = decoded.split(";");
-  let headIndex: number | null = null;
-  if (headPart != null && headPart !== "" && /^\d+$/.test(headPart)) {
-    headIndex = Number(headPart);
+  // Peel ;head;match or ;head from the end. matchIndex is only encoded when > 0.
+  // Do not split from the front — CXSMILES labels use ';' inside |$...$|.
+  const withMatch = decoded.match(/^(.*);(\d+);(\d+)$/);
+  if (withMatch && Number(withMatch[3]) > 0) {
+    return {
+      smiles: withMatch[1],
+      headIndex: Number(withMatch[2]),
+      matchIndex: Number(withMatch[3]),
+    };
   }
-  let matchIndex: number | null = null;
-  if (matchPart != null && matchPart !== "" && /^\d+$/.test(matchPart)) {
-    matchIndex = Number(matchPart);
+  const withHead = decoded.match(/^(.*);(\d+)$/);
+  if (withHead) {
+    return {
+      smiles: withHead[1],
+      headIndex: Number(withHead[2]),
+      matchIndex: null,
+    };
   }
-  return { smiles, headIndex, matchIndex };
+  return { smiles: decoded, headIndex: null, matchIndex: null };
 }
 
 export function encodeMetaboliteSlug(slug: MetaboliteSlug): string {
