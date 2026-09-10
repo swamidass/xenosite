@@ -40,6 +40,7 @@ import HEADERS from "~/loaders/headers";
 import { getQueryUrl } from "~/utils";
 import { MODELS } from "~/data";
 import {
+  hasPredictionModel,
   parseMoleculeFocusPath,
 } from "~/utils/metabolitePath";
 import { isSearchBoxNavigation } from "~/utils/navigationLoading";
@@ -179,6 +180,14 @@ export default function App() {
 
   const hasMolecule = !!rootMoleculeData?.resolved_query && !rootMoleculeData.resolved_query?.detail;
 
+  const showScaleBar = useMemo(() => {
+    if (!hasMolecule || !hasPredictionModel(model)) return false;
+    const results = rootMoleculeData?.resolved_query?.results;
+    return (
+      Array.isArray(results) && results.some((r: { depiction?: unknown }) => !!r?.depiction)
+    );
+  }, [hasMolecule, model, rootMoleculeData]);
+
   return (
     <html lang="en">
       <head>
@@ -253,7 +262,7 @@ export default function App() {
         </div>
 
         <Loading />
-        <ShareButton />
+        <ShareButton showScaleBar={showScaleBar} />
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" ? <LiveReload /> : <Gtag />}

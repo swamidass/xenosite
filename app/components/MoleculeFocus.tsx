@@ -14,7 +14,6 @@ import GenerationBanner from "~/components/GenerationBanner";
 import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import MetabolitePanel from "~/components/MetabolitePanel";
-import PlotDotScaleBar from "~/components/PlotDotScaleBar";
 import MoleculeIdentity from "~/components/MoleculeIdentity";
 import { ModelTabs } from "~/components/ModelTabs";
 import Spinner from "~/components/Spinner";
@@ -460,8 +459,7 @@ export function GenerationView({
           : "w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4"
       }
     >
-      <div className="flex mx-auto mb-4 justify-center items-center gap-3 sm:gap-4">
-        <div className="flex justify-center flex-wrap gap-4 min-w-0">
+      <div className="flex mx-auto mb-4 justify-center flex-wrap gap-4 min-w-0">
           {results.map((r: any, i: number) => {
             const mode = selectionModeFromResult(r);
             const isSelectedHead = selectedHeadIndex === i;
@@ -509,12 +507,6 @@ export function GenerationView({
               </div>
             );
           })}
-        </div>
-        {depth === 0 &&
-        hasPredictionModel(model) &&
-        results.some((r: any) => r.depiction) ? (
-          <PlotDotScaleBar className="self-center" />
-        ) : null}
       </div>
     </div>
   ) : null;

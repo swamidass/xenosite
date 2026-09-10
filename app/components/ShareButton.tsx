@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
+import PlotDotScaleBar from "~/components/PlotDotScaleBar";
+
+export type ShareButtonProps = {
+  /** PlotDot legend stacked above the share control (root predictions). */
+  showScaleBar?: boolean;
+};
 
 /**
  * Fixed lower-right share control. Prefers `navigator.share` (OS share sheet);
  * falls back to copying the URL when the Web Share API is unavailable.
+ * Optional scale bar sits directly above the button.
  */
-export default function ShareButton() {
+export default function ShareButton({ showScaleBar = false }: ShareButtonProps) {
   const [hint, setHint] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,39 +65,42 @@ export default function ShareButton() {
   }, []);
 
   return (
-    <div className="fixed right-0 bottom-0 z-50 p-4 flex flex-col items-end gap-2">
-      {hint ? (
-        <p
-          role="status"
-          className="rounded bg-gray-900 px-2 py-1 text-xs text-white shadow"
+    <div className="fixed right-0 bottom-0 z-50 p-4 flex flex-col items-center gap-2">
+      {showScaleBar ? <PlotDotScaleBar /> : null}
+      <div className="relative print:hidden">
+        {hint ? (
+          <p
+            role="status"
+            className="absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white shadow"
+          >
+            {hint}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={share}
+          aria-label="Share this page"
+          title="Share"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
         >
-          {hint}
-        </p>
-      ) : null}
-      <button
-        type="button"
-        onClick={share}
-        aria-label="Share this page"
-        title="Share"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
-      >
-        {/* Standard share glyph: up arrow rising from a tray. */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-5 w-5"
-          aria-hidden
-        >
-          <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
-          <polyline points="16 6 12 2 8 6" />
-          <line x1="12" y1="2" x2="12" y2="15" />
-        </svg>
-      </button>
+          {/* Standard share glyph: up arrow rising from a tray. */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+            aria-hidden
+          >
+            <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
