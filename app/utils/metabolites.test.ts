@@ -4,6 +4,7 @@ import {
   exactSiteMatch,
   findMetaboliteBySmiles,
   formatPathwayLabel,
+  isStarMolecule,
   matchFormationEdge,
   metaboliteMatchIndex,
   METABOLITE_DISPLAY_CAP,
@@ -94,6 +95,28 @@ describe("rankMetabolites", () => {
       ["SAL", "red", [0], 0.4],
       ["OTHER", "ox", [2], 0.3],
       ["SAL", "ox", [0], 0.05],
+    ]);
+  });
+
+  it("dedupes CIP-equivalent SOMs that yield the same product", () => {
+    // Phenol epoxidation: ortho/meta/para pairs appear twice by symmetry.
+    const phenolCip = [0, 6, 4, 2, 1, 2, 4];
+    const { shown, totalMatching } = rankMetabolites(
+      [
+        { smiles: "OC12C=CC=CC1O2", atom: [1, 2], pathway: "Epoxidation", score: 0.14 },
+        { smiles: "OC12C=CC=CC1O2", atom: [1, 6], pathway: "Epoxidation", score: 0.14 },
+        { smiles: "OC1=CC2OC2C=C1", atom: [3, 4], pathway: "Epoxidation", score: 0.08 },
+        { smiles: "OC1=CC2OC2C=C1", atom: [4, 5], pathway: "Epoxidation", score: 0.08 },
+        { smiles: "OC1=CC=CC2OC12", atom: [5, 6], pathway: "Epoxidation", score: 0.05 },
+        { smiles: "OC1=CC=CC2OC12", atom: [2, 3], pathway: "Epoxidation", score: 0.05 },
+      ],
+      { cipRank: phenolCip, cap: 10 },
+    );
+    expect(totalMatching).toBe(3);
+    expect(shown.map((m) => m.smiles)).toEqual([
+      "OC12C=CC=CC1O2",
+      "OC1=CC2OC2C=C1",
+      "OC1=CC=CC2OC12",
     ]);
   });
 
@@ -246,16 +269,17 @@ describe("rankMetabolites CIP selection", () => {
     expect(shown[0].smiles).toBe("o12");
   });
 
-  it("keeps same SMILES at CIP-equivalent but distinct SOMs", () => {
+  it("dedupes same SMILES at CIP-equivalent SOMs", () => {
     const { shown, totalMatching } = rankMetabolites(
       [
         { smiles: "o12", atom: [1, 2], pathway: "QuinoneFormation", score: 0.31 },
-        { smiles: "o12", atom: [1, 6], pathway: "QuinoneFormation", score: 0.31 },
+        { smiles: "o12", atom: [1, 6], pathway: "QuinoneFormation", score: 0.28 },
       ],
       { selection: { atomIdxs: [1, 6] }, cipRank: phenolCip },
     );
-    expect(totalMatching).toBe(2);
-    expect(shown.map((m) => m.atom)).toEqual([[1, 2], [1, 6]]);
+    expect(totalMatching).toBe(1);
+    expect(shown[0].atom).toEqual([1, 2]);
+    expect(shown[0].score).toBe(0.31);
   });
 });
 
@@ -342,5 +366,16 @@ describe("validateChildFormationEdge / matchFormationEdge", () => {
         matchIndex: 9,
       }).reason,
     ).toMatch(/out of range/);
+  });
+});
+
+describe("isStarMolecule", () => {
+  it("detects dummy-atom adducts and ignores CXSMILES label blocks", () => {
+    expect(isStarMolecule("*C1C=C(O)C=CC1=O |$GSH;;;;;;;;$|")).toBe(true);
+    expect(isStarMolecule("CC(*)C")).toBe(true);
+    expect(isStarMolecule("CCO")).toBe(false);
+    expect(isStarMolecule("c1ccccc1 |$;;;;;;;;$|")).toBe(false);
+    expect(isStarMolecule("")).toBe(false);
+    expect(isStarMolecule(null)).toBe(false);
   });
 });

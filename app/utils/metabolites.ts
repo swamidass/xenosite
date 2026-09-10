@@ -36,6 +36,18 @@ export function collectMetabolites(
   return out;
 }
 
+/**
+ * Dummy-atom / attachment-point molecules (e.g. reactivity adducts
+ * `*C1... |$GSH;;;;;;;;$|`). Prediction endpoints reject these; UI should
+ * show structure only and hide model tabs.
+ */
+export function isStarMolecule(smiles: string | null | undefined): boolean {
+  if (!smiles) return false;
+  // CXSMILES extensions are after " |" — only inspect the base graph.
+  const base = smiles.split(/\s\|/, 1)[0] || smiles;
+  return base.includes("*");
+}
+
 export type SiteSelection = {
   atomIdxs?: number[];
   bondIdx?: number | null;
@@ -134,26 +146,42 @@ function matchesSelection(
 }
 
 /**
- * Collapse true duplicates only: same SMILES + pathway + SOM.
- * Different structures, pathways, or sites are kept separately (e.g. both
- * cleavage products at one site, or the same SMILES from different sites).
+ * Collapse true duplicates only: same SMILES + pathway + formation site.
+ * When `cipRank` is available, sites are compared by CIP-rank multiset so
+ * symmetry-equivalent SOMs (e.g. phenol ortho 1–2 vs 1–6) collapse.
+ * Without CIP, raw atom indices are used. Different pathways or
+ * CIP-inequivalent sites are kept separately (e.g. both cleavage products).
  */
-function metaboliteIdentityKey(m: MetaboliteRecord): string {
+function metaboliteIdentityKey(
+  m: MetaboliteRecord,
+  cipRank?: number[] | null,
+): string {
   const smiles = String(m.smiles || "");
   const pathway = String(m.pathway || "");
-  const som = (m.atom || [])
+  const atoms = (m.atom || [])
     .map(Number)
-    .filter((n) => Number.isInteger(n) && n >= 0)
+    .filter((n) => Number.isInteger(n) && n >= 0);
+  const useCip =
+    Array.isArray(cipRank) &&
+    cipRank.length > 0 &&
+    atoms.every((a) => a < cipRank.length);
+  const som = (
+    useCip ? atoms.map((a) => Number(cipRank![a])) : atoms
+  )
+    .slice()
     .sort((a, b) => a - b)
     .join(",");
   return `${smiles}\0${pathway}\0${som}`;
 }
 
-function dedupeMetabolites(list: MetaboliteRecord[]): MetaboliteRecord[] {
+function dedupeMetabolites(
+  list: MetaboliteRecord[],
+  cipRank?: number[] | null,
+): MetaboliteRecord[] {
   const best = new Map<string, MetaboliteRecord>();
   for (const m of list) {
     if (!m.smiles) continue;
-    const key = metaboliteIdentityKey(m);
+    const key = metaboliteIdentityKey(m, cipRank);
     const prev = best.get(key);
     if (!prev || scoreOf(m) > scoreOf(prev)) {
       best.set(key, m);
@@ -189,7 +217,7 @@ export function rankMetabolites(
   let list = (metabolites || []).filter((m) =>
     matchesSelection(m, selection, cipRank),
   );
-  list = dedupeMetabolites(list);
+  list = dedupeMetabolites(list, cipRank);
   list.sort((a, b) => scoreOf(b) - scoreOf(a));
 
   return {
