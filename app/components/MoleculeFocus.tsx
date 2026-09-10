@@ -38,6 +38,7 @@ import {
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
+  filterNDealkMetabolites,
   formatPathwayLabel,
   isStarMolecule,
   matchFormationEdge,
@@ -161,7 +162,12 @@ export function GenerationView({
   const [siteHover, setSiteHover] = useState<SiteSelection | null>(null);
 
   const results = resolved_query?.results || [];
-  const metabolites = collectMetabolites(results);
+  const atomicNumbers = resolved_query?.atoms?.z as number[] | undefined;
+  const metabolitesRaw = collectMetabolites(results);
+  const metabolites =
+    model === "ndealk"
+      ? filterNDealkMetabolites(metabolitesRaw, atomicNumbers)
+      : metabolitesRaw;
   const childQuery = generations[depth + 1]?.query || null;
   const childGen = generations[depth + 1] || null;
   const cipRank = resolved_query?.atoms?.cipRank;
@@ -205,7 +211,11 @@ export function GenerationView({
     if (!Array.isArray(resolved_query.results)) return;
     if (!edgeForChild) return;
 
-    const parentMets = collectMetabolites(resolved_query.results);
+    const parentMetsRaw = collectMetabolites(resolved_query.results);
+    const parentMets =
+      model === "ndealk"
+        ? filterNDealkMetabolites(parentMetsRaw, resolved_query?.atoms?.z)
+        : parentMetsRaw;
     const result = validateChildFormationEdge(
       parentMets,
       {

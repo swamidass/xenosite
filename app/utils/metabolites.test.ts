@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collectMetabolites,
   exactSiteMatch,
+  filterNDealkMetabolites,
   findMetaboliteBySmiles,
   formatPathwayLabel,
   isStarMolecule,
@@ -10,6 +11,7 @@ import {
   METABOLITE_DISPLAY_CAP,
   rankMetabolites,
   siteAtomsMatch,
+  siteIncludesNitrogen,
   validateChildFormationEdge,
 } from "./metabolites";
 
@@ -229,6 +231,33 @@ describe("formatPathwayLabel", () => {
     expect(formatPathwayLabel("NitrogenOxidation")).toBe("nitrogen oxidation");
     expect(formatPathwayLabel("Hydrolysis")).toBe("hydrolysis");
     expect(formatPathwayLabel("NDealkylation")).toBe("n dealkylation");
+  });
+});
+
+describe("N-dealk nitrogen site filter", () => {
+  // diphenhydramine-like: C N C … C O C
+  const z = [6, 7, 6, 6, 6, 8, 6];
+
+  it("keeps bonds that include nitrogen", () => {
+    expect(siteIncludesNitrogen([0, 1], z)).toBe(true);
+    expect(siteIncludesNitrogen([1, 3], z)).toBe(true);
+  });
+
+  it("drops C–O and C–C sites", () => {
+    expect(siteIncludesNitrogen([4, 5], z)).toBe(false);
+    expect(siteIncludesNitrogen([3, 4], z)).toBe(false);
+  });
+
+  it("filters the metabolite forest to N–C sites only", () => {
+    const kept = filterNDealkMetabolites(
+      [
+        { smiles: "N-site", atom: [0, 1], score: 0.5 },
+        { smiles: "O-site", atom: [4, 5], score: 0.4 },
+        { smiles: "C-site", atom: [3, 4], score: 0.3 },
+      ],
+      z,
+    );
+    expect(kept.map((m) => m.smiles)).toEqual(["N-site"]);
   });
 });
 

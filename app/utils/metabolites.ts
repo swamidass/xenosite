@@ -58,6 +58,37 @@ export type SiteSelection = {
 
 export const METABOLITE_DISPLAY_CAP = 5;
 
+/** Nitrogen atomic number from API `atoms.z` (detailed=true). */
+export const ATOMIC_NUM_NITROGEN = 7;
+
+/**
+ * True when at least one formation-site atom is nitrogen.
+ * Used to drop non-N–C bonds from the N-dealkylation metabolite forest.
+ */
+export function siteIncludesNitrogen(
+  atomIdxs: number[] | null | undefined,
+  atomicNumbers: ArrayLike<number> | null | undefined,
+): boolean {
+  if (!atomIdxs?.length || atomicNumbers == null || !atomicNumbers.length) {
+    return false;
+  }
+  const n = atomicNumbers.length;
+  return atomIdxs.some((i) => {
+    if (!Number.isInteger(i) || i < 0 || i >= n) return false;
+    return Number(atomicNumbers[i]) === ATOMIC_NUM_NITROGEN;
+  });
+}
+
+/** Keep only N-dealkylation metabolites whose site includes a nitrogen atom. */
+export function filterNDealkMetabolites(
+  metabolites: MetaboliteRecord[] | null | undefined,
+  atomicNumbers: ArrayLike<number> | null | undefined,
+): MetaboliteRecord[] {
+  return (metabolites || []).filter((m) =>
+    siteIncludesNitrogen(m.atom, atomicNumbers),
+  );
+}
+
 /** `NitrogenOxidation` → `nitrogen oxidation`; already spaced labels pass through. */
 export function formatPathwayLabel(pathway: string | null | undefined): string {
   if (!pathway) return "";
