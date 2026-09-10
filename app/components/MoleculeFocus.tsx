@@ -33,12 +33,14 @@ import {
   resolveHeadIndex,
   encodeHeadParam,
   somToSearchParams,
+  UNSELECTED_MODEL_PATH,
   type FocusGeneration,
 } from "~/utils/metabolitePath";
 import {
   collectMetabolites,
   findMetaboliteBySmiles,
   formatPathwayLabel,
+  isStarMolecule,
   matchFormationEdge,
   metaboliteMatchIndex,
   validateChildFormationEdge,
@@ -237,9 +239,34 @@ export function GenerationView({
     navigate,
   ]);
 
+  const hopSmilesEarly =
+    generations[depth]?.query || resolved_query?.smiles || "";
+  const starMolEarly =
+    isStarMolecule(hopSmilesEarly) || isStarMolecule(resolved_query?.smiles);
+
+  // * mols cannot be predicted — drop a mistaken model hop back to identity-only.
+  useEffect(() => {
+    if (!starMolEarly || !hasPredictionModel(model)) return;
+    const next = generations.slice(0, depth + 1).map((g, i) =>
+      i === depth
+        ? {
+            model: UNSELECTED_MODEL_PATH,
+            query: g.query,
+            headIndex: g.headIndex ?? null,
+            matchIndex: g.matchIndex ?? null,
+          }
+        : g,
+    );
+    navigate(moleculeFocusUrl({ generations: next }), {
+      replace: true,
+      preventScrollReset: true,
+    });
+  }, [starMolEarly, model, generations, depth, navigate]);
+
   if (!resolved_query) return null;
 
-  if (resolved_query.detail) {
+  // Failed prediction on a * mol: still render identity + structure below.
+  if (resolved_query.detail && !starMolEarly) {
     return (
       <div className="w-fit mx-auto mt-6 relative p-6 text-sm text-gray-600">
         {resolved_query.detail}
@@ -419,9 +446,11 @@ export function GenerationView({
   };
 
   const showIdentity = depth > 0 || !identityInShell;
-  const predictionReady = depth === 0 || hasPredictionModel(model);
-  const hopSmiles =
-    generations[depth]?.query || resolved_query?.smiles || "";
+  const hopSmiles = hopSmilesEarly;
+  // Dummy-atom adducts (* mols) cannot be predicted — structure only, no model tabs.
+  const starMol = starMolEarly;
+  const predictionReady =
+    !starMol && (depth === 0 || hasPredictionModel(model));
 
   const predictionBlock = predictionReady ? (
     <div
@@ -490,10 +519,23 @@ export function GenerationView({
     </div>
   ) : null;
 
+  const plainDepiction =
+    (!predictionReady &&
+      (results.find((r: any) => r?.depiction)?.depiction ||
+        resolved_query?.depiction)) ||
+    null;
+
   const plainStructure =
-    depth > 0 && !predictionReady && hopSmiles ? (
+    !predictionReady && (plainDepiction || hopSmiles) ? (
       <div className="w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4">
-        <LazyMetaboliteImg smiles={hopSmiles} alt={moleculeName} />
+        {plainDepiction ? (
+          <InteractiveMoleculeDepiction
+            svg={plainDepiction}
+            alt={moleculeName}
+          />
+        ) : (
+          <LazyMetaboliteImg smiles={hopSmiles} alt={moleculeName} />
+        )}
       </div>
     ) : null;
 
@@ -528,12 +570,16 @@ export function GenerationView({
 
       {depth > 0 ? (
         <>
-          <ModelTabs depth={depth} generations={generations} />
+          {!starMol ? (
+            <ModelTabs depth={depth} generations={generations} />
+          ) : null}
           {predictionReady ? <AboutModel model={model} /> : null}
           {predictionReady ? predictionBlock : plainStructure}
         </>
-      ) : (
+      ) : predictionReady ? (
         predictionBlock
+      ) : (
+        plainStructure
       )}
 
       {showPanel && predictionReady ? (
