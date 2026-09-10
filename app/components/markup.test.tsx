@@ -21,14 +21,21 @@ vi.mock("@remix-run/react", () => ({
     children,
     ...rest
   }: {
-    to: string;
+    to: string | { pathname?: string; search?: string };
     children?: React.ReactNode;
     [k: string]: unknown;
-  }) => (
-    <a href={to} {...rest}>
-      {children}
-    </a>
-  ),
+  }) => {
+    const href =
+      typeof to === "string"
+        ? to
+        : `${to.pathname || ""}${to.search ? `?${to.search.replace(/^\?/, "")}` : ""}`;
+    return (
+      <a href={href} {...rest}>
+        {children}
+      </a>
+    );
+  },
+  useSearchParams: () => [new URLSearchParams(), () => {}],
 }));
 
 describe("presentational components", () => {

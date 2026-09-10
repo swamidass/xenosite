@@ -1,5 +1,6 @@
-import { Link } from "@remix-run/react";
+import { Link, useSearchParams } from "@remix-run/react";
 import type { PathCrumb } from "~/utils/pathNav";
+import { truncatePanelSearch } from "~/utils/metabolitePanelView";
 import { classNames } from "~/utils";
 
 export type MetabolitePathNavProps = {
@@ -10,11 +11,13 @@ export type MetabolitePathNavProps = {
 /**
  * Sticky top path bar for metabolite generation stacks.
  * Crumbs are Substrate / Generation N only (no molecule names).
+ * Links keep truncated `open` / `all` search (depths ≤ crumb).
  */
 export default function MetabolitePathNav({
   crumbs,
   className,
 }: MetabolitePathNavProps) {
+  const [searchParams] = useSearchParams();
   if (!crumbs.length || crumbs.length < 2) return null;
 
   return (
@@ -43,7 +46,10 @@ export default function MetabolitePathNav({
               </span>
             ) : (
               <Link
-                to={c.href}
+                to={{
+                  pathname: c.href,
+                  search: truncatePanelSearch(searchParams, c.depth),
+                }}
                 title={c.title}
                 preventScrollReset
                 className="min-h-[2rem] inline-flex items-center font-medium whitespace-nowrap text-gray-200 hover:text-white underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded"
