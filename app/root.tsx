@@ -35,6 +35,7 @@ import {
   XDot,
   Gtag,
 } from "~/components";
+import ShareButton from "~/components/ShareButton";
 import HEADERS from "~/loaders/headers";
 import { getQueryUrl } from "~/utils";
 import { MODELS } from "~/data";
@@ -252,6 +253,7 @@ export default function App() {
         </div>
 
         <Loading />
+        <ShareButton />
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" ? <LiveReload /> : <Gtag />}

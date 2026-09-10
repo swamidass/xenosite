@@ -1,5 +1,6 @@
 export { default as Gtag } from "./Gtag";
 export { default as Loading } from "./Loading";
+export { default as ShareButton } from "./ShareButton";
 export { default as ModelDescriptions } from "./ModelDescriptions";
 export * from "./ModelTabs";
 export { default as MoleculeSummary } from "./MoleculeSummary";
