@@ -106,3 +106,43 @@ body {
     drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff)
     drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff);
 }
+
+/* Print / PDF: keep molecule content; drop interactive chrome. */
+@media print {
+  @page {
+    margin: 0.6in;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+  }
+
+  /* Preserve black generation bars and selected tab chips in PDF. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .som-overlay__hit,
+  .som-overlay__mark--hover {
+    display: none !important;
+  }
+
+  .som-overlay__mark--selected {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .interactive-molecule,
+  .interactive-molecule__img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}

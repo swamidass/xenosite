@@ -21,7 +21,7 @@ export default function MetabolitePathNav({
     <nav
       aria-label="Metabolite path"
       className={classNames(
-        "sticky top-0 z-40 border-b border-gray-800 bg-black text-white shadow-sm",
+        "sticky top-0 z-40 border-b border-gray-800 bg-black text-white shadow-sm print:hidden",
         className,
       )}
     >

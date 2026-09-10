@@ -15,7 +15,7 @@ export default function Loading() {
       aria-valuetext={active ? "Loading" : undefined}
       aria-hidden={!active}
       className={
-        "pointer-events-none fixed left-0 bottom-0 z-50 p-4 transition-all duration-500 ease-out " +
+        "pointer-events-none fixed left-0 bottom-0 z-50 p-4 transition-all duration-500 ease-out print:hidden " +
         (active ? "translate-y-0" : "translate-y-full")
       }
     >

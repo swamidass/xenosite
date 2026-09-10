@@ -75,7 +75,7 @@ export default function MoleculeIdentity({
         <Disclosure as="div" className="mt-2 text-left" defaultOpen={false}>
           {({ open }) => (
             <>
-              <Disclosure.Button className="mx-auto flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700 py-0.5">
+              <Disclosure.Button className="mx-auto flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700 py-0.5 print:hidden">
                 <span>{open ? "Hide description" : "Description"}</span>
                 <span aria-hidden className="text-gray-400">
                   {open ? "▴" : "▾"}

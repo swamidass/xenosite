@@ -57,9 +57,19 @@ export function ModelTabs({
   const tabSearch = modelTabSearchFromLocation(location.search);
 
   return (
-    <div className="w-full px-2 py-3 sm:px-0">
+    <div
+      className={classNames(
+        "w-full px-2 py-3 sm:px-0",
+        children == null && "print:hidden",
+      )}
+    >
       <Tab.Group as="div" selectedIndex={selectedIndex >= 0 ? selectedIndex : -1}>
-        <Tab.List className="flex flex-wrap gap-1 justify-center">
+        <Tab.List
+          className={classNames(
+            "flex flex-wrap gap-1 justify-center",
+            children != null && "print:hidden",
+          )}
+        >
           {MODELS.map((x, i) => {
             const selected = x.path === model;
             return (

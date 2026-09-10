@@ -193,7 +193,7 @@ export default function App() {
           <>
             <fetcher.Form
               method="GET"
-              className="mt-10 pt-10 block w-full "
+              className="mt-10 pt-10 block w-full print:hidden"
               onChange={(e) => {
                 const q = (e.target as HTMLInputElement).value;
                 setNewQuery(q);
@@ -217,14 +217,14 @@ export default function App() {
               <input className="hidden" type="submit" />
             </fetcher.Form>
 
-            <div className="h-8 text-center py-3">
+            <div className="h-8 text-center py-3 print:hidden">
               {message ? (
                 <div className="text-red-400 text-sm">{message}</div>
               ) : null}
             </div>
 
             {/* Stable identity slot under query — keeps model tabs from bouncing. */}
-            <div className="min-h-[4.5rem] flex flex-col justify-center">
+            <div className="min-h-[4.5rem] flex flex-col justify-center print:min-h-0">
               {hasMolecule ? (
                 <MoleculeIdentity
                   resolved_query={rootMoleculeData!.resolved_query}
@@ -247,7 +247,7 @@ export default function App() {
               </Suspense>
             )}
             {/* Extra scroll room so metabolite/SOM layout shifts don't bounce the page. */}
-            <div className="h-[80vh] w-full" aria-hidden />
+            <div className="h-[80vh] w-full print:hidden" aria-hidden />
           </>
           </div>
         </div>

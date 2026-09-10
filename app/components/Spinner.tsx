@@ -8,7 +8,7 @@ import XDot from "./XDot"
  */
 const Spinner = () => {
     return (
-        <div className="w-full pt-20 opacity-50">
+        <div className="w-full pt-20 opacity-50 print:hidden">
             <div className="mx-auto animate-ping block w-fit">
                 <XDot className="w-8" />
             </div>

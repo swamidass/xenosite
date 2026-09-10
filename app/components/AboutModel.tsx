@@ -16,7 +16,7 @@ export default function AboutModel({ model }: AboutModelProps) {
   return (
     <Disclosure
       as="div"
-      className="max-w-prose mx-auto mt-0 mb-2 px-2"
+      className="max-w-prose mx-auto mt-0 mb-2 px-2 print:hidden"
       defaultOpen={false}
     >
       {({ open }) => (
