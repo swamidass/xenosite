@@ -1,4 +1,4 @@
-import { Link } from "@remix-run/react";
+import { Link, useSearchParams } from "@remix-run/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
 import PlotDot from "~/components/PlotDot";
@@ -10,8 +10,11 @@ import {
   type SiteSelection,
 } from "~/utils/metabolites";
 import {
+  METS_ALL_PARAM,
+  METS_OPEN_PARAM,
+  depthSetHas,
   metabolitePanelChrome,
-  metabolitesExpandedByDefault,
+  withDepthSet,
 } from "~/utils/metabolitePanelView";
 import { moleculeDisplayName } from "~/utils/moleculeIdentity";
 import { compensateScrollForAnchorShift } from "~/utils/scrollAnchor";
@@ -27,7 +30,7 @@ export type MetabolitePanelProps = {
   /** Remix path that pops the selected hop (Clear). */
   clearHref?: string | null;
   onHoverMetabolite?: (m: MetaboliteRecord | null) => void;
-  /** Generation depth that owns this panel (for markers). */
+  /** Generation depth that owns this panel (for markers + `open`/`all` params). */
   depth?: number;
   /**
    * SMILES of the currently selected child metabolite.
@@ -53,6 +56,7 @@ function labelFor(m: MetaboliteRecord): string {
 /**
  * Metabolites below a generation's predictions.
  * Selection is a Remix <Link> to the next paired {model}/{query} hop.
+ * Panel open / show-all live in `?open=` / `?all=` (comma-separated depths).
  */
 export default function MetabolitePanel({
   metabolites,
@@ -61,41 +65,33 @@ export default function MetabolitePanel({
   hrefForMetabolite,
   clearHref = null,
   onHoverMetabolite,
+  depth = 0,
   selectedSmiles = null,
   lockLayout = false,
   canSelectNextGeneration = true,
 }: MetabolitePanelProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [removedSmiles, setRemovedSmiles] = useState<Set<string>>(
     () => new Set(),
   );
   const hasSelection = !!selectedSmiles;
-  const [expanded, setExpanded] = useState(() =>
-    metabolitesExpandedByDefault(hasSelection),
-  );
-  const [showAll, setShowAll] = useState(false);
+  const showAll = depthSetHas(searchParams, METS_ALL_PARAM, depth);
+  const expanded =
+    !hasSelection ||
+    depthSetHas(searchParams, METS_OPEN_PARAM, depth) ||
+    showAll;
+
+  const patchSearch = (update: (prev: URLSearchParams) => URLSearchParams) => {
+    setSearchParams((prev) => update(new URLSearchParams(prev)), {
+      replace: true,
+      preventScrollReset: true,
+    });
+  };
+
   const sectionRef = useRef<HTMLElement | null>(null);
   const baselineHeightRef = useRef(0);
   const anchorTopRef = useRef<number | null>(null);
   const [minHeight, setMinHeight] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    // Collapse on first select; reopen when cleared. Replacing the selected
-    // metabolite (same hasSelection) must not collapse an open browse grid.
-    setExpanded(metabolitesExpandedByDefault(hasSelection));
-    setShowAll(false);
-  }, [hasSelection]);
-
-  const selectionKey = [
-    selection?.metaboliteSmiles || "",
-    selection?.headIndex ?? "",
-    (selection?.atomIdxs || []).join(","),
-  ].join("\0");
-
-  useEffect(() => {
-    // Reset "show all" when the filter changes — not when the parent
-    // re-creates the metabolites array on hover/render.
-    setShowAll(false);
-  }, [selectionKey]);
 
   const { shown: ranked } = rankMetabolites(metabolites, {
     selection,
@@ -105,7 +101,13 @@ export default function MetabolitePanel({
   });
 
   const poolKey = useMemo(
-    () => ranked.map((m) => `${m.smiles}\0${m.pathway || ""}\0${(m.atom || []).join(",")}`).join("|"),
+    () =>
+      ranked
+        .map(
+          (m) =>
+            `${m.smiles}\0${m.pathway || ""}\0${(m.atom || []).join(",")}`,
+        )
+        .join("|"),
     [ranked],
   );
 
@@ -171,9 +173,19 @@ export default function MetabolitePanel({
             className="text-xs text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline min-h-[2rem] px-1"
             aria-expanded={expanded}
             onClick={() => {
-              // Intentional expand/collapse — do not scroll-compensate.
               anchorTopRef.current = null;
-              setExpanded((v) => !v);
+              patchSearch((prev) => {
+                let next = withDepthSet(
+                  prev,
+                  METS_OPEN_PARAM,
+                  depth,
+                  !expanded,
+                );
+                if (expanded) {
+                  next = withDepthSet(next, METS_ALL_PARAM, depth, false);
+                }
+                return next;
+              });
             }}
           >
             {chrome.toggleLabel}
@@ -287,19 +299,32 @@ export default function MetabolitePanel({
           </ul>
           {hiddenCount > 0 || showAll ? (
             <div className="mb-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2">
-              <p className="text-xs text-gray-500">
-                Showing {shown.length} of {visiblePool.length} metabolite
-                {visiblePool.length === 1 ? "" : "s"}
-              </p>
+              {!showAll ? (
+                <p className="text-xs text-gray-500">
+                  Showing {shown.length} of {visiblePool.length} metabolite
+                  {visiblePool.length === 1 ? "" : "s"}
+                </p>
+              ) : null}
               <button
                 type="button"
                 className="text-xs text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline min-h-[2rem] px-1 print:hidden"
                 onClick={() => {
                   anchorTopRef.current = null;
-                  setShowAll((v) => !v);
+                  patchSearch((prev) => {
+                    let next = withDepthSet(
+                      prev,
+                      METS_ALL_PARAM,
+                      depth,
+                      !showAll,
+                    );
+                    if (!showAll) {
+                      next = withDepthSet(next, METS_OPEN_PARAM, depth, true);
+                    }
+                    return next;
+                  });
                 }}
               >
-                {showAll ? "Show top only" : "Show all"}
+                {showAll ? "Show only top five" : "Show all"}
               </button>
             </div>
           ) : null}

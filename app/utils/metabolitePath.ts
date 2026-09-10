@@ -14,6 +14,7 @@
  */
 
 import { MODELS } from "~/data";
+import { keepPanelSearch } from "~/utils/metabolitePanelView";
 
 export type FocusGeneration = {
   model: string;
@@ -618,12 +619,12 @@ export function somToSearchParams(som: SomSearchParams): URLSearchParams {
 }
 
 /**
- * Model-tab navigations drop SOM search; formation lives in the path stub now.
+ * Model-tab navigations drop SOM search; keep metabolite panel `open` / `all`.
  */
 export function modelTabSearchFromLocation(
-  _search: string | URLSearchParams,
+  search: string | URLSearchParams,
 ): string {
-  return "";
+  return keepPanelSearch(search).toString();
 }
 
 /** SMILES only from a mol stub param (for loaders / revalidate). */

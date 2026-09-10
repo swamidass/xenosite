@@ -61,6 +61,7 @@ import {
   somSelectUrl,
   toggleSomHighlight,
 } from "~/utils/somInteraction";
+import { keepPanelSearch } from "~/utils/metabolitePanelView";
 import {
   normalizeBondsIdx,
   type SomHighlight,
@@ -353,6 +354,7 @@ export function GenerationView({
       headIndex: typeof m.headIndex === "number" ? m.headIndex : null,
       site: site.length ? site : undefined,
       matchIndex: matchIndex > 0 ? matchIndex : null,
+      search: location.search,
     });
   };
 
@@ -362,23 +364,27 @@ export function GenerationView({
         depth,
         metaboliteSmiles: childQuery,
         childQuery,
+        search: location.search,
       })
     : null;
 
   const toggleHeadFilter = (headIndex: number) => {
     if (childQuery) return;
     if (selectedHeadIndex === headIndex) {
+      const search = keepPanelSearch(location.search).toString();
       navigate(
-        { pathname: location.pathname, search: "" },
+        { pathname: location.pathname, search: search ? `?${search}` : "" },
         { replace: true, preventScrollReset: true },
       );
       return;
     }
     const search = somToSearchParams({
       head: encodeHeadParam(headIndex, results),
-    }).toString();
+    });
+    keepPanelSearch(location.search, search);
+    const q = search.toString();
     navigate(
-      { pathname: location.pathname, search: search ? `?${search}` : "" },
+      { pathname: location.pathname, search: q ? `?${q}` : "" },
       { replace: true, preventScrollReset: true },
     );
   };
@@ -395,6 +401,7 @@ export function GenerationView({
         atomIdxs: highlight?.atomIdxs,
         bondIdx: highlight?.bondIdx,
         head: highlight ? head : undefined,
+        search: location.search,
       }),
       // SOM stub updates must not ScrollRestoration-jump (esp. short pages).
       { replace: !childQuery, preventScrollReset: true },

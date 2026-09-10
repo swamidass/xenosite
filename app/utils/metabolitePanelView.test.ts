@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  METS_ALL_PARAM,
+  METS_OPEN_PARAM,
+  depthSetHas,
+  keepPanelSearch,
   metabolitePanelChrome,
   metabolitesExpandedByDefault,
+  truncatePanelSearch,
+  withDepthSet,
 } from "./metabolitePanelView";
 
 describe("metabolitesExpandedByDefault", () => {
@@ -73,5 +79,27 @@ describe("metabolitePanelChrome", () => {
       showClear: true,
       toggleLabel: "Hide metabolites",
     });
+  });
+});
+
+describe("panel depth-set search params", () => {
+  it("reads and writes comma-separated depths", () => {
+    const p = new URLSearchParams("open=0,2");
+    expect(depthSetHas(p, METS_OPEN_PARAM, 0)).toBe(true);
+    expect(depthSetHas(p, METS_OPEN_PARAM, 1)).toBe(false);
+    expect(withDepthSet(p, METS_ALL_PARAM, 1, true).get("all")).toBe("1");
+    expect(withDepthSet(p, METS_OPEN_PARAM, 0, false).get("open")).toBe("2");
+  });
+
+  it("keepPanelSearch preserves open/all only", () => {
+    const kept = keepPanelSearch("atom=3&open=0&all=0,1&head=x");
+    expect(kept.toString()).toBe("open=0&all=0%2C1");
+  });
+
+  it("truncatePanelSearch drops deeper depths", () => {
+    expect(truncatePanelSearch("open=0,2&all=1,2&head=x", 1)).toBe(
+      "open=0&all=1",
+    );
+    expect(truncatePanelSearch("open=2&all=2", 0)).toBe("");
   });
 });

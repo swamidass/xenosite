@@ -5,6 +5,7 @@
 import type { SiteSelection } from "~/utils/metabolites";
 import type { SiteHit } from "~/utils/siteHitTest";
 import type { SomHighlight } from "~/utils/somOverlay";
+import { keepPanelSearch } from "~/utils/metabolitePanelView";
 import {
   canAppendMetaboliteHop,
   moleculeFocusUrl,
@@ -105,6 +106,8 @@ export function somSelectUrl(opts: {
   atomIdxs?: number[];
   bondIdx?: number | null;
   head?: string | null;
+  /** Existing location search — `open` / `all` are preserved. */
+  search?: string;
 }): string {
   const gens = withGenerationSom(
     opts.generations,
@@ -113,10 +116,10 @@ export function somSelectUrl(opts: {
     opts.bondIdx,
   );
   const path = moleculeFocusUrl({ generations: gens });
-  if (!opts.head) return path;
-  const search = new URLSearchParams();
-  search.set("head", opts.head);
-  return `${path}?${search}`;
+  const params = keepPanelSearch(opts.search || "");
+  if (opts.head) params.set("head", opts.head);
+  const q = params.toString();
+  return q ? `${path}?${q}` : path;
 }
 
 /**
@@ -146,10 +149,16 @@ export function metaboliteSelectUrl(opts: {
   } = opts;
   const base = generations.slice(0, depth + 1);
   if (childQuery && childQuery === metaboliteSmiles) {
-    return moleculeFocusUrl({ generations: base });
+    return moleculeFocusUrl({
+      generations: base,
+      search: keepPanelSearch(search || "").toString() || undefined,
+    });
   }
   if (!canAppendMetaboliteHop(depth) && !generations[depth + 1]) {
-    return moleculeFocusUrl({ generations: base });
+    return moleculeFocusUrl({
+      generations: base,
+      search: keepPanelSearch(search || "").toString() || undefined,
+    });
   }
   return moleculeFocusUrl({
     generations: selectMetaboliteGeneration(
@@ -158,6 +167,6 @@ export function metaboliteSelectUrl(opts: {
       metaboliteSmiles,
       { headIndex, site, matchIndex },
     ),
-    search,
+    search: keepPanelSearch(search || "").toString() || undefined,
   });
 }
