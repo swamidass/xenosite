@@ -72,6 +72,7 @@ export default function MetabolitePanel({
   const [expanded, setExpanded] = useState(() =>
     metabolitesExpandedByDefault(hasSelection),
   );
+  const [showAll, setShowAll] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const baselineHeightRef = useRef(0);
   const anchorTopRef = useRef<number | null>(null);
@@ -81,31 +82,42 @@ export default function MetabolitePanel({
     // Collapse on first select; reopen when cleared. Replacing the selected
     // metabolite (same hasSelection) must not collapse an open browse grid.
     setExpanded(metabolitesExpandedByDefault(hasSelection));
+    setShowAll(false);
   }, [hasSelection]);
 
-  const poolKey = useMemo(() => {
-    // Parent passes null while a child hop is selected and nothing is hovered
-    // (full list). A hover SiteSelection filters the browse grid.
-    const { shown } = rankMetabolites(metabolites, {
-      selection,
-      cipRank,
-      cap: METABOLITE_DISPLAY_CAP * 4,
-    });
-    return shown.map((m) => m.smiles).join("|");
-  }, [metabolites, selection, cipRank]);
+  const selectionKey = [
+    selection?.metaboliteSmiles || "",
+    selection?.headIndex ?? "",
+    (selection?.atomIdxs || []).join(","),
+  ].join("\0");
+
+  useEffect(() => {
+    // Reset "show all" when the filter changes — not when the parent
+    // re-creates the metabolites array on hover/render.
+    setShowAll(false);
+  }, [selectionKey]);
+
+  const { shown: ranked } = rankMetabolites(metabolites, {
+    selection,
+    cipRank,
+    // Rank the full filtered set; UI caps display unless "show all".
+    cap: Number.POSITIVE_INFINITY,
+  });
+
+  const poolKey = useMemo(
+    () => ranked.map((m) => `${m.smiles}\0${m.pathway || ""}\0${(m.atom || []).join(",")}`).join("|"),
+    [ranked],
+  );
 
   useEffect(() => {
     setRemovedSmiles(new Set());
   }, [poolKey]);
 
-  const { shown: pool } = rankMetabolites(metabolites, {
-    selection,
-    cipRank,
-    cap: METABOLITE_DISPLAY_CAP * 4,
-  });
-  const shown = pool
-    .filter((m) => !removedSmiles.has(m.smiles))
-    .slice(0, METABOLITE_DISPLAY_CAP);
+  const visiblePool = ranked.filter((m) => !removedSmiles.has(m.smiles));
+  const shown = showAll
+    ? visiblePool
+    : visiblePool.slice(0, METABOLITE_DISPLAY_CAP);
+  const hiddenCount = Math.max(0, visiblePool.length - shown.length);
 
   const chrome = metabolitePanelChrome({
     hasSelection,
@@ -190,8 +202,14 @@ export default function MetabolitePanel({
               const name = labelFor(m);
               const isCurrent = !!selectedSmiles && selectedSmiles === m.smiles;
               const href = hrefForMetabolite(m);
+              const cardKey = [
+                m.smiles,
+                m.pathway || "",
+                (m.atom || []).join(","),
+                m.headIndex ?? "",
+              ].join("\0");
               return (
-                <li key={m.smiles} className="mx-2">
+                <li key={cardKey} className="mx-2">
                   <Link
                     to={href}
                     preventScrollReset
@@ -253,6 +271,24 @@ export default function MetabolitePanel({
               );
             })}
           </ul>
+          {hiddenCount > 0 || showAll ? (
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2">
+              <p className="text-xs text-gray-500">
+                Showing {shown.length} of {visiblePool.length} metabolite
+                {visiblePool.length === 1 ? "" : "s"}
+              </p>
+              <button
+                type="button"
+                className="text-xs text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline min-h-[2rem] px-1"
+                onClick={() => {
+                  anchorTopRef.current = null;
+                  setShowAll((v) => !v);
+                }}
+              >
+                {showAll ? "Show top only" : "Show all"}
+              </button>
+            </div>
+          ) : null}
           {!hasSelection ? (
             <p className="mb-4 px-3 text-center text-xs text-gray-400">
               {canSelectNextGeneration
