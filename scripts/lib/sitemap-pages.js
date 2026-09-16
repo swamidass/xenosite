@@ -38,7 +38,6 @@ function staticSitemapPages() {
       name: null,
       score: null,
     })),
-    { loc: "/_", model: "_", name: null, score: null },
   ];
 }
 
@@ -51,6 +50,71 @@ function slugForRecord(record, nameByChebi) {
   return String(mapped || queryName).trim();
 }
 
+function pageNameKeys(page) {
+  const keys = [];
+  for (const field of ["name", "queryName", "resolvedName"]) {
+    const v = page?.[field];
+    if (v) keys.push(String(v).trim().toLowerCase());
+  }
+  const loc = String(page?.loc || "");
+  if (loc.startsWith("/") && loc !== "/") {
+    const parts = loc.split("/").filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (last) {
+      try {
+        keys.push(decodeURIComponent(last).trim().toLowerCase());
+      } catch {
+        keys.push(last.trim().toLowerCase());
+      }
+    }
+  }
+  return keys;
+}
+
+/**
+ * Fast filter of an existing inventory page list:
+ * drop /_ hubs; keep static hubs; keep molecule pages matching preferred names.
+ */
+function filterPagesToPreferred(pages, preferredNames) {
+  const preferred = preferredNames instanceof Set
+    ? preferredNames
+    : new Set(
+        [...(preferredNames || [])].map((n) => String(n).trim().toLowerCase()),
+      );
+
+  const preferredChebis = new Set();
+  for (const page of pages) {
+    if (page?.score == null) continue;
+    if (page.model === "_" || page.loc === "/_" || page.loc?.startsWith("/_/")) {
+      continue;
+    }
+    if (pageNameKeys(page).some((k) => preferred.has(k))) {
+      const id = Number(page.chebi);
+      if (Number.isFinite(id)) preferredChebis.add(id);
+    }
+  }
+
+  const out = [];
+  for (const page of pages) {
+    if (page?.model === "_" || page.loc === "/_" || page.loc?.startsWith("/_/")) {
+      continue;
+    }
+    if (page?.score == null) {
+      // Keep non-_ static hubs only
+      if (page.loc === "/" || MODELS.includes(page.model)) out.push(page);
+      continue;
+    }
+    const chebi = Number(page.chebi);
+    if (Number.isFinite(chebi) && preferredChebis.has(chebi)) {
+      out.push(page);
+      continue;
+    }
+    if (pageNameKeys(page).some((k) => preferred.has(k))) out.push(page);
+  }
+  out.sort((a, b) => String(a.loc).localeCompare(String(b.loc)));
+  return out;
+}
+
 function pagesFromCheckpoint(
   checkpoint,
   minScore = minScoreFromEnv(),
@@ -59,8 +123,6 @@ function pagesFromCheckpoint(
   const pages = [...staticSitemapPages()];
   for (const record of Object.values(checkpoint?.results || {})) {
     if (!isCompleteRecord(record)) continue;
-    // loc is the drug-like name (query or better CHEBI synonym), never the
-    // API/CHEBI preferred label the resolver may redirect to.
     const name = slugForRecord(record, nameByChebi);
     if (!name) continue;
     const scores = record.scores || {};
@@ -74,10 +136,8 @@ function pagesFromCheckpoint(
       record.queryName && record.queryName !== name
         ? record.queryName
         : undefined;
-    let best = 0;
     for (const model of hits) {
       const score = Number(scores[model]);
-      best = Math.max(best, score);
       pages.push({
         loc: `/${model}/${encoded}`,
         chebi: record.chebi,
@@ -88,16 +148,6 @@ function pagesFromCheckpoint(
         ...(resolvedName ? { resolvedName } : {}),
       });
     }
-    pages.push({
-      loc: `/_/${encoded}`,
-      chebi: record.chebi,
-      model: "_",
-      name,
-      score: Number(best.toFixed(6)),
-      models: hits,
-      ...(queryName ? { queryName } : {}),
-      ...(resolvedName ? { resolvedName } : {}),
-    });
   }
   pages.sort((a, b) => a.loc.localeCompare(b.loc));
   return pages;
@@ -146,6 +196,7 @@ module.exports = {
   staticSitemapPages,
   pagesFromCheckpoint,
   slugForRecord,
+  filterPagesToPreferred,
   inventoryFromCheckpoint,
   absoluteUrl,
 };

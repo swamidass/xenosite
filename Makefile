@@ -5,7 +5,7 @@
 
 NODE ?= node
 
-.PHONY: help sitemap-candidates sitemap-inventory sitemap-inventory-force sitemap-inventory-rebuild sitemaps validate-sitemaps clean-sitemaps check-site
+.PHONY: help sitemap-candidates sitemap-inventory sitemap-inventory-force sitemap-inventory-rebuild sitemap-inventory-preferred sitemaps validate-sitemaps clean-sitemaps check-site
 
 help:
 	@echo "Sitemap targets:"
@@ -13,6 +13,7 @@ help:
 	@echo "  make sitemap-inventory           MANUAL: crawl API + write data/sitemap-inventory.json"
 	@echo "  make sitemap-inventory-force     Delete checkpoint, then recrawl from scratch"
 	@echo "  make sitemap-inventory-rebuild   Rebuild inventory JSON from checkpoint (no API)"
+	@echo "  make sitemap-inventory-preferred Filter inventory to preferred drugs + drop /_"
 	@echo "  make sitemaps                    Build public/sitemap/*.xml.gz from inventory (or checkpoint)"
 	@echo "  make validate-sitemaps           Check gzip, XML syntax, index URLs, and robots.txt"
 	@echo "  make check-site URL=https://xenosite.org   Live HTTP + browser smoke tests"
@@ -33,6 +34,9 @@ sitemap-inventory-force:
 
 sitemap-inventory-rebuild:
 	$(NODE) scripts/rebuild-inventory-from-checkpoint.js
+
+sitemap-inventory-preferred:
+	$(NODE) scripts/filter-sitemap-inventory-preferred.js
 
 sitemaps:
 	$(NODE) scripts/build-sitemaps-from-inventory.js

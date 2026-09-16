@@ -230,7 +230,6 @@ function main() {
 
   const required = [
     `${SITE_ORIGIN}/`,
-    `${SITE_ORIGIN}/_`,
     ...MODELS.map((m) => `${SITE_ORIGIN}/${m}`),
   ];
   for (const loc of required) {

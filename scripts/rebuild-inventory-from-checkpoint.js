@@ -48,12 +48,10 @@ async function main() {
   });
   saveJson(OUT_PATH, inventory);
 
-  const remapped = inventory.pages.filter(
-    (p) => p.queryName && p.model === "_",
-  ).length;
+  const remapped = inventory.pages.filter((p) => p.queryName).length;
   console.log(`Wrote ${OUT_PATH}`);
   console.log(`  pages: ${inventory.pages.length}`);
-  console.log(`  /_/ slugs remapped from queryName: ${remapped}`);
+  console.log(`  pages with queryName remap: ${remapped}`);
 }
 
 main().catch((err) => {
