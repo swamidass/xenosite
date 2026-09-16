@@ -1,2 +1,3 @@
 User-agent: *
+Crawl-delay: 10
 Sitemap: https://xenosite.org/sitemap/sitemap_index.xml
