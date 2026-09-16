@@ -33,6 +33,8 @@ vi.mock("@remix-run/react", () => ({
   useNavigation: () => ({ state: "idle", location: undefined }),
   useParams: () => ({ model: "phase1", query: "aspirin" }),
   useLoaderData: () => ({ gaTrackingId: "G-TEST" }),
+  useRouteLoaderData: (id: string) =>
+    id === "root" ? { gaTrackingId: "G-TEST" } : undefined,
   useMatches: () => [],
 }));
 
