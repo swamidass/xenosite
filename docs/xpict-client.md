@@ -53,7 +53,7 @@ Add auth in CI / `~/.npmrc`:
 ```
 
 ```json
-"@swamidasslab/xpict": "^0.1.2"
+"@swamidasslab/xpict": "^0.1.4"
 ```
 
 Set `NPM_TOKEN` (and optionally `NODE_AUTH_TOKEN` to the same value):
@@ -69,7 +69,7 @@ Set `NPM_TOKEN` (and optionally `NODE_AUTH_TOKEN` to the same value):
 Until CI secrets / package Actions access are wired, this repo may use:
 
 ```json
-"@swamidasslab/xpict": "file:vendor/swamidasslab-xpict-0.1.2.tgz"
+"@swamidasslab/xpict": "file:vendor/swamidasslab-xpict-0.1.4.tgz"
 ```
 
 `postinstall` / `build` copy WASM to `public/xpict/xpict_core_bg.wasm`.

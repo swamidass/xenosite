@@ -2,9 +2,12 @@
  * Server-only xpict paint (Node / Vercel serverless).
  * Used for Open Graph PNGs — interactive UI paints in the browser instead.
  *
+ * Load via dynamic `import()` — the package is ESM-only (`"type":"module"`),
+ * so a static `require()` crashes the whole Vercel serverless bundle at boot.
+ *
  * Do not import from client modules (pulls RDKit + wasm into the browser bundle).
  */
-import { xpict, type MolRenderOptions } from "@swamidasslab/xpict";
+import type { MolRenderOptions } from "@swamidasslab/xpict";
 import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
 import { shadeVector } from "~/utils/xpictShade";
 
@@ -33,6 +36,8 @@ export async function paintSmilesServer(
   const source = smiles.trim();
   if (!source) throw new Error("paintSmilesServer requires a non-empty SMILES");
 
+  const { xpict } = await import("@swamidasslab/xpict");
+
   const {
     atomScores,
     bondScores,
@@ -44,6 +49,7 @@ export async function paintSmilesServer(
 
   const atomShade = atom_shade ?? shadeVector(atomScores);
   const bondShade = bond_shade ?? shadeVector(bondScores);
+  // 0.1.3+ auto-applies CX trailers; still pass explicitly for older packs.
   const cxStars = star_labels ?? starLabelsFromCxsmiles(source);
 
   const rendered = await xpict.render(xpict.mol(source), {

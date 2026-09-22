@@ -1837,9 +1837,9 @@
     fflate "^0.7.3"
     string.prototype.codepointat "^0.2.1"
 
-"@swamidasslab/xpict@file:vendor/swamidasslab-xpict-0.1.2.tgz":
-  version "0.1.2"
-  resolved "file:vendor/swamidasslab-xpict-0.1.2.tgz#b696b2e85a26319874d68a053b19f5e8e25ae6da"
+"@swamidasslab/xpict@file:vendor/swamidasslab-xpict-0.1.4.tgz":
+  version "0.1.4"
+  resolved "file:vendor/swamidasslab-xpict-0.1.4.tgz#9116aaedf774c0f06e5506318bf3e12d52987e04"
   dependencies:
     "@rdkit/rdkit" "^2026.3.6"
   optionalDependencies:
