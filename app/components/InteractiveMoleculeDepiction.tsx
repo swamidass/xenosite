@@ -79,8 +79,9 @@ function OverlayMarks({
 
 /**
  * Legacy server-SVG depiction (xenopict embed_script coords).
- * Prefer {@link XpictMoleculeDepiction} for client-side paint; keep this for tests
- * until the xpict path is fully proven, then drop.
+ * Prefer {@link XpictMoleculeDepiction} for interactive UI (client xpict).
+ * Prefer {@link paintSmilesServer} for Open Graph (server xpict).
+ * Keep this for tests that feed a pre-built SVG with embed_script coords.
  *
  * Keeps API SVG as &lt;img&gt;; transparent overlay for SOM hit-test + highlights.
  * When depiction lacks embedded coords (API without embed_script), falls back to plain img.

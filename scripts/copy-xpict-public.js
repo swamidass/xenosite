@@ -3,7 +3,8 @@
  * ESM (not remixed/esbuild-bundled). That keeps Node-only paths (fs, RDKit npm)
  * out of the Remix client bundle and lets wasm resolve via import.meta.url.
  *
- * Depiction stays client-only — never imported from Remix loaders / SSR.
+ * Interactive UI paints client-side from this public copy. Open Graph uses the
+ * Node package directly via `xpictPaint.server.ts` (never imported on the client).
  */
 const fs = require("fs");
 const path = require("path");

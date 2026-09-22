@@ -184,10 +184,10 @@ export default function App() {
     if (!hasMolecule || !hasPredictionModel(model)) return false;
     const results = rootMoleculeData?.resolved_query?.results;
     if (!Array.isArray(results) || !results.length) return false;
-    // Server xenopict SVG *or* client xpict paint from atom/bond scores.
+    // Client xpict paints from atom/bond scores (API depictions are disabled).
     return results.some(
-      (r: { depiction?: unknown; atom?: unknown; bond?: unknown }) =>
-        !!r?.depiction || Array.isArray(r?.atom) || Array.isArray(r?.bond),
+      (r: { atom?: unknown; bond?: unknown }) =>
+        Array.isArray(r?.atom) || Array.isArray(r?.bond),
     );
   }, [hasMolecule, model, rootMoleculeData]);
 

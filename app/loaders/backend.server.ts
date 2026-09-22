@@ -23,7 +23,8 @@ console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
 export function backendQueryParams(smiles: string): URLSearchParams {
   return new URLSearchParams({
     query: decodeURIComponent(smiles),
-    depict: "true",
+    // Never ask the API to depict — UI paints client-side; OG paints server-side.
+    depict: "false",
     // atoms.cipRank for topological equivalence when matching pair sites.
     detailed: "true",
     // Forest metabolites for the site panel (capped/ranked in the UI).

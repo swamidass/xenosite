@@ -1,6 +1,7 @@
 /**
  * Browser-only xpict helpers. Remix empties `*.client.ts` on the server so
- * depiction never runs in SSR / Vercel serverless (avoids burning bandwidth).
+ * interactive depiction never runs in SSR. Open Graph uses
+ * `xpictPaint.server.ts` instead (Node import of `@swamidasslab/xpict`).
  *
  * Runtime loads `/xpict-pkg/*` as plain ESM (see scripts/copy-xpict-public.js),
  * not via the Remix client bundle — that keeps Node builtins out of esbuild.

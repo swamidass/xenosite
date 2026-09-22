@@ -6,10 +6,10 @@ import {
 } from "~/loaders/backend.server";
 
 describe("backendQueryParams", () => {
-  it("requests depictions and metabolites for the site panel", () => {
+  it("requests metabolites without API depictions", () => {
     const p = backendQueryParams("aspirin");
     expect(p.get("query")).toBe("aspirin");
-    expect(p.get("depict")).toBe("true");
+    expect(p.get("depict")).toBe("false");
     expect(p.get("metabolites")).toBe("true");
     expect(p.get("detailed")).toBe("true");
   });

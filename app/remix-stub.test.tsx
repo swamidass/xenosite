@@ -132,15 +132,7 @@ describe("Remix route stub", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo) => {
-        const url = String(input);
-        if (url.includes("/depict")) {
-          return {
-            ok: true,
-            status: 200,
-            text: async () => "<svg></svg>",
-          };
-        }
-        throw new Error(`unexpected fetch ${url}`);
+        throw new Error(`unexpected fetch ${String(input)}`);
       }),
     );
     window.scrollTo = vi.fn();

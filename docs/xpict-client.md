@@ -1,11 +1,15 @@
 # Client-side depiction (`@swamidasslab/xpict`)
 
-The site paints molecules **in the browser only** with xpict (RDKit script +
-WASM). Coords come from the `Rendered` object — no SVG `embed_script`.
+The site paints interactive molecules **in the browser** with xpict (RDKit
+script + WASM). Coords come from the `Rendered` object — no SVG `embed_script`.
 
-**Not used on the server / Vercel serverless** — avoids burning function CPU
-and bandwidth. SSR shows a short placeholder; after hydrate, Remix
-`ClientOnly` + `Suspense` + a `*.client` paint resource paints (no `useEffect`).
+**Prediction API never gets `depict=true`** — no `/v1/depict` and no SVG in
+prediction JSON. After hydrate, Remix `ClientOnly` + `Suspense` + a `*.client`
+paint resource paints (no `useEffect`).
+
+**Open Graph PNGs** (`/og/:model/:query`) paint **server-side** via
+`paintSmilesServer` (`app/utils/xpictPaint.server.ts`) so crawlers get a real
+image without calling the API depict endpoint.
 
 - **Main card:** `XpictMoleculeDepiction` (shade from `atom` / `bond` scores)
 - **Metabolite cards:** `XpictLazyMetaboliteImg`, **aligned to the parent** via
@@ -15,7 +19,8 @@ and bandwidth. SSR shows a short placeholder; after hydrate, Remix
 - **Star / R-group labels:** CXSMILES ``|$GSH;;;;$|`` trailers are parsed in
   `app/utils/cxsmiles.ts` and passed as xpict `star_labels`. Upstream patch:
   [`docs/patches/`](patches/README.md) / [xenosite-pict#20](https://github.com/swamidasslab/xenosite-pict/issues/20)
-- **Legacy (tests):** `InteractiveMoleculeDepiction` + `LazyMetaboliteImg` + `/depict`
+- **Legacy (tests only):** `InteractiveMoleculeDepiction` (server SVG + embed);
+  `LazyMetaboliteImg` re-exports the client xpict path
 
 ## How the browser loads xpict
 

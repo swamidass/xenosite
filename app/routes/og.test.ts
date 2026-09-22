@@ -27,22 +27,32 @@ vi.mock("~/loaders/backend.server", () => ({
   resolve_query: vi.fn(),
 }));
 
+vi.mock("~/utils/xpictPaint.server", () => ({
+  paintSmilesServer: vi.fn(async () => "<svg id='mol-server'/>"),
+}));
+
 import satori from "satori";
 import { resolve_query } from "~/loaders/backend.server";
+import { paintSmilesServer } from "~/utils/xpictPaint.server";
 import { loader } from "~/routes/og.$model.$query";
 
 const mockedResolve = vi.mocked(resolve_query);
 const mockedSatori = vi.mocked(satori);
+const mockedPaint = vi.mocked(paintSmilesServer);
 
 describe("og image loader", () => {
-  it("renders an Open Graph PNG from a prediction", async () => {
+  it("renders an Open Graph PNG from server-side xpict paint", async () => {
     mockedResolve.mockResolvedValue({
       model: "phase1",
       resolved_query: {
         smiles: "CCO",
         name: { name: "ethanol" },
         results: [
-          { model: "phase1.hydrolysis", depiction: "<svg id='mol'/>" },
+          {
+            model: "phase1.hydrolysis",
+            atom: [0.1, 0.5, 0.9],
+            bond: [0.2],
+          },
         ],
       },
     });
@@ -53,6 +63,13 @@ describe("og image loader", () => {
     } as LoaderFunctionArgs);
     expect(res.headers.get("Content-Type")).toBe("image/png");
     expect(Buffer.from(await res.arrayBuffer()).toString()).toBe("png");
+    expect(mockedPaint).toHaveBeenCalledWith(
+      "CCO",
+      expect.objectContaining({
+        atomScores: [0.1, 0.5, 0.9],
+        bondScores: [0.2],
+      }),
+    );
     expect(mockedSatori).toHaveBeenCalled();
   });
 

@@ -7,7 +7,7 @@ import XDot from "~/components/XDot";
 import { MODELS } from "~/data";
 import { QueryResult, resolve_query } from "~/loaders/backend.server";
 import { capitalize, chooseRandom } from "~/utils";
-
+import { paintSmilesServer } from "~/utils/xpictPaint.server";
 
 async function getFont(
   font: string,
@@ -44,53 +44,57 @@ async function getFont(
 
 const fontData = getFont("Roboto");
 
-function getMoleculeInfo (response: QueryResult) {
+async function getMoleculeInfo(response: QueryResult) {
   // Get Name of molecule
-  let name: string = response.resolved_query.name ? 
-    capitalize(response.resolved_query.name.name) : 
-    response.resolved_query.smiles;
+  let name: string = response.resolved_query.name
+    ? capitalize(response.resolved_query.name.name)
+    : response.resolved_query.smiles;
 
   // Get Model information
   const modelinfo = MODELS.find((x) => x.path == response.model);
-  const majorModel = response.model == "_" ? 
-    "All Models" : 
-    modelinfo?.model ? 
-      modelinfo.model :
-      null;
-  if(!majorModel) throw new Error("No model found.");
+  const majorModel =
+    response.model == "_"
+      ? "All Models"
+      : modelinfo?.model
+        ? modelinfo.model
+        : null;
+  if (!majorModel) throw new Error("No model found.");
 
-  // Get (random) Depiction (Svg)
-  const choice = chooseRandom(response.resolved_query.results)
-  
-  // Create description & depiction
-  const subModel = choice.model ? choice.model.includes(".") ? ` (${choice.model.split(".")[1]})` : null : null;
+  const choice = chooseRandom(response.resolved_query.results);
+  if (!choice) throw new Error("No prediction result for OG image.");
+
+  const subModel = choice.model
+    ? choice.model.includes(".")
+      ? ` (${choice.model.split(".")[1]})`
+      : null
+    : null;
   const model = subModel ? `${majorModel}${subModel}` : majorModel;
-  // const description = `${model}: ${name}`;
-  const depiction = choice.depiction;
+
+  const smiles = String(response.resolved_query.smiles || "").trim();
+  if (!smiles) throw new Error("No SMILES for OG depiction.");
+
+  // Server-side xpict paint (do not use API /depict or result.depiction).
+  const depiction = await paintSmilesServer(smiles, {
+    atomScores: choice.atom,
+    bondScores: choice.bond,
+  });
 
   return { depiction, model, name };
 }
 
-export async function loader({
-  params,
-}: LoaderFunctionArgs) {
-  // Get the depiction.
+export async function loader({ params }: LoaderFunctionArgs) {
   let jsx: React.ReactElement | string = <XDot />;
   const response = await resolve_query({
     model: params.model || "_",
     query: params.query || null,
   });
 
-  if(response.resolved_query) {
-    // console.log(response);
-    // console.log(response.resolved_query);
-    // console.log(response.resolved_query.results);
-
+  if (response.resolved_query) {
     try {
-      const { depiction, model, name } = getMoleculeInfo(response);
-      jsx = ( 
-        <OpenGraphImage model={model} name={name} depiction={depiction} /> 
-      )
+      const { depiction, model, name } = await getMoleculeInfo(response);
+      jsx = (
+        <OpenGraphImage model={model} name={name} depiction={depiction} />
+      );
     } catch (error) {
       console.error(error);
       jsx = <XDot />;
@@ -101,10 +105,8 @@ export async function loader({
   const svg = await satori(jsx, {
     width: 600,
     height: 400,
-    //debug: true,
     fonts: await fontData,
   });
-  // console.log(svg);
 
   // Convert the SVG to PNG.
   const { data, error } = await new Promise(
@@ -143,8 +145,7 @@ export async function loader({
   }
   return new Response(data, {
     headers: {
-      "Content-Type": "image/png", 
+      "Content-Type": "image/png",
     },
   });
 }
-
