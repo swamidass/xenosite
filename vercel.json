@@ -5,6 +5,11 @@
       "ENABLE_FILE_SYSTEM_API": "1"
     }
   },
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm"
+    }
+  },
   "headers": [
     {
       "source": "/xpict-pkg/(.*).wasm",
