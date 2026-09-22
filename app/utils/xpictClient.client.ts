@@ -11,6 +11,7 @@ import {
   type MolRenderOptions,
   type Rendered,
 } from "@swamidasslab/xpict";
+import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
 import { XPICT_SCALE } from "~/utils/xpictShade";
 
 export type XpictPaintOptions = Pick<
@@ -101,16 +102,20 @@ export async function paintSmiles(
 
   await ensureXpictReady();
 
-  const { alignToSmiles, align_to, ...rest } = options;
+  const { alignToSmiles, align_to, star_labels, ...rest } = options;
   const alignTarget =
     align_to ??
     (alignToSmiles && alignToSmiles.trim()
       ? molCached(alignToSmiles)
       : undefined);
 
+  // JS xpict does not auto-apply CXSMILES aliases — derive star_labels here.
+  const cxStars = star_labels ?? starLabelsFromCxsmiles(source);
+
   const rendered = await xpict.render(molCached(source), {
     ...rest,
     ...(alignTarget ? { align_to: alignTarget } : {}),
+    ...(cxStars ? { star_labels: cxStars } : {}),
   });
   const svg = xpict.toSvg(rendered.scene);
   return {

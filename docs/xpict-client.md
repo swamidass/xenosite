@@ -8,6 +8,12 @@ Coords come from the `Rendered` object — no SVG `embed_script`.
   `align_to` / `alignToSmiles` at every hop
 - **Nested hop depiction:** also aligned to the previous generation’s SMILES
   (`HopOutletContext.alignToSmiles`)
+- **Star / R-group labels:** CXSMILES ``|$GSH;;;;$|`` trailers are parsed in
+  `app/utils/cxsmiles.ts` and passed as xpict `star_labels`. The same logic is
+  patched upstream in
+  [`docs/patches/xpict-js-cxsmiles-star-labels.patch`](patches/xpict-js-cxsmiles-star-labels.patch)
+  for `@swamidasslab/xpict` ([issue #20](https://github.com/swamidasslab/xenosite-pict/issues/20));
+  once that lands, the site-side pass becomes redundant.
 - **Legacy (tests):** `InteractiveMoleculeDepiction` + `LazyMetaboliteImg` + `/depict`
 
 ## Install / CI

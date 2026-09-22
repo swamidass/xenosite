@@ -1,0 +1,237 @@
+From a8b623e6c3bc2d885cb6badb0f5579f73ca2e58c Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursor@cursor.com>
+Date: Tue, 22 Sep 2026 17:56:02 +0000
+Subject: [PATCH] feat(js): auto-apply CXSMILES star labels in xpict.render
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Parse ChemAxon |$…$| trailers (parity with Python cx_atom_labels) and
+derive star_labels when the option is omitted. Explicit star_labels still
+wins. Fixes bare-* depictions for xenosite adducts like GSH.
+
+Closes #20
+---
+ js/src/api.smoke.ts |  19 ++++++++
+ js/src/api.ts       |  14 ++++--
+ js/src/cxsmiles.ts  | 110 ++++++++++++++++++++++++++++++++++++++++++++
+ js/src/index.ts     |   6 +++
+ 4 files changed, 146 insertions(+), 3 deletions(-)
+ create mode 100644 js/src/cxsmiles.ts
+
+diff --git a/js/src/api.smoke.ts b/js/src/api.smoke.ts
+index be6f758..e5e159b 100644
+--- a/js/src/api.smoke.ts
++++ b/js/src/api.smoke.ts
+@@ -83,6 +83,25 @@ if (bareSvg.includes("<text")) {
+   throw new Error("star label must be a glyph path, not <text>");
+ }
+ 
++// CXSMILES trailer → star label without explicit star_labels (Python parity).
++const fromCx = await xpict.render(xpict.mol("*C |$R1;$|"));
++const fromCxSvg = xpict.toSvg(fromCx.scene);
++if (!fromCxSvg.includes('data-text="R1"')) {
++  throw new Error("CXSMILES |$R1;$| should auto-label * as R1");
++}
++const gsh = await xpict.render(xpict.mol("*C1C=C(O)C=CC1=O |$GSH;;;;;;;;$|"));
++const gshSvg = xpict.toSvg(gsh.scene);
++if (!gshSvg.includes('data-text="GSH"')) {
++  throw new Error("CXSMILES GSH adduct should auto-label *");
++}
++// Explicit star_labels still wins over the trailer.
++const override = await xpict.render(xpict.mol("*C |$R1;$|"), {
++  star_labels: ["X"],
++});
++if (!xpict.toSvg(override.scene).includes('data-text="X"')) {
++  throw new Error("explicit star_labels should override CX trailer");
++}
++
+ console.log("api smoke ok", {
+   svgBytes: svg.length,
+   alignToMol: xpict.toSvg(alignedToMol.scene).length,
+diff --git a/js/src/api.ts b/js/src/api.ts
+index e8bf9fc..39c15b3 100644
+--- a/js/src/api.ts
++++ b/js/src/api.ts
+@@ -24,6 +24,7 @@ import { depictMolecule, initNative, isNativeReady } from "./native.js";
+ import { atomsInSvgFrame, type SvgAtom, type SvgBond } from "./frame.js";
+ import { sceneToSvg, type Scene } from "./draw/scene-svg.js";
+ import { elementSymbol } from "./elements.js";
++import { starLabelsFromCxsmiles } from "./cxsmiles.js";
+ 
+ export type { SvgAtom, SvgBond } from "./frame.js";
+ export type {
+@@ -77,6 +78,8 @@ export type MolRenderOptions = {
+   /**
+    * Labels for ``*`` atoms in encounter order.
+    * ``null`` / ``"*"`` → bare star glyph; other strings (e.g. ``R1``) replace it.
++   * When omitted, CXSMILES ``|$alias;…$|`` trailers on the input are applied
++   * automatically (parity with Python ``cx_atom_labels``).
+    */
+   star_labels?: Array<string | null>;
+   /**
+@@ -164,7 +167,11 @@ function applyStarLabels(
+   return { ...molecule, atoms };
+ }
+ 
+-function applyOpts(molecule: MoleculeIn, opts: MolRenderOptions): MoleculeIn {
++function applyOpts(
++  molecule: MoleculeIn,
++  opts: MolRenderOptions,
++  source: string
++): MoleculeIn {
+   let out: MoleculeIn = {
+     ...molecule,
+     atoms: [...molecule.atoms],
+@@ -177,7 +184,8 @@ function applyOpts(molecule: MoleculeIn, opts: MolRenderOptions): MoleculeIn {
+   if (opts.mark_atoms !== undefined) out.mark_atoms = opts.mark_atoms;
+   if (opts.mark_bonds !== undefined) out.mark_bonds = opts.mark_bonds;
+   if (opts.bold_labels !== undefined) out.bold_labels = opts.bold_labels;
+-  out = applyStarLabels(out, opts.star_labels);
++  const starLabels = opts.star_labels ?? starLabelsFromCxsmiles(source);
++  out = applyStarLabels(out, starLabels);
+   return out;
+ }
+ 
+@@ -235,7 +243,7 @@ async function render(
+     if (!m.frame_molblock) m.frame_molblock = poseMolblock;
+   }
+ 
+-  const molecule = applyOpts(laid, opts);
++  const molecule = applyOpts(laid, opts, m.source);
+   const sceneJson = depictMolecule(JSON.stringify(molecule));
+   const scene = JSON.parse(sceneJson) as Scene;
+   const framed = atomsInSvgFrame(molecule);
+diff --git a/js/src/cxsmiles.ts b/js/src/cxsmiles.ts
+new file mode 100644
+index 0000000..6ddefd7
+--- /dev/null
++++ b/js/src/cxsmiles.ts
+@@ -0,0 +1,110 @@
++/**
++ * ChemAxon CXSMILES atom-label helpers (parity with Python
++ * ``xpict.structure.cx_atom_labels``).
++ *
++ * The JS RDKit layout path does not surface CX aliases; ``api.ts`` uses these
++ * to derive ``star_labels`` automatically from the input string.
++ */
++
++/** ChemAxon ``|$alias1;alias2;$|`` atom-label block inside CXSMILES. */
++const CX_ATOM_LABELS = /\|\$([^|]*)\$\|/;
++
++/**
++ * Parse CXSMILES ``|$a;b;c;$|`` aliases into a per-atom label list.
++ * Empty segments → ``null``. Returns ``[]`` when no label block is present.
++ * Leading underscore in ChemAxon (``_R``) is stripped for display.
++ */
++export function cxAtomLabels(smilesOrCx: string): Array<string | null> {
++  if (!smilesOrCx) return [];
++  const m = smilesOrCx.match(CX_ATOM_LABELS);
++  if (!m) return [];
++  const raw = m[1] ?? "";
++  // Trailing empty field before final ``$`` is common: ``a;b;``.
++  let parts = raw.split(";");
++  if (parts.length && parts[parts.length - 1] === "") {
++    parts = parts.slice(0, -1);
++  }
++  const out: Array<string | null> = [];
++  for (let p of parts) {
++    p = p.trim();
++    if (!p) {
++      out.push(null);
++      continue;
++    }
++    if (p.startsWith("_") && p.length > 1) p = p.slice(1);
++    out.push(p);
++  }
++  return out;
++}
++
++/** SMILES graph only — drop `` |$…$|`` / other CX trailers. */
++export function smilesBase(smilesOrCx: string): string {
++  if (!smilesOrCx) return "";
++  const cut = smilesOrCx.split(/\s\|/, 1)[0];
++  return (cut ?? smilesOrCx).trim();
++}
++
++const ORGANIC_TWO = new Set(["Cl", "Br"]);
++
++/**
++ * Atom indices in SMILES order (CX label slots / RDKit organic SMILES order).
++ * Returns indices of ``*`` / ``[*…]`` dummy atoms.
++ */
++export function smilesStarAtomIndices(smilesOrCx: string): number[] {
++  const s = smilesBase(smilesOrCx);
++  const stars: number[] = [];
++  let atom = 0;
++  let i = 0;
++  while (i < s.length) {
++    const c = s[i]!;
++    if (c === "[") {
++      const end = s.indexOf("]", i + 1);
++      if (end < 0) break;
++      const inner = s.slice(i + 1, end);
++      if (
++        inner === "*" ||
++        inner.startsWith("*") ||
++        /^R\d*/i.test(inner) ||
++        inner.startsWith("_")
++      ) {
++        stars.push(atom);
++      }
++      atom += 1;
++      i = end + 1;
++      continue;
++    }
++    if (c === "*") {
++      stars.push(atom);
++      atom += 1;
++      i += 1;
++      continue;
++    }
++    if (/[A-Za-z]/.test(c)) {
++      const two = s.slice(i, i + 2);
++      if (ORGANIC_TWO.has(two)) {
++        atom += 1;
++        i += 2;
++        continue;
++      }
++      atom += 1;
++      i += 1;
++      continue;
++    }
++    i += 1;
++  }
++  return stars;
++}
++
++/**
++ * Labels for ``*`` atoms in encounter order — suitable for ``star_labels``.
++ * ``undefined`` when there is no CX label block.
++ */
++export function starLabelsFromCxsmiles(
++  smilesOrCx: string
++): Array<string | null> | undefined {
++  const labels = cxAtomLabels(smilesOrCx);
++  if (!labels.length) return undefined;
++  const stars = smilesStarAtomIndices(smilesOrCx);
++  if (!stars.length) return undefined;
++  return stars.map((idx) => (idx < labels.length ? labels[idx] : null));
++}
+diff --git a/js/src/index.ts b/js/src/index.ts
+index 64c1abe..826265f 100644
+--- a/js/src/index.ts
++++ b/js/src/index.ts
+@@ -17,3 +17,9 @@ export type {
+   SceneLayer,
+   SceneViewport,
+ } from "./api.js";
++export {
++  cxAtomLabels,
++  smilesBase,
++  smilesStarAtomIndices,
++  starLabelsFromCxsmiles,
++} from "./cxsmiles.js";
+-- 
+2.43.0
+
