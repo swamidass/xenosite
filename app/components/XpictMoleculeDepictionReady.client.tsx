@@ -96,7 +96,7 @@ export default function XpictMoleculeDepictionReady({
   const scale = paint.scale;
   const viewBox = { x: 0, y: 0, width: paint.width, height: paint.height };
   const src =
-    "data:image/svg+xml;utf8," + encodeURIComponent(paint.svg);
+    "data:image/svg+xml;charset=utf-8," + encodeURIComponent(paint.svg);
 
   const localPoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -151,6 +151,8 @@ export default function XpictMoleculeDepictionReady({
 
   const interactive = !!(onSelect || onHover);
 
+  // Hit-test on the <img> (not an overlay rect) so right-click "Save image as…"
+  // still targets the SVG data URI.
   return (
     <div className={`interactive-molecule ${className || ""}`.trim()}>
       <img
@@ -159,6 +161,32 @@ export default function XpictMoleculeDepictionReady({
         src={src}
         alt={alt}
         draggable={false}
+        style={interactive && onSelect ? { cursor: "crosshair" } : undefined}
+        onPointerMove={
+          interactive
+            ? (e) => {
+                const hit = hitAt(e.clientX, e.clientY);
+                setPointerHover(hitToHighlight(hit));
+                onHover?.(hit);
+              }
+            : undefined
+        }
+        onPointerLeave={
+          interactive
+            ? () => {
+                setPointerHover(null);
+                onHover?.(null);
+              }
+            : undefined
+        }
+        onClick={
+          onSelect
+            ? (e) => {
+                const hit = hitAt(e.clientX, e.clientY);
+                onSelect(hit);
+              }
+            : undefined
+        }
       />
       <svg
         className="som-overlay"
@@ -168,34 +196,6 @@ export default function XpictMoleculeDepictionReady({
       >
         <OverlayMarks marks={selectedMarks} scale={scale} tone="selected" />
         <OverlayMarks marks={hoverMarks} scale={scale} tone="hover" />
-        {interactive ? (
-          <rect
-            className="som-overlay__hit"
-            x={viewBox.x}
-            y={viewBox.y}
-            width={viewBox.width}
-            height={viewBox.height}
-            fill="transparent"
-            style={{ cursor: onSelect ? "crosshair" : "default" }}
-            onPointerMove={(e) => {
-              const hit = hitAt(e.clientX, e.clientY);
-              setPointerHover(hitToHighlight(hit));
-              onHover?.(hit);
-            }}
-            onPointerLeave={() => {
-              setPointerHover(null);
-              onHover?.(null);
-            }}
-            onClick={
-              onSelect
-                ? (e) => {
-                    const hit = hitAt(e.clientX, e.clientY);
-                    onSelect(hit);
-                  }
-                : undefined
-            }
-          />
-        ) : null}
       </svg>
     </div>
   );

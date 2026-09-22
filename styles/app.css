@@ -30,14 +30,10 @@ body {
   pointer-events: none;
 }
 
+/* Legacy hit-rect class — interaction now lives on the <img> so right-click
+   "Save image as…" can download the SVG. Keep rule for older markup/tests. */
 .som-overlay__hit {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: auto;
-  cursor: crosshair;
-  touch-action: none;
+  pointer-events: none;
 }
 
 .som-overlay__mark--selected.som-overlay__mark--black {

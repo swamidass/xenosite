@@ -20,8 +20,9 @@ export default function XpictLazyMetaboliteImgReady({
   const paint = readXpictPaint(smiles, {
     ...(alignToSmiles ? { alignToSmiles } : {}),
   });
+  // charset=utf-8 helps browsers offer a proper .svg "Save image as…" name.
   const src =
-    "data:image/svg+xml;utf8," + encodeURIComponent(paint.svg);
+    "data:image/svg+xml;charset=utf-8," + encodeURIComponent(paint.svg);
 
   return (
     <div className={`interactive-molecule ${className || ""}`.trim()}>
