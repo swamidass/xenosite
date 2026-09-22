@@ -3,13 +3,13 @@
 The site paints interactive molecules **in the browser** with xpict (RDKit
 script + WASM). Coords come from the `Rendered` object — no SVG `embed_script`.
 
-**Prediction API never gets `depict=true`** — no `/v1/depict` and no SVG in
-prediction JSON. After hydrate, Remix `ClientOnly` + `Suspense` + a `*.client`
+**Interactive pages use `depict=false`** — no SVG in prediction JSON and no
+`/depict` proxy. After hydrate, Remix `ClientOnly` + `Suspense` + a `*.client`
 paint resource paints (no `useEffect`).
 
-**Open Graph PNGs** (`/og/:model/:query`) paint **server-side** via
-`paintSmilesServer` (`app/utils/xpictPaint.server.ts`) so crawlers get a real
-image without calling the API depict endpoint.
+**Open Graph PNGs** (`/og/:model/:query`) still request API depictions
+(`depict=true` on that route only). Server-side xpict for OG is deferred until
+RDKit/xpict wasm packaging works reliably on Vercel serverless.
 
 - **Main card:** `XpictMoleculeDepiction` (shade from `atom` / `bond` scores)
 - **Metabolite cards:** `XpictLazyMetaboliteImg`, **aligned to the parent** via

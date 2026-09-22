@@ -19,12 +19,23 @@ export type QueryResult = {
 
 console.log("XENOSITE_BACKEND:", XENOSITE_BACKEND);
 
+export type BackendQueryOptions = {
+  /**
+   * When true, ask the API for SVG depictions.
+   * Default false — interactive UI paints with client xpict.
+   * Open Graph still sets this true until server xpict is wired on Vercel.
+   */
+  depict?: boolean;
+};
+
 /** Query string for prediction / canonize requests. */
-export function backendQueryParams(smiles: string): URLSearchParams {
+export function backendQueryParams(
+  smiles: string,
+  options: BackendQueryOptions = {},
+): URLSearchParams {
   return new URLSearchParams({
     query: decodeURIComponent(smiles),
-    // Never ask the API to depict — UI paints client-side; OG paints server-side.
-    depict: "false",
+    depict: options.depict ? "true" : "false",
     // atoms.cipRank for topological equivalence when matching pair sites.
     detailed: "true",
     // Forest metabolites for the site panel (capped/ranked in the UI).
@@ -40,14 +51,20 @@ export function backendQueryParams(smiles: string): URLSearchParams {
  * @param url The URL to send the request to
  * @returns
  */
-export const backend_api = async (smiles: string | null, url: string) => {
+export const backend_api = async (
+  smiles: string | null,
+  url: string,
+  options: BackendQueryOptions = {},
+) => {
   if (!smiles) return {};
 
-  const req = `${XENOSITE_BACKEND}${url}?` + backendQueryParams(smiles);
+  const req = `${XENOSITE_BACKEND}${url}?` + backendQueryParams(smiles, options);
   console.log("Fetching " + req);
 
   return (await fetch(req, { headers: XENOSITE_HEADERS })).json().catch((_e) => null);
 };
+
+export type ResolveQueryParams = QueryParameters & BackendQueryOptions;
 
 /**
  *
@@ -57,11 +74,11 @@ export const backend_api = async (smiles: string | null, url: string) => {
  * @returns QueryResult
  */
 export const resolve_query = async (
-  params: QueryParameters,
+  params: ResolveQueryParams,
 ): Promise<QueryResult> => {
-  const { model, query } = params;
+  const { model, query, depict = false } = params;
   const url = model != "_" ? "/v1/" + model : "/v1/canonize";
-  let response = await backend_api(query, url);
+  let response = await backend_api(query, url, { depict });
 
   if (response && response.name && response.name.chebi) {
     const chebi_url = `https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:${response.name.chebi.toString()}`;

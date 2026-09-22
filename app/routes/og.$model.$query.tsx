@@ -7,7 +7,6 @@ import XDot from "~/components/XDot";
 import { MODELS } from "~/data";
 import { QueryResult, resolve_query } from "~/loaders/backend.server";
 import { capitalize, chooseRandom } from "~/utils";
-import { paintSmilesServer } from "~/utils/xpictPaint.server";
 
 async function getFont(
   font: string,
@@ -44,7 +43,7 @@ async function getFont(
 
 const fontData = getFont("Roboto");
 
-async function getMoleculeInfo(response: QueryResult) {
+function getMoleculeInfo(response: QueryResult) {
   // Get Name of molecule
   let name: string = response.resolved_query.name
     ? capitalize(response.resolved_query.name.name)
@@ -60,6 +59,7 @@ async function getMoleculeInfo(response: QueryResult) {
         : null;
   if (!majorModel) throw new Error("No model found.");
 
+  // Random shaded depiction from the API (OG-only; interactive UI is client xpict).
   const choice = chooseRandom(response.resolved_query.results);
   if (!choice) throw new Error("No prediction result for OG image.");
 
@@ -69,37 +69,29 @@ async function getMoleculeInfo(response: QueryResult) {
       : null
     : null;
   const model = subModel ? `${majorModel}${subModel}` : majorModel;
-
-  const smiles = String(response.resolved_query.smiles || "").trim();
-  if (!smiles) throw new Error("No SMILES for OG depiction.");
-
-  // Server-side xpict paint (do not use API /depict or result.depiction).
-  const depiction = await paintSmilesServer(smiles, {
-    atomScores: choice.atom,
-    bondScores: choice.bond,
-  });
+  const depiction = choice.depiction;
+  if (!depiction) throw new Error("No API depiction for OG image.");
 
   return { depiction, model, name };
 }
 
 export async function loader({ params }: LoaderFunctionArgs) {
   let jsx: React.ReactElement | string = <XDot />;
-  let paintError: string | null = null;
+  // OG is the one path that still asks the API to depict (server xpict deferred).
   const response = await resolve_query({
     model: params.model || "_",
     query: params.query || null,
+    depict: true,
   });
 
   if (response.resolved_query) {
     try {
-      const { depiction, model, name } = await getMoleculeInfo(response);
+      const { depiction, model, name } = getMoleculeInfo(response);
       jsx = (
         <OpenGraphImage model={model} name={name} depiction={depiction} />
       );
     } catch (error) {
-      paintError =
-        error instanceof Error ? error.message : String(error ?? "og paint failed");
-      console.error("[og] xpict paint failed; falling back to XDot", error);
+      console.error(error);
       jsx = <XDot />;
     }
   }
@@ -146,12 +138,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
       },
     });
   }
-  const headers: Record<string, string> = {
-    "Content-Type": "image/png",
-  };
-  // Temporary diagnose header while OG server paint is rolling out.
-  if (paintError) {
-    headers["X-Xpict-Og-Error"] = paintError.slice(0, 200);
-  }
-  return new Response(data, { headers });
+  return new Response(data, {
+    headers: {
+      "Content-Type": "image/png",
+    },
+  });
 }

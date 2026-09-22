@@ -6,12 +6,17 @@ import {
 } from "~/loaders/backend.server";
 
 describe("backendQueryParams", () => {
-  it("requests metabolites without API depictions", () => {
+  it("defaults to no API depictions for the interactive UI", () => {
     const p = backendQueryParams("aspirin");
     expect(p.get("query")).toBe("aspirin");
     expect(p.get("depict")).toBe("false");
     expect(p.get("metabolites")).toBe("true");
     expect(p.get("detailed")).toBe("true");
+  });
+
+  it("can request depictions for Open Graph", () => {
+    const p = backendQueryParams("aspirin", { depict: true });
+    expect(p.get("depict")).toBe("true");
   });
 });
 
