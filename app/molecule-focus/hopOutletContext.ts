@@ -15,8 +15,14 @@ export type HopOutletContext = {
    * (CIP-aware against parent som). Child reads this for identity chrome.
    */
   formationForChild?: ChildFormationMeta | null;
+  /**
+   * Parent molecule SMILES for xpict `align_to` on the child hop depiction.
+   * Metabolite cards at this depth align to the *current* generation instead.
+   */
+  alignToSmiles?: string | null;
 };
 
 export const EMPTY_HOP_OUTLET_CONTEXT: HopOutletContext = {
   formationForChild: null,
+  alignToSmiles: null,
 };

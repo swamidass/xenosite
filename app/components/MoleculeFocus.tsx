@@ -11,9 +11,12 @@ import {
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import AboutModel from "~/components/AboutModel";
 import GenerationBanner from "~/components/GenerationBanner";
-import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
-import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
+import XpictMoleculeDepiction from "~/components/XpictMoleculeDepiction";
 import MetabolitePanel from "~/components/MetabolitePanel";
+// Legacy server-SVG depictions kept for comparison tests:
+// import InteractiveMoleculeDepiction from "~/components/InteractiveMoleculeDepiction";
+// import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
+// import XpictLazyMetaboliteImg from "~/components/XpictLazyMetaboliteImg";
 import MoleculeIdentity from "~/components/MoleculeIdentity";
 import { ModelTabs } from "~/components/ModelTabs";
 import Spinner from "~/components/Spinner";
@@ -195,13 +198,19 @@ export function GenerationView({
       )
     : findMetaboliteBySmiles(metabolites, childQuery);
 
+  const parentAlignToSmiles = parentCtx.alignToSmiles || null;
+  // Prefer API-canonical SMILES (not URL name stubs) for xpict align frames.
+  const selfSmiles = String(resolved_query?.smiles || "").trim();
+
   const hopOutletContext = useMemo<HopOutletContext>(
     () => ({
       formationForChild: childMet
         ? { pathway: childMet.pathway, score: childMet.score }
         : null,
+      // Child hop depictions + grandchild cards align to this generation.
+      alignToSmiles: selfSmiles || null,
     }),
-    [childMet],
+    [childMet, selfSmiles],
   );
 
   // Late validation: smiles+head+parent-som (CIP-aware) must match.
@@ -483,16 +492,21 @@ export function GenerationView({
             const isHoverHead = hover?.headIndex === i;
             return (
               <div key={r.model || i} className="mx-2 max-w-full">
-                {r.depiction ? (
-                  <InteractiveMoleculeDepiction
-                    svg={r.depiction}
+                {hopSmilesEarly || resolved_query?.smiles ? (
+                  <XpictMoleculeDepiction
+                    smiles={
+                      String(resolved_query?.smiles || hopSmilesEarly || "")
+                    }
                     alt={`${moleculeName} ${
                       results.length > 1 ? last_name(r.model) : modelLabel
                     } prediction`}
+                    atomScores={r.atom}
+                    bondScores={r.bond}
                     bondsIdx={resolved_query?.bonds?.idx}
                     selectionMode={mode}
                     selected={isSelectedHead ? selectedHighlight : null}
                     externalHover={isHoverHead ? hover?.highlight : null}
+                    alignToSmiles={parentAlignToSmiles}
                     onSelect={(hit) => applyHit(hit, i)}
                     onHover={(hit) => {
                       const sel = hitToSiteSelection(hit);
@@ -528,23 +542,14 @@ export function GenerationView({
     </div>
   ) : null;
 
-  const plainDepiction =
-    (!predictionReady &&
-      (results.find((r: any) => r?.depiction)?.depiction ||
-        resolved_query?.depiction)) ||
-    null;
-
   const plainStructure =
-    !predictionReady && (plainDepiction || hopSmiles) ? (
+    !predictionReady && hopSmiles ? (
       <div className="w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4">
-        {plainDepiction ? (
-          <InteractiveMoleculeDepiction
-            svg={plainDepiction}
-            alt={moleculeName}
-          />
-        ) : (
-          <LazyMetaboliteImg smiles={hopSmiles} alt={moleculeName} />
-        )}
+        <XpictMoleculeDepiction
+          smiles={hopSmiles}
+          alt={moleculeName}
+          alignToSmiles={parentAlignToSmiles}
+        />
       </div>
     ) : null;
 
@@ -609,6 +614,7 @@ export function GenerationView({
             hrefForMetabolite={hrefForMetabolite}
             clearHref={clearHref}
             onHoverMetabolite={onHoverMetabolite}
+            alignToSmiles={selfSmiles || null}
           />
         </>
       ) : null}

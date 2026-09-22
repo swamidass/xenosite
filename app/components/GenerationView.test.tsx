@@ -29,13 +29,28 @@ vi.mock("@remix-run/react", () => ({
   useNavigate: () => vi.fn(),
   useLocation: () => ({ pathname: "/phase1/aspirin", search: "" }),
   useSearchParams: () => [new URLSearchParams(), vi.fn()],
-  useOutletContext: () => ({ formationForChild: null }),
+  useOutletContext: () => ({ formationForChild: null, alignToSmiles: null }),
   useNavigation: () => ({ state: "idle", location: undefined }),
   useParams: () => ({ model: "phase1", query: "aspirin" }),
   useLoaderData: () => ({ gaTrackingId: "G-TEST" }),
   useRouteLoaderData: (id: string) =>
     id === "root" ? { gaTrackingId: "G-TEST" } : undefined,
   useMatches: () => [],
+}));
+
+vi.mock("~/utils/xpictClient.client", () => ({
+  paintSmiles: async () => ({
+    svg: `<svg viewBox="0 0 10 10" width="10" height="10"></svg>`,
+    coords: [
+      [1, 2],
+      [3, 4],
+    ] as [number, number][],
+    bondsIdx: [[0, 1]] as [number, number][],
+    width: 10,
+    height: 10,
+    scale: 20,
+    rendered: {} as never,
+  }),
 }));
 
 const DEPICTION = `<svg viewBox="0 0 10 10"><script type="application/json">{"coords":[[1,2],[3,4]],"scale":20}</script></svg>`;
@@ -94,7 +109,7 @@ describe("GenerationView", () => {
       />,
     );
     expect(html).toContain("hydrolysis");
-    expect(html).toContain("data:image/svg+xml");
+    expect(html).toContain("animate-pulse");
     expect(html).toContain("Metabolites");
   });
 

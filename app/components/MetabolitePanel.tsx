@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "@remix-run/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import LazyMetaboliteImg from "~/components/LazyMetaboliteImg";
+import XpictLazyMetaboliteImg from "~/components/XpictLazyMetaboliteImg";
 import PlotDot from "~/components/PlotDot";
 import {
   formatPathwayLabel,
@@ -47,6 +47,11 @@ export type MetabolitePanelProps = {
    * a metabolite cannot open another generation.
    */
   canSelectNextGeneration?: boolean;
+  /**
+   * Current generation SMILES — each metabolite card is xpict-aligned to this
+   * parent frame.
+   */
+  alignToSmiles?: string | null;
 };
 
 function labelFor(m: MetaboliteRecord): string {
@@ -69,6 +74,7 @@ export default function MetabolitePanel({
   selectedSmiles = null,
   lockLayout = false,
   canSelectNextGeneration = true,
+  alignToSmiles = null,
 }: MetabolitePanelProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [removedSmiles, setRemovedSmiles] = useState<Set<string>>(
@@ -271,9 +277,10 @@ export default function MetabolitePanel({
                         ) : null}
                       </div>
                       <div className="relative z-10 flex justify-center leading-none">
-                        <LazyMetaboliteImg
+                        <XpictLazyMetaboliteImg
                           smiles={m.smiles}
                           alt={name || m.smiles}
+                          alignToSmiles={alignToSmiles}
                           onDepictError={() => {
                             setRemovedSmiles((prev) => {
                               if (prev.has(m.smiles)) return prev;

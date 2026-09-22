@@ -183,8 +183,11 @@ export default function App() {
   const showScaleBar = useMemo(() => {
     if (!hasMolecule || !hasPredictionModel(model)) return false;
     const results = rootMoleculeData?.resolved_query?.results;
-    return (
-      Array.isArray(results) && results.some((r: { depiction?: unknown }) => !!r?.depiction)
+    if (!Array.isArray(results) || !results.length) return false;
+    // Server xenopict SVG *or* client xpict paint from atom/bond scores.
+    return results.some(
+      (r: { depiction?: unknown; atom?: unknown; bond?: unknown }) =>
+        !!r?.depiction || Array.isArray(r?.atom) || Array.isArray(r?.bond),
     );
   }, [hasMolecule, model, rootMoleculeData]);
 

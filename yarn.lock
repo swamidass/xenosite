@@ -1374,6 +1374,11 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
+"@rdkit/rdkit@^2026.3.6":
+  version "2026.3.6"
+  resolved "https://registry.yarnpkg.com/@rdkit/rdkit/-/rdkit-2026.3.6.tgz#bc336b5f628c8e5049fa4468d920d60021ffb4e3"
+  integrity sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA==
+
 "@remix-run/css-bundle@^2.0.1":
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/@remix-run/css-bundle/-/css-bundle-2.3.1.tgz#c4827304cbd3bb0e2168d9e31282eb1c2db2d794"
@@ -1831,6 +1836,14 @@
   dependencies:
     fflate "^0.7.3"
     string.prototype.codepointat "^0.2.1"
+
+"@swamidasslab/xpict@file:vendor/swamidasslab-xpict-0.1.1.tgz":
+  version "0.1.1"
+  resolved "file:vendor/swamidasslab-xpict-0.1.1.tgz#fb79adb12828f2457f26e6a87abe7fd33767a55f"
+  dependencies:
+    "@rdkit/rdkit" "^2026.3.6"
+  optionalDependencies:
+    elkjs "^0.9.3"
 
 "@tailwindcss/typography@^0.5.10":
   version "0.5.10"
@@ -3538,6 +3551,11 @@ electron-to-chromium@^1.4.535:
   version "1.4.594"
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.594.tgz#f69f207fba80735a44a988df42f3f439115d0515"
   integrity sha512-xT1HVAu5xFn7bDfkjGQi9dNpMqGchUkebwf1GL7cZN32NSwwlHRPMSDJ1KN6HkS0bWUtndbSQZqvpQftKG2uFQ==
+
+elkjs@^0.9.3:
+  version "0.9.3"
+  resolved "https://registry.yarnpkg.com/elkjs/-/elkjs-0.9.3.tgz#16711f8ceb09f1b12b99e971b138a8384a529161"
+  integrity sha512-f/ZeWvW/BCXbhGEf1Ujp29EASo/lk1FDnETgNKwJrsVvGZhUWCZyg3xLJjAsxfOmt8KjswHmI5EwCQcPMpOYhQ==
 
 emoji-regex@^10.2.1:
   version "10.3.0"

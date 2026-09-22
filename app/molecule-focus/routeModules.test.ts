@@ -44,6 +44,7 @@ describe("nested hop route modules", () => {
     expect(typeof met1Revalidate).toBe("function");
     expect(MoleculeFocusIndex()).toBeNull();
     expect(EMPTY_HOP_OUTLET_CONTEXT.formationForChild).toBeNull();
+    expect(EMPTY_HOP_OUTLET_CONTEXT.alignToSmiles).toBeNull();
   });
 
   it("re-exports nested Remix route modules", () => {

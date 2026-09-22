@@ -1,25 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 
-type LazyMetaboliteImgProps = {
+type XpictLazyMetaboliteImgProps = {
   smiles: string;
   alt: string;
   className?: string;
-  /** Called when /depict fails (e.g. RDKit-invalid SMILES). */
+  /**
+   * Parent (current generation) SMILES — metabolites are template-aligned
+   * to this frame via xpict `align_to`.
+   */
+  alignToSmiles?: string | null;
+  /** Called when client depict fails (e.g. RDKit-invalid SMILES). */
   onDepictError?: (error: Error) => void;
 };
 
 /**
- * Legacy lazy plain depiction via `/depict` proxy.
- * Prefer {@link XpictLazyMetaboliteImg}; keep this for tests until xpict is proven.
- *
- * Uses the same CSS sizing as InteractiveMoleculeDepiction (intrinsic SVG size).
+ * Lazy plain metabolite depiction via client-side xpict (no `/depict` proxy).
+ * Aligns to {@link alignToSmiles} when provided.
+ * Legacy server path: {@link LazyMetaboliteImg}.
  */
-export default function LazyMetaboliteImg({
+export default function XpictLazyMetaboliteImg({
   smiles,
   alt,
   className,
+  alignToSmiles = null,
   onDepictError,
-}: LazyMetaboliteImgProps) {
+}: XpictLazyMetaboliteImgProps) {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const onErrorRef = useRef(onDepictError);
@@ -30,32 +35,24 @@ export default function LazyMetaboliteImg({
     setSrc(null);
     setFailed(false);
 
-    const url = `/depict?${new URLSearchParams({ query: smiles })}`;
-    fetch(url)
-      .then(async (res) => {
-        if (!res.ok) {
-          let detail = "";
-          try {
-            detail = (await res.text()).slice(0, 200);
-          } catch {
-            /* ignore */
-          }
-          throw new Error(
-            detail
-              ? `depict ${res.status}: ${detail}`
-              : `depict failed with status ${res.status}`,
-          );
-        }
-        const svg = await res.text();
+    import("~/utils/xpictClient.client")
+      .then(({ paintSmiles }) =>
+        paintSmiles(smiles, {
+          ...(alignToSmiles ? { alignToSmiles } : {}),
+        }),
+      )
+      .then((painted) => {
         if (cancelled) return;
-        setSrc("data:image/svg+xml;utf8," + encodeURIComponent(svg));
+        setSrc(
+          "data:image/svg+xml;utf8," + encodeURIComponent(painted.svg),
+        );
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         const error =
-          err instanceof Error ? err : new Error(String(err ?? "depict failed"));
+          err instanceof Error ? err : new Error(String(err ?? "xpict failed"));
         console.error(
-          `[metabolite depict] RDKit/depict failed for SMILES ${smiles}`,
+          `[metabolite xpict] depict failed for SMILES ${smiles}`,
           error,
         );
         setFailed(true);
@@ -65,7 +62,7 @@ export default function LazyMetaboliteImg({
     return () => {
       cancelled = true;
     };
-  }, [smiles]);
+  }, [smiles, alignToSmiles]);
 
   if (failed) {
     return null;

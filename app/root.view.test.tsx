@@ -47,6 +47,7 @@ vi.mock("@remix-run/react", () => ({
   useLocation: () => ({ pathname: "/phase1/aspirin", search: "" }),
   useParams: () => ({ model: "phase1", query: "aspirin" }),
   useLoaderData: () => ({ gaTrackingId: null }),
+  useRouteLoaderData: () => ({ gaTrackingId: null }),
   useSearchParams: () => [new URLSearchParams(), vi.fn()],
   useOutletContext: () => ({}),
   useNavigation: () => ({ state: "idle", location: undefined }),

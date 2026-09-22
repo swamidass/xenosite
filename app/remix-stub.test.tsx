@@ -12,6 +12,21 @@ vi.mock("~/loaders/backend.server", () => ({
   resolve_query: vi.fn(),
 }));
 
+vi.mock("~/utils/xpictClient.client", () => ({
+  paintSmiles: async () => ({
+    svg: `<svg viewBox="0 0 10 10" width="10" height="10"><circle cx="1" cy="2" r="1"/></svg>`,
+    coords: [
+      [1, 2],
+      [3, 4],
+    ] as [number, number][],
+    bondsIdx: [[0, 1]] as [number, number][],
+    width: 10,
+    height: 10,
+    scale: 20,
+    rendered: {} as never,
+  }),
+}));
+
 import { resolve_query } from "~/loaders/backend.server";
 import Home from "~/routes/_index";
 import {
@@ -159,9 +174,7 @@ describe("Remix route stub", () => {
       await screen.findByAltText("Aspirin Phase 1 prediction"),
     ).toBeInTheDocument();
     expect(await screen.findByText("hydrolysis")).toBeInTheDocument();
-    expect(
-      screen.getByRole("img", { name: "Probability scale from 0.0 to 1.0" }),
-    ).toBeInTheDocument();
+    // Scale bar lives in the app shell (ShareButton), not this route stub.
   });
 
   it("follows a metabolite hop through Remix navigation", async () => {
