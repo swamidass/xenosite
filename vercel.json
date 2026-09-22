@@ -5,11 +5,6 @@
       "ENABLE_FILE_SYSTEM_API": "1"
     }
   },
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "node_modules/@swamidasslab/xpict/**"
-    }
-  },
   "headers": [
     {
       "source": "/xpict-pkg/(.*).wasm",
