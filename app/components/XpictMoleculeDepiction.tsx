@@ -1,19 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { displayPointToSvg } from "~/utils/moleculeSvg";
 import {
-  resolveHit,
-  type SelectionMode,
-  type SiteHit,
-} from "~/utils/siteHitTest";
-import {
-  buildOverlayMarks,
-  normalizeBondsIdx,
-  somAtomRadius,
-  somStrokeWidths,
-  type SomHighlight,
-} from "~/utils/somOverlay";
-import { shadeVector } from "~/utils/xpictShade";
-import type { XpictPaintResult } from "~/utils/xpictClient.client";
+  Component,
+  Suspense,
+  lazy,
+  type ErrorInfo,
+  type ReactNode,
+} from "react";
+import { ClientOnly } from "~/utils/clientOnly";
+import type { SelectionMode, SiteHit } from "~/utils/siteHitTest";
+import type { SomHighlight } from "~/utils/somOverlay";
 
 export type XpictMoleculeDepictionProps = {
   smiles: string;
@@ -36,265 +30,121 @@ export type XpictMoleculeDepictionProps = {
   alignToSmiles?: string | null;
 };
 
-function hitToHighlight(hit: SiteHit | null): SomHighlight | null {
-  if (!hit) return null;
-  return {
-    atomIdxs: hit.atomIdxs,
-    bondIdx: hit.kind === "bond" ? hit.bondIdx : null,
-  };
+const XpictMoleculeDepictionReady = lazy(
+  () => import("~/components/XpictMoleculeDepictionReady.client"),
+);
+
+function DepictionPulse({
+  alt,
+  className,
+}: {
+  alt: string;
+  className?: string;
+}) {
+  return (
+    <div className={`interactive-molecule ${className || ""}`.trim()}>
+      <img
+        className="interactive-molecule__img sr-only"
+        alt={alt}
+        src={
+          "data:image/svg+xml;utf8," +
+          encodeURIComponent(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>`,
+          )
+        }
+      />
+      <div
+        className="h-[6.5rem] w-[8rem] animate-pulse bg-gray-50"
+        aria-hidden
+      />
+    </div>
+  );
 }
 
-function OverlayMarks({
-  marks,
-  scale,
-  tone,
+function DepictErrorFallback({
+  alt,
+  className,
 }: {
-  marks: ReturnType<typeof buildOverlayMarks>;
-  scale: number;
-  tone: "selected" | "hover";
+  alt: string;
+  className?: string;
 }) {
-  const strokes = somStrokeWidths(scale);
-  const r = somAtomRadius(scale);
   return (
-    <>
-      {marks.map((m, i) => {
-        const key = `${tone}-${i}`;
-        return (
-          <g key={key}>
-            <circle
-              className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--black`}
-              cx={m.x}
-              cy={m.y}
-              r={r}
-              strokeWidth={strokes.black}
-            />
-            <circle
-              className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--white`}
-              cx={m.x}
-              cy={m.y}
-              r={r}
-              strokeWidth={strokes.white}
-            />
-          </g>
-        );
-      })}
-    </>
+    <div
+      className={`interactive-molecule ${className || ""}`.trim()}
+      role="img"
+      aria-label={alt}
+    >
+      <div className="h-[6.5rem] w-[8rem] text-xs text-gray-400 flex items-center justify-center">
+        —
+      </div>
+    </div>
   );
+}
+
+type BoundaryProps = {
+  resetKey: string;
+  fallback: ReactNode;
+  children: ReactNode;
+};
+
+type BoundaryState = { error: Error | null };
+
+/** Local error boundary so a bad SMILES does not nuke the page Suspense tree. */
+class DepictErrorBoundary extends Component<BoundaryProps, BoundaryState> {
+  state: BoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): BoundaryState {
+    return { error };
+  }
+
+  componentDidUpdate(prev: BoundaryProps) {
+    if (prev.resetKey !== this.props.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[xpict] depict failed", error, info);
+  }
+
+  render() {
+    if (this.state.error) return this.props.fallback;
+    return this.props.children;
+  }
 }
 
 /**
  * Client-side depiction via `@swamidasslab/xpict`.
- * Coords / bonds come from the render result (no SVG embed).
+ *
+ * Remix pattern: ClientOnly (hydrate) → Suspense → `*.client` paint resource
+ * (no useEffect). Coords from the render result.
  *
  * Legacy server-SVG path: {@link InteractiveMoleculeDepiction} (keep for tests).
  */
-export default function XpictMoleculeDepiction({
-  smiles,
-  alt,
-  atomScores,
-  bondScores,
-  bondsIdx,
-  selectionMode = "atom",
-  selected = null,
-  externalHover = null,
-  onSelect,
-  onHover,
-  className,
-  color,
-  alignToSmiles = null,
-}: XpictMoleculeDepictionProps) {
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [pointerHover, setPointerHover] = useState<SomHighlight | null>(null);
-  const [paint, setPaint] = useState<XpictPaintResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const atom_shade = useMemo(() => shadeVector(atomScores), [atomScores]);
-  const bond_shade = useMemo(() => shadeVector(bondScores), [bondScores]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setPaint(null);
-    setError(null);
-    setPointerHover(null);
-
-    const source = smiles.trim();
-    if (!source) {
-      setError("missing SMILES");
-      return;
-    }
-
-    import("~/utils/xpictClient.client")
-      .then(({ paintSmiles }) =>
-        paintSmiles(source, {
-          ...(atom_shade ? { atom_shade } : {}),
-          ...(bond_shade ? { bond_shade } : {}),
-          ...(color ? { color } : {}),
-          ...(alignToSmiles ? { alignToSmiles } : {}),
-        }),
-      )
-      .then((result) => {
-        if (!cancelled) setPaint(result);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : String(err ?? "xpict failed");
-        console.error(`[xpict] depict failed for SMILES ${source}`, err);
-        setError(message);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [smiles, atom_shade, bond_shade, color, alignToSmiles]);
-
-  const apiBonds = useMemo(() => normalizeBondsIdx(bondsIdx), [bondsIdx]);
-  const bonds = apiBonds.length ? apiBonds : paint?.bondsIdx || [];
-  const coords = paint?.coords || [];
-  const scale = paint?.scale ?? 20;
-  const viewBox = paint
-    ? { x: 0, y: 0, width: paint.width, height: paint.height }
-    : null;
-
-  const src = useMemo(
-    () =>
-      paint
-        ? "data:image/svg+xml;utf8," + encodeURIComponent(paint.svg)
-        : null,
-    [paint],
-  );
-
-  const localPoint = useCallback(
-    (clientX: number, clientY: number) => {
-      const img = imgRef.current;
-      if (!img || !viewBox) return null;
-      const rect = img.getBoundingClientRect();
-      if (!(rect.width > 0) || !(rect.height > 0)) return null;
-      return displayPointToSvg(
-        clientX - rect.left,
-        clientY - rect.top,
-        { width: rect.width, height: rect.height },
-        viewBox,
-      );
-    },
-    [viewBox],
-  );
-
-  const hitAt = useCallback(
-    (clientX: number, clientY: number): SiteHit | null => {
-      if (!coords.length) return null;
-      const pt = localPoint(clientX, clientY);
-      if (!pt) return null;
-      return resolveHit(pt.x, pt.y, {
-        coords,
-        bondsIdx: bonds,
-        scale,
-        mode: selectionMode,
-      });
-    },
-    [coords, localPoint, bonds, scale, selectionMode],
-  );
-
-  const selectedMarks = useMemo(() => {
-    if (!coords.length || !selected) return [];
-    return buildOverlayMarks(selected, coords, bonds);
-  }, [coords, selected, bonds]);
-
-  const hoverSource =
-    onSelect || onHover ? pointerHover || externalHover : externalHover;
-  const hoverMarks = useMemo(() => {
-    if (!coords.length || !hoverSource) return [];
-    if (
-      selected &&
-      selected.bondIdx === hoverSource.bondIdx &&
-      selected.atomIdxs.length === hoverSource.atomIdxs.length &&
-      selected.atomIdxs.every((a, i) => a === hoverSource.atomIdxs[i])
-    ) {
-      return [];
-    }
-    return buildOverlayMarks(hoverSource, coords, bonds);
-  }, [coords, hoverSource, bonds, selected]);
-
-  const interactive = !!(onSelect || onHover);
-
-  if (error) {
-    return (
-      <div
-        className={`interactive-molecule ${className || ""}`.trim()}
-        role="img"
-        aria-label={alt}
-      >
-        <div className="h-[6.5rem] w-[8rem] text-xs text-gray-400 flex items-center justify-center">
-          —
-        </div>
-      </div>
-    );
-  }
-
-  if (!src || !viewBox) {
-    return (
-      <div className={`interactive-molecule ${className || ""}`.trim()}>
-        <img
-          className="interactive-molecule__img sr-only"
-          alt={alt}
-          src={
-            "data:image/svg+xml;utf8," +
-            encodeURIComponent(
-              `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>`,
-            )
-          }
-        />
-        <div className="h-[6.5rem] w-[8rem] animate-pulse bg-gray-50" aria-hidden />
-      </div>
-    );
-  }
+export default function XpictMoleculeDepiction(
+  props: XpictMoleculeDepictionProps,
+) {
+  const pulse = <DepictionPulse alt={props.alt} className={props.className} />;
+  const resetKey = [
+    props.smiles,
+    props.alignToSmiles ?? "",
+    props.color ?? "",
+    JSON.stringify(props.atomScores ?? null),
+    JSON.stringify(props.bondScores ?? null),
+  ].join("|");
 
   return (
-    <div className={`interactive-molecule ${className || ""}`.trim()}>
-      <img
-        ref={imgRef}
-        className="interactive-molecule__img"
-        src={src}
-        alt={alt}
-        draggable={false}
-      />
-      <svg
-        className="som-overlay"
-        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden
+    <ClientOnly fallback={pulse}>
+      <DepictErrorBoundary
+        resetKey={resetKey}
+        fallback={
+          <DepictErrorFallback alt={props.alt} className={props.className} />
+        }
       >
-        <OverlayMarks marks={selectedMarks} scale={scale} tone="selected" />
-        <OverlayMarks marks={hoverMarks} scale={scale} tone="hover" />
-        {interactive ? (
-          <rect
-            className="som-overlay__hit"
-            x={viewBox.x}
-            y={viewBox.y}
-            width={viewBox.width}
-            height={viewBox.height}
-            fill="transparent"
-            style={{ cursor: onSelect ? "crosshair" : "default" }}
-            onPointerMove={(e) => {
-              const hit = hitAt(e.clientX, e.clientY);
-              setPointerHover(hitToHighlight(hit));
-              onHover?.(hit);
-            }}
-            onPointerLeave={() => {
-              setPointerHover(null);
-              onHover?.(null);
-            }}
-            onClick={
-              onSelect
-                ? (e) => {
-                    const hit = hitAt(e.clientX, e.clientY);
-                    onSelect(hit);
-                  }
-                : undefined
-            }
-          />
-        ) : null}
-      </svg>
-    </div>
+        <Suspense fallback={pulse}>
+          <XpictMoleculeDepictionReady {...props} />
+        </Suspense>
+      </DepictErrorBoundary>
+    </ClientOnly>
   );
 }

@@ -4,7 +4,8 @@ The site paints molecules **in the browser only** with xpict (RDKit script +
 WASM). Coords come from the `Rendered` object — no SVG `embed_script`.
 
 **Not used on the server / Vercel serverless** — avoids burning function CPU
-and bandwidth. SSR shows a short placeholder; `useEffect` paints after hydrate.
+and bandwidth. SSR shows a short placeholder; after hydrate, Remix
+`ClientOnly` + `Suspense` + a `*.client` paint resource paints (no `useEffect`).
 
 - **Main card:** `XpictMoleculeDepiction` (shade from `atom` / `bond` scores)
 - **Metabolite cards:** `XpictLazyMetaboliteImg`, **aligned to the parent** via

@@ -22,12 +22,17 @@ vi.mock("~/utils/xpictClient.client", () => ({
 }));
 
 describe("XpictMoleculeDepiction", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const { clearAllXpictPaint } = await import(
+      "~/utils/xpictPaintResource.client"
+    );
+    clearAllXpictPaint();
   });
   afterEach(() => cleanup());
 
-  it("paints from SMILES and exposes an img with alt", async () => {
+  it("paints from SMILES via Suspense and exposes an img with alt", async () => {
+    const { paintSmiles } = await import("~/utils/xpictClient.client");
     render(
       <XpictMoleculeDepiction
         smiles="CCO"
@@ -35,8 +40,12 @@ describe("XpictMoleculeDepiction", () => {
         atomScores={[0.1, 0.5, 0.9]}
       />,
     );
-    const img = await screen.findByAltText("ethanol");
     await waitFor(() => {
+      expect(paintSmiles).toHaveBeenCalled();
+    });
+    const img = await screen.findByRole("img", { name: "ethanol" });
+    await waitFor(() => {
+      expect(img.className).not.toContain("sr-only");
       expect(img.getAttribute("src") || "").toContain("data:image/svg+xml");
     });
   });
