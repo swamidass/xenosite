@@ -12,26 +12,44 @@ Coords come from the `Rendered` object — no SVG `embed_script`.
 
 ## Install / CI
 
-Today the package is **vendored** so installs need no GitHub token:
+`@swamidasslab/xpict` is published **public** on GitHub Packages
+(`publishConfig.access: "public"`). GitHub’s **npm** registry still requires
+authentication to download — there is no anonymous `npm install` for
+`npm.pkg.github.com` (unlike the Container registry).
+
+### Preferred: registry
+
+Committed `.npmrc` only sets the scope registry (yarn v1 cannot reference an
+unset `${NPM_TOKEN}`).
+
+```
+@swamidasslab:registry=https://npm.pkg.github.com
+```
+
+Add auth in CI / `~/.npmrc`:
+
+```
+//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
+```
 
 ```json
-"@swamidasslab/xpict": "file:vendor/swamidasslab-xpict-0.1.1.tgz"
+"@swamidasslab/xpict": "^0.1.2"
+```
+
+Set `NPM_TOKEN` (and optionally `NODE_AUTH_TOKEN` to the same value):
+
+| Environment | Token |
+| --- | --- |
+| Local | Classic PAT with `read:packages` in `~/.npmrc` |
+| GitHub Actions | `secrets.NPM_TOKEN`, or `GITHUB_TOKEN` after granting the package **Actions → Read** access to `swamidass/xenosite` |
+| Vercel | Project env `NPM_TOKEN` (available at install) |
+
+### Interim: vendored tarball
+
+Until CI secrets / package Actions access are wired, this repo may use:
+
+```json
+"@swamidasslab/xpict": "file:vendor/swamidasslab-xpict-0.1.2.tgz"
 ```
 
 `postinstall` / `build` copy WASM to `public/xpict/xpict_core_bg.wasm`.
-
-### Switch to GitHub Packages
-
-1. Publish visibility: set `publishConfig.access` to `"public"` in xpict (optional;
-   GitHub’s **npm** registry still usually requires a token to pull).
-2. Package settings → **Manage Actions access** → grant **Read** to `swamidass/xenosite`.
-3. Repo secret `NPM_TOKEN` = classic PAT with `read:packages`.
-4. `.npmrc`:
-
-   ```
-   @swamidasslab:registry=https://npm.pkg.github.com
-   //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
-   ```
-
-5. Dependency: `"@swamidasslab/xpict": "^0.1.1"`.
-6. Workflow / Vercel: export `NPM_TOKEN` (and `NODE_AUTH_TOKEN`) at install time.
