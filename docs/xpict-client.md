@@ -1,7 +1,10 @@
 # Client-side depiction (`@swamidasslab/xpict`)
 
-The site paints molecules in the browser with xpict (RDKit coords + WASM scene).
-Coords come from the `Rendered` object — no SVG `embed_script`.
+The site paints molecules **in the browser only** with xpict (RDKit script +
+WASM). Coords come from the `Rendered` object — no SVG `embed_script`.
+
+**Not used on the server / Vercel serverless** — avoids burning function CPU
+and bandwidth. SSR shows a short placeholder; `useEffect` paints after hydrate.
 
 - **Main card:** `XpictMoleculeDepiction` (shade from `atom` / `bond` scores)
 - **Metabolite cards:** `XpictLazyMetaboliteImg`, **aligned to the parent** via
@@ -9,12 +12,17 @@ Coords come from the `Rendered` object — no SVG `embed_script`.
 - **Nested hop depiction:** also aligned to the previous generation’s SMILES
   (`HopOutletContext.alignToSmiles`)
 - **Star / R-group labels:** CXSMILES ``|$GSH;;;;$|`` trailers are parsed in
-  `app/utils/cxsmiles.ts` and passed as xpict `star_labels`. The same logic is
-  patched upstream in
-  [`docs/patches/xpict-js-cxsmiles-star-labels.patch`](patches/xpict-js-cxsmiles-star-labels.patch)
-  for `@swamidasslab/xpict` ([issue #20](https://github.com/swamidasslab/xenosite-pict/issues/20));
-  once that lands, the site-side pass becomes redundant.
+  `app/utils/cxsmiles.ts` and passed as xpict `star_labels`. Upstream patch:
+  [`docs/patches/`](patches/README.md) / [xenosite-pict#20](https://github.com/swamidasslab/xenosite-pict/issues/20)
 - **Legacy (tests):** `InteractiveMoleculeDepiction` + `LazyMetaboliteImg` + `/depict`
+
+## How the browser loads xpict
+
+`scripts/copy-xpict-public.js` (postinstall + build) copies the package `dist/`
+to `public/xpict-pkg/`. Client code dynamic-imports `/xpict-pkg/index.js` so
+Remix/esbuild never bundles RDKit/Node builtins into the app chunk. WASM
+resolves beside that ESM via `import.meta.url`.
+
 
 ## Install / CI
 

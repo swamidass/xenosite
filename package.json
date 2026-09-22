@@ -9,7 +9,7 @@
     "clean": "rm -fr public/build",
     "build:remix": "remix build",
     "build:rdkit": "cp -r ./node_modules/@rdkit/rdkit/Code/MinimalLib/dist rdkit && cp rdkit/*.wasm api",
-    "build:xpict-wasm": "mkdir -p public/xpict && cp node_modules/@swamidasslab/xpict/dist/wasm/xpict_core_bg.wasm public/xpict/",
+    "build:xpict-wasm": "node scripts/copy-xpict-public.js",
     "postinstall": "yarn build:xpict-wasm",
     "build": "yarn build:css && yarn build:sitemaps && yarn build:xpict-wasm && remix build",
     "build:css": "tailwindcss -m -i ./styles/app.css -o app/styles/app.css",

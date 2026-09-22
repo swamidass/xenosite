@@ -18,6 +18,9 @@ node_modules
 app/styles/app.css
 build/
 public/build
+# Generated xpict browser ESM (copied from node_modules on postinstall/build)
+public/xpict-pkg/
+public/xpict/
 # Generated sitemap shards + index (rebuilt from inventory at build time)
 public/sitemap/*
 !public/sitemap/.gitkeep
