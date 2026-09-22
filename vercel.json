@@ -5,6 +5,13 @@
       "ENABLE_FILE_SYSTEM_API": "1"
     }
   },
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "{node_modules/@swamidasslab/xpict/**,node_modules/@rdkit/rdkit/**}"
+    }
+  },
   "headers": [
     {
       "source": "/xpict-pkg/(.*).wasm",

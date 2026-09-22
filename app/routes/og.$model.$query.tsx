@@ -84,6 +84,7 @@ async function getMoleculeInfo(response: QueryResult) {
 
 export async function loader({ params }: LoaderFunctionArgs) {
   let jsx: React.ReactElement | string = <XDot />;
+  let paintError: string | null = null;
   const response = await resolve_query({
     model: params.model || "_",
     query: params.query || null,
@@ -96,7 +97,9 @@ export async function loader({ params }: LoaderFunctionArgs) {
         <OpenGraphImage model={model} name={name} depiction={depiction} />
       );
     } catch (error) {
-      console.error(error);
+      paintError =
+        error instanceof Error ? error.message : String(error ?? "og paint failed");
+      console.error("[og] xpict paint failed; falling back to XDot", error);
       jsx = <XDot />;
     }
   }
@@ -143,9 +146,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
       },
     });
   }
-  return new Response(data, {
-    headers: {
-      "Content-Type": "image/png",
-    },
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": "image/png",
+  };
+  // Temporary diagnose header while OG server paint is rolling out.
+  if (paintError) {
+    headers["X-Xpict-Og-Error"] = paintError.slice(0, 200);
+  }
+  return new Response(data, { headers });
 }
