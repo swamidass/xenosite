@@ -4,6 +4,8 @@
  *
  * Load via dynamic `import()` — the package is ESM-only (`"type":"module"`),
  * so a static `require()` crashes the whole Vercel serverless bundle at boot.
+ * `vercel.json` `includeFiles` keeps the package (+ wasm) in the function when
+ * NFT would otherwise skip a dynamic import.
  *
  * Do not import from client modules (pulls RDKit + wasm into the browser bundle).
  */
