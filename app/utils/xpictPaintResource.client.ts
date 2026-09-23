@@ -27,7 +27,7 @@ function paintKey(smiles: string, options: XpictPaintOptions): string {
     mark_atoms,
     mark_bonds,
     color,
-    bold_labels,
+    weight,
     star_labels,
   } = options;
   return JSON.stringify({
@@ -38,7 +38,7 @@ function paintKey(smiles: string, options: XpictPaintOptions): string {
     mark_atoms: mark_atoms ?? null,
     mark_bonds: mark_bonds ?? null,
     color: color ?? null,
-    bold_labels: bold_labels ?? null,
+    weight: weight ?? null,
     star_labels: star_labels ?? null,
   });
 }

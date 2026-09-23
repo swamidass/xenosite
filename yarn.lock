@@ -1837,14 +1837,6 @@
     fflate "^0.7.3"
     string.prototype.codepointat "^0.2.1"
 
-"@swamidasslab/xpict@file:vendor/swamidasslab-xpict-0.1.4.tgz":
-  version "0.1.4"
-  resolved "file:vendor/swamidasslab-xpict-0.1.4.tgz#9116aaedf774c0f06e5506318bf3e12d52987e04"
-  dependencies:
-    "@rdkit/rdkit" "^2026.3.6"
-  optionalDependencies:
-    elkjs "^0.9.3"
-
 "@tailwindcss/typography@^0.5.10":
   version "0.5.10"
   resolved "https://registry.yarnpkg.com/@tailwindcss/typography/-/typography-0.5.10.tgz#2abde4c6d5c797ab49cf47610830a301de4c1e0a"
@@ -2362,6 +2354,14 @@
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@web3-storage/multipart-parser/-/multipart-parser-1.0.0.tgz#6b69dc2a32a5b207ba43e556c25cc136a56659c4"
   integrity sha512-BEO6al7BYqcnfX15W2cnGR+Q566ACXAT9UQykORCWW80lmkpWsnEob6zJS1ZVBKsSJC8+7vJkHwlp+lXG1UCdw==
+
+"@xenosite/xpict@file:vendor/xenosite-xpict-0.3.1.tgz":
+  version "0.3.1"
+  resolved "file:vendor/xenosite-xpict-0.3.1.tgz#97528c97a9c8d8c9c2fe89b6fea3393c385ef420"
+  dependencies:
+    "@rdkit/rdkit" "^2026.3.6"
+  optionalDependencies:
+    elkjs "^0.9.3"
 
 "@zxing/text-encoding@0.9.0":
   version "0.9.0"

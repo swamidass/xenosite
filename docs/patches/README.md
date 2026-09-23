@@ -25,5 +25,6 @@ gh pr create --title "feat(js): auto-apply CXSMILES star labels in xpict.render"
 - `xpict.render` auto-sets `star_labels` from the input CXSMILES when omitted
 - Smoke tests: `*C |$R1;$|`, GSH adduct, explicit override
 
-Until this ships in `@swamidasslab/xpict`, xenosite keeps the same logic in
-`app/utils/cxsmiles.ts` and applies it in `paintSmiles`.
+`@xenosite/xpict` ≥ 0.3.1 auto-applies CX aliases when `star_labels` is omitted.
+Xenosite still keeps the same logic in `app/utils/cxsmiles.ts` and passes
+`star_labels` explicitly in `paintSmiles` for override clarity.

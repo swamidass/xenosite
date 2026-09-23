@@ -1,4 +1,4 @@
-# Client-side depiction (`@swamidasslab/xpict`)
+# Client-side depiction (`@xenosite/xpict`)
 
 The site paints interactive molecules **in the browser** with xpict (RDKit
 script + WASM). Coords come from the `Rendered` object — no SVG `embed_script`.
@@ -15,10 +15,13 @@ RDKit/xpict wasm packaging works reliably on Vercel serverless.
 - **Metabolite cards:** `XpictLazyMetaboliteImg`, **aligned to the parent** via
   `align_to` / `alignToSmiles` at every hop
 - **Nested hop depiction:** also aligned to the previous generation’s SMILES
-  (`HopOutletContext.alignToSmiles`)
+  (`HopDepictContext.alignToSmiles`)
 - **Star / R-group labels:** CXSMILES ``|$GSH;;;;$|`` trailers are parsed in
-  `app/utils/cxsmiles.ts` and passed as xpict `star_labels`. Upstream patch:
-  [`docs/patches/`](patches/README.md) / [xenosite-pict#20](https://github.com/swamidasslab/xenosite-pict/issues/20)
+  `app/utils/cxsmiles.ts` and passed as xpict `star_labels`. Upstream
+  `@xenosite/xpict` ≥ 0.3.1 also auto-applies CX aliases when `star_labels` is
+  omitted; we still pass them explicitly for override clarity. Upstream patch
+  history: [`docs/patches/`](patches/README.md) /
+  [xenosite-pict#20](https://github.com/swamidasslab/xenosite-pict/issues/20)
 - **Legacy (tests only):** `InteractiveMoleculeDepiction` (server SVG + embed);
   `LazyMetaboliteImg` re-exports the client xpict path
 
@@ -32,44 +35,20 @@ resolves beside that ESM via `import.meta.url`.
 
 ## Install / CI
 
-`@swamidasslab/xpict` is published **public** on GitHub Packages
-(`publishConfig.access: "public"`). GitHub’s **npm** registry still requires
-authentication to download — there is no anonymous `npm install` for
-`npm.pkg.github.com` (unlike the Container registry).
+Package name: **`@xenosite/xpict`** (formerly `@swamidasslab/xpict`). Intended
+registry is public npm (`publishConfig.registry: https://registry.npmjs.org`).
+Until the package is published there, this repo vendors a release tarball.
 
-### Preferred: registry
-
-Committed `.npmrc` only sets the scope registry (yarn v1 cannot reference an
-unset `${NPM_TOKEN}`).
-
-```
-@swamidasslab:registry=https://npm.pkg.github.com
-```
-
-Add auth in CI / `~/.npmrc`:
-
-```
-//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
-```
+### Preferred: registry (when published)
 
 ```json
-"@swamidasslab/xpict": "^0.1.4"
+"@xenosite/xpict": "^0.3.1"
 ```
-
-Set `NPM_TOKEN` (and optionally `NODE_AUTH_TOKEN` to the same value):
-
-| Environment | Token |
-| --- | --- |
-| Local | Classic PAT with `read:packages` in `~/.npmrc` |
-| GitHub Actions | `secrets.NPM_TOKEN`, or `GITHUB_TOKEN` after granting the package **Actions → Read** access to `swamidass/xenosite` |
-| Vercel | Project env `NPM_TOKEN` (available at install) |
 
 ### Interim: vendored tarball
 
-Until CI secrets / package Actions access are wired, this repo may use:
-
 ```json
-"@swamidasslab/xpict": "file:vendor/swamidasslab-xpict-0.1.4.tgz"
+"@xenosite/xpict": "file:vendor/xenosite-xpict-0.3.1.tgz"
 ```
 
-`postinstall` / `build` copy WASM to `public/xpict/xpict_core_bg.wasm`.
+`postinstall` / `build` copy `dist/` (including WASM) to `public/xpict-pkg/`.

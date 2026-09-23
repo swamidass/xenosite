@@ -114,7 +114,7 @@ class DepictErrorBoundary extends Component<BoundaryProps, BoundaryState> {
 }
 
 /**
- * Client-side depiction via `@swamidasslab/xpict`.
+ * Client-side depiction via `@xenosite/xpict`.
  *
  * Remix pattern: ClientOnly (hydrate) → Suspense → `*.client` paint resource
  * (no useEffect). Coords from the render result.

@@ -35,7 +35,7 @@
     "@remix-run/react": "^2.0.1",
     "@remix-run/serve": "^2.0.1",
     "@remix-run/vercel": "^1.19.3",
-    "@swamidasslab/xpict": "file:vendor/swamidasslab-xpict-0.1.4.tgz",
+    "@xenosite/xpict": "file:vendor/xenosite-xpict-0.3.1.tgz",
     "@tailwindcss/typography": "^0.5.10",
     "@vercel/node": "^2.15.10",
     "dotenv": "^16.3.1",

@@ -1,7 +1,7 @@
 /**
  * Browser-only xpict helpers. Remix empties `*.client.ts` on the server so
- * interactive depiction never runs in SSR. Open Graph uses
- * `xpictPaint.server.ts` instead (Node import of `@swamidasslab/xpict`).
+ * interactive depiction never runs in SSR. Open Graph still uses API
+ * depictions until server xpict wasm packaging is sorted on Vercel.
  *
  * Runtime loads `/xpict-pkg/*` as plain ESM (see scripts/copy-xpict-public.js),
  * not via the Remix client bundle — that keeps Node builtins out of esbuild.
@@ -10,7 +10,7 @@ import type {
   Mol,
   MolRenderOptions,
   Rendered,
-} from "@swamidasslab/xpict";
+} from "@xenosite/xpict";
 import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
 import { XPICT_SCALE } from "~/utils/xpictShade";
 
@@ -21,7 +21,7 @@ export type XpictPaintOptions = Pick<
   | "mark_atoms"
   | "mark_bonds"
   | "color"
-  | "bold_labels"
+  | "weight"
   | "star_labels"
   | "align_to"
 > & {
@@ -126,7 +126,8 @@ export async function paintSmiles(
       ? await molCached(alignToSmiles)
       : undefined);
 
-  // Until xpict JS auto-applies CX trailers, derive star_labels here.
+  // Explicit star_labels win; otherwise xpict ≥0.3.1 applies CX aliases.
+  // We still derive them here so overrides stay consistent with cxsmiles.ts.
   const cxStars = star_labels ?? starLabelsFromCxsmiles(source);
 
   const rendered = await xpict.render(await molCached(source), {

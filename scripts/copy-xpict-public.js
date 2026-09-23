@@ -1,10 +1,10 @@
 /**
- * Copy @swamidasslab/xpict dist into public/ so the browser loads it as plain
+ * Copy @xenosite/xpict dist into public/ so the browser loads it as plain
  * ESM (not remixed/esbuild-bundled). That keeps Node-only paths (fs, RDKit npm)
  * out of the Remix client bundle and lets wasm resolve via import.meta.url.
  *
- * Interactive UI paints client-side from this public copy. Open Graph uses the
- * Node package directly via `xpictPaint.server.ts` (never imported on the client).
+ * Interactive UI paints client-side from this public copy. Open Graph still
+ * uses API depictions until server wasm packaging is reliable on Vercel.
  */
 const fs = require("fs");
 const path = require("path");
@@ -13,14 +13,14 @@ const src = path.join(
   __dirname,
   "..",
   "node_modules",
-  "@swamidasslab",
+  "@xenosite",
   "xpict",
   "dist",
 );
 const dest = path.join(__dirname, "..", "public", "xpict-pkg");
 
 if (!fs.existsSync(src)) {
-  console.warn("[copy-xpict-public] @swamidasslab/xpict not installed; skip");
+  console.warn("[copy-xpict-public] @xenosite/xpict not installed; skip");
   process.exit(0);
 }
 
