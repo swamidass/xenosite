@@ -12,12 +12,14 @@ import type {
   Rendered,
 } from "@swamidasslab/xpict";
 import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
-import { XPICT_SCALE } from "~/utils/xpictShade";
+import { withFixedShadeWindow, XPICT_SCALE } from "~/utils/xpictShade";
 
 export type XpictPaintOptions = Pick<
   MolRenderOptions,
   | "atom_shade"
   | "bond_shade"
+  | "shade_vmin"
+  | "shade_vmax"
   | "mark_atoms"
   | "mark_bonds"
   | "color"
@@ -131,7 +133,7 @@ export async function paintSmiles(
   const cxStars = star_labels ?? starLabelsFromCxsmiles(source);
 
   const rendered = await xpict.render(await molCached(source), {
-    ...rest,
+    ...withFixedShadeWindow(rest),
     ...(alignTarget ? { align_to: alignTarget } : {}),
     ...(cxStars ? { star_labels: cxStars } : {}),
   });

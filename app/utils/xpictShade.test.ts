@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { shadeVector, XPICT_SCALE } from "./xpictShade";
+import {
+  shadeVector,
+  withFixedShadeWindow,
+  XPICT_SCALE,
+} from "./xpictShade";
 
 describe("xpictShade", () => {
   it("exports xenopict scale", () => {
@@ -15,5 +19,18 @@ describe("xpictShade", () => {
     expect(shadeVector(undefined)).toBeUndefined();
     expect(shadeVector([])).toBeUndefined();
     expect(shadeVector("x")).toBeUndefined();
+  });
+
+  it("pins shade window to [0, 1] when shades are present", () => {
+    expect(
+      withFixedShadeWindow({ atom_shade: [0.2, 0.5] }),
+    ).toMatchObject({ shade_vmin: 0, shade_vmax: 1 });
+    expect(withFixedShadeWindow({ color: "#000" })).toEqual({ color: "#000" });
+    expect(
+      withFixedShadeWindow({
+        bond_shade: [0.3],
+        shade_vmax: 0.8,
+      }),
+    ).toMatchObject({ shade_vmin: 0, shade_vmax: 0.8 });
   });
 });
