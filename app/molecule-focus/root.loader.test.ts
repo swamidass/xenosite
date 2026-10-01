@@ -6,6 +6,7 @@ vi.mock("~/loaders/backend.server", () => ({
 }));
 
 import { resolve_query } from "~/loaders/backend.server";
+import { PREDICTION_CACHE_CONTROL } from "~/loaders/headers";
 import { loader, meta } from "~/molecule-focus/root";
 import { SITE_NAME } from "~/utils";
 
@@ -43,6 +44,7 @@ describe("root molecule loader / meta", () => {
       model: "phase1",
       query: "aspirin",
     });
+    expect(res.headers.get("Cache-Control")).toBe(PREDICTION_CACHE_CONTROL);
   });
 
   it("builds molecule-page meta and JSON-LD", () => {

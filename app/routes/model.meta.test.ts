@@ -18,6 +18,13 @@ describe("model layout loader / revalidate", () => {
     expect(await (await loader(args({ model: "_" }))).json()).toEqual({});
   });
 
+  it("sets hyphenated max-age on loader JSON", async () => {
+    const res = await loader(args({ model: "phase1" }));
+    const cc = res.headers.get("Cache-Control") || "";
+    expect(cc).toMatch(/max-age=\d+/);
+    expect(cc).not.toMatch(/(?:^|[^-\w])maxage=/);
+  });
+
   it("404s an unknown model", async () => {
     await expect(loader(args({ model: "not-a-model" }))).rejects.toMatchObject({
       status: 404,

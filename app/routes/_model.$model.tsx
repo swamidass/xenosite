@@ -10,6 +10,7 @@ import type {
 } from "@remix-run/node";
 import type { LdJsonParams } from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
+import HEADERS, { predictionHeaders } from "~/loaders/headers";
 import { SITE_NAME, commonMetaValues, isMetaLeaf, siteUrl } from "~/utils";
 
 export const meta: MetaFunction = ({ matches, params }: MetaArgs) => {
@@ -52,8 +53,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
     });
   }
 
-  return json({});
+  return json({}, { headers: HEADERS });
 }
+
+export const headers = predictionHeaders;
 
 /** Model layout is static per `params.model` — skip refetch on nested hops. */
 export const shouldRevalidate: ShouldRevalidateFunction = ({

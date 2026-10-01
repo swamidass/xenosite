@@ -10,6 +10,7 @@ import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import isbot from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
+import { DOCUMENT_CACHE_CONTROL } from "~/loaders/headers";
 
 const ABORT_DELAY = 15_000;
 
@@ -35,7 +36,10 @@ export default function handleRequest(
           const stream = createReadableStreamFromReadable(body);
 
           responseHeaders.set("Content-Type", "text/html");
-          responseHeaders.set("Cache-Control", "public,s-maxage=600,stale-while-revalidate");
+          // Don't clobber Cache-Control lifted from loaders via route `headers`.
+          if (!responseHeaders.has("Cache-Control")) {
+            responseHeaders.set("Cache-Control", DOCUMENT_CACHE_CONTROL);
+          }
           responseHeaders.set("Transfer-Encoding", "chunked");
           responseHeaders.set("Connection", "keep-alive");
 
