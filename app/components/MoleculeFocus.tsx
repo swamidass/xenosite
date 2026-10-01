@@ -50,6 +50,7 @@ import {
   type MetaboliteRecord,
   type SiteSelection,
 } from "~/utils/metabolites";
+import { backboneColorForModel } from "~/utils/metabolicRainbow";
 import { moleculeDisplayName } from "~/utils/moleculeIdentity";
 import { isNestedPredictionNavigation } from "~/utils/navigationLoading";
 import {
@@ -506,6 +507,7 @@ export function GenerationView({
                     selectionMode={mode}
                     selected={isSelectedHead ? selectedHighlight : null}
                     externalHover={isHoverHead ? hover?.highlight : null}
+                    color={backboneColorForModel(r.model)}
                     alignToSmiles={parentAlignToSmiles}
                     onSelect={(hit) => applyHit(hit, i)}
                     onHover={(hit) => {
