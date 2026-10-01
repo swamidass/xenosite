@@ -1,1 +1,8 @@
-export { loader, meta, shouldRevalidate, default } from "~/molecule-focus/root";
+export {
+  loader,
+  clientLoader,
+  headers,
+  meta,
+  shouldRevalidate,
+  default,
+} from "~/molecule-focus/root";

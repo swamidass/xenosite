@@ -5,11 +5,11 @@ import type {
   ShouldRevalidateFunction,
 } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, type ClientLoaderFunctionArgs } from "@remix-run/react";
 import { Spinner } from "~/components";
 import { MoleculeFocusRootLayout } from "~/components/MoleculeFocus";
 import { resolveModelInfo, type XenositeModelInfo } from "~/data";
-import HEADERS from "~/loaders/headers";
+import HEADERS, { predictionHeaders } from "~/loaders/headers";
 import type { LdJsonParams } from "~/loaders/ld-json";
 import { getLdJson } from "~/loaders/ld-json";
 import { resolve_query } from "~/loaders/backend.server";
@@ -26,6 +26,10 @@ import {
   parseMoleculeFocusPath,
   smilesFromMolStubParam,
 } from "~/utils/metabolitePath";
+import {
+  clientPredictionCache,
+  predictionCacheKey,
+} from "~/utils/predictionCache";
 
 export type RootMoleculeLoaderData = {
   model: string;
@@ -45,6 +49,30 @@ export async function loader({ params }: LoaderFunctionArgs) {
     { headers: HEADERS },
   );
 }
+
+/**
+ * Keep prior prediction JSON in the browser when switching models/tabs and
+ * coming back — avoid a `_data` round-trip (and backend hit) for the same
+ * model+smiles.
+ */
+export async function clientLoader({
+  serverLoader,
+  params,
+}: ClientLoaderFunctionArgs) {
+  const model = params.model || "";
+  const query =
+    smilesFromMolStubParam(params.query || "") || params.query || "";
+  const key = predictionCacheKey(model, query, false);
+  const hit = clientPredictionCache.get(key);
+  if (hit) return hit;
+  const data = await serverLoader();
+  clientPredictionCache.set(key, data);
+  return data;
+}
+clientLoader.hydrate = true;
+
+/** Lift loader Cache-Control onto the document response. */
+export const headers = predictionHeaders;
 
 /**
  * Skip refetch when only nested hops, SOM stub, or search params change.
@@ -84,7 +112,14 @@ export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
           query: preferredName || rootQuery,
         },
       ];
-  const path = moleculeFocusUrl({ generations });
+  // Canonical/OG omit SOM stubs so atom clicks don't rewrite <head> (favicon churn).
+  const path = moleculeFocusUrl({
+    generations: generations.map((g) => ({
+      ...g,
+      som: undefined,
+      bondIdx: null,
+    })),
+  });
   const imageUrl = `${siteUrl(`/og/${params.model}/${encodeURIComponent(rootQuery)}`)}`;
 
   const modelInfo = resolveModelInfo(queryData?.model || params.model);

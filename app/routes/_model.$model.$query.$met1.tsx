@@ -1,1 +1,7 @@
-export { loader, shouldRevalidate, default } from "~/molecule-focus/metaboliteRoute1";
+export {
+  loader,
+  clientLoader,
+  headers,
+  shouldRevalidate,
+  default,
+} from "~/molecule-focus/metaboliteRoute1";

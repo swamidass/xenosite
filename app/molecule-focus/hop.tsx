@@ -8,11 +8,16 @@
 
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { Outlet, useLoaderData, useParams } from "@remix-run/react";
+import {
+  Outlet,
+  useLoaderData,
+  useParams,
+  type ClientLoaderFunctionArgs,
+} from "@remix-run/react";
 import { useMemo } from "react";
 import { GenerationView } from "~/components/MoleculeFocus";
 import Spinner from "~/components/Spinner";
-import HEADERS from "~/loaders/headers";
+import HEADERS, { predictionHeaders } from "~/loaders/headers";
 import { resolve_query } from "~/loaders/backend.server";
 import {
   generationsFromParams,
@@ -23,6 +28,10 @@ import {
   UNSELECTED_MODEL_PATH,
   type FocusGeneration,
 } from "~/utils/metabolitePath";
+import {
+  clientPredictionCache,
+  predictionCacheKey,
+} from "~/utils/predictionCache";
 
 export type HopLoaderData = {
   depth: number;
@@ -111,6 +120,23 @@ export function createMetaboliteRoute(depth: number) {
     );
   };
 
+  const clientLoader = async ({
+    serverLoader,
+    params,
+  }: ClientLoaderFunctionArgs) => {
+    if (params[modelKey] && params[queryKey]) return serverLoader();
+    const query = parseMetaboliteSlug(params[metKey] || "").smiles || "";
+    const key = predictionCacheKey(UNSELECTED_MODEL_PATH, query, false);
+    const hit = clientPredictionCache.get(key);
+    if (hit) return hit;
+    const data = await serverLoader();
+    clientPredictionCache.set(key, data);
+    return data;
+  };
+  clientLoader.hydrate = true;
+
+  const headers = predictionHeaders;
+
   const shouldRevalidate = ({
     currentParams,
     nextParams,
@@ -144,7 +170,13 @@ export function createMetaboliteRoute(depth: number) {
     );
   }
 
-  return { loader, shouldRevalidate, default: MetaboliteRoute };
+  return {
+    loader,
+    clientLoader,
+    headers,
+    shouldRevalidate,
+    default: MetaboliteRoute,
+  };
 }
 
 /** Predicting hop: /$metN/$mN/$qN */
@@ -170,6 +202,24 @@ export function createHopRoute(depth: number) {
       { headers: HEADERS },
     );
   };
+
+  const clientLoader = async ({
+    serverLoader,
+    params,
+  }: ClientLoaderFunctionArgs) => {
+    const model = params[modelKey] || "";
+    const query =
+      smilesFromMolStubParam(params[queryKey] || "") || params[queryKey] || "";
+    const key = predictionCacheKey(model, query, false);
+    const hit = clientPredictionCache.get(key);
+    if (hit) return hit;
+    const data = await serverLoader();
+    clientPredictionCache.set(key, data);
+    return data;
+  };
+  clientLoader.hydrate = true;
+
+  const headers = predictionHeaders;
 
   const shouldRevalidate = ({
     currentParams,
@@ -198,5 +248,11 @@ export function createHopRoute(depth: number) {
     );
   }
 
-  return { loader, shouldRevalidate, default: HopRoute };
+  return {
+    loader,
+    clientLoader,
+    headers,
+    shouldRevalidate,
+    default: HopRoute,
+  };
 }
