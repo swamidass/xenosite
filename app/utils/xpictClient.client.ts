@@ -12,6 +12,10 @@ import type {
   Rendered,
 } from "@swamidasslab/xpict";
 import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
+import {
+  applyCoordShift,
+  shadeCoordShift,
+} from "~/utils/xpictCoordShift";
 import { withFixedShadeWindow, XPICT_SCALE } from "~/utils/xpictShade";
 
 export type XpictPaintOptions = Pick<
@@ -138,9 +142,12 @@ export async function paintSmiles(
     ...(cxStars ? { star_labels: cxStars } : {}),
   });
   const svg = xpict.toSvg(rendered.scene);
+  // xpict svg_coords omit Rust label pad; nudge from painted shade disks.
+  const rawCoords = coordsFromRendered(rendered);
+  const coords = applyCoordShift(rawCoords, shadeCoordShift(svg, rawCoords));
   return {
     svg,
-    coords: coordsFromRendered(rendered),
+    coords,
     bondsIdx: bondsFromRendered(rendered),
     width: rendered.width,
     height: rendered.height,

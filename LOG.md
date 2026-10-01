@@ -1,5 +1,9 @@
 # Lab log
 
+## 2026-10-01
+
+- SOM overlay rings sat above phenol atoms: xpict JS `svg_coords` omit Rust heteroatom label pad. Workaround in xenosite (not xpict): after paint, take one `class="shade"` disk vs nearest atom → uniform `(dx, dy)` applied to overlay/hit coords until xpict frames labels.
+
 ## 2026-09-30
 
 - Phase I backbones lost Metabolic Rainbow ink after client xpict: API used to set xenopict backbone color per head; restore via `backboneColorForModel` → xpict `color` (SO `#D55E00` … RD `#CC79A7`). Shade plot-dots stay score-based; bond strokes are not score-colored.
