@@ -1,5 +1,9 @@
 import "dotenv/config";
 import type { QueryParameters } from "~/utils";
+import {
+  createPredictionCache,
+  predictionCacheKey,
+} from "~/utils/predictionCache";
 
 const XENOSITE_BACKEND =
   process.env.XENOSITE_BACKEND || `http://localhost:8000`;
@@ -27,6 +31,14 @@ export type BackendQueryOptions = {
    */
   depict?: boolean;
 };
+
+/** Process-local cache so repeated loader hits skip the prediction API. */
+const serverPredictionCache = createPredictionCache();
+
+/** Test helper — clear process cache between cases. */
+export function clearServerPredictionCache(): void {
+  serverPredictionCache.clear();
+}
 
 /** Query string for prediction / canonize requests. */
 export function backendQueryParams(
@@ -77,6 +89,10 @@ export const resolve_query = async (
   params: ResolveQueryParams,
 ): Promise<QueryResult> => {
   const { model, query, depict = false } = params;
+  const cacheKey = predictionCacheKey(model || "", query || "", depict);
+  const cached = serverPredictionCache.get(cacheKey) as QueryResult | null;
+  if (cached) return cached;
+
   const url = model != "_" ? "/v1/" + model : "/v1/canonize";
   let response = await backend_api(query, url, { depict });
 
@@ -98,5 +114,7 @@ export const resolve_query = async (
 
   if (!response) response = {};
 
-  return { resolved_query: response, model };
+  const result = { resolved_query: response, model };
+  serverPredictionCache.set(cacheKey, result);
+  return result;
 };

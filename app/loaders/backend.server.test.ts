@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   backend_api,
   backendQueryParams,
+  clearServerPredictionCache,
   resolve_query,
 } from "~/loaders/backend.server";
 
@@ -23,6 +24,7 @@ describe("backendQueryParams", () => {
 describe("backend_api / resolve_query", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    clearServerPredictionCache();
   });
 
   it("returns {} when smiles is empty", async () => {
@@ -74,5 +76,18 @@ describe("backend_api / resolve_query", () => {
     expect(model).toBe("_");
     expect(resolved_query).toEqual({});
     expect(String(fetchMock.mock.calls[0]![0])).toContain("/v1/canonize");
+  });
+
+  it("reuses a cached prediction for the same model+query", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ smiles: "CCO", results: [] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const a = await resolve_query({ model: "phase1", query: "CCO" });
+    const b = await resolve_query({ model: "phase1", query: "CCO" });
+    expect(a).toEqual(b);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await resolve_query({ model: "ugt", query: "CCO" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
