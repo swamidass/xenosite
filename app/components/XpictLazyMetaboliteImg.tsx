@@ -5,6 +5,7 @@ import {
   type ErrorInfo,
   type ReactNode,
 } from "react";
+import DepictLoading from "~/components/DepictLoading";
 import { ClientOnly } from "~/utils/clientOnly";
 
 type XpictLazyMetaboliteImgProps = {
@@ -23,17 +24,6 @@ type XpictLazyMetaboliteImgProps = {
 const XpictLazyMetaboliteImgReady = lazy(
   () => import("~/components/XpictLazyMetaboliteImgReady.client"),
 );
-
-function MetabolitePulse({ className }: { className?: string }) {
-  return (
-    <div
-      className={`interactive-molecule ${className || ""}`.trim()}
-      aria-hidden
-    >
-      <div className="h-[6.5rem] w-[8rem] animate-pulse bg-gray-50" />
-    </div>
-  );
-}
 
 type BoundaryProps = {
   resetKey: string;
@@ -85,13 +75,13 @@ export default function XpictLazyMetaboliteImg({
   alignToSmiles = null,
   onDepictError,
 }: XpictLazyMetaboliteImgProps) {
-  const pulse = <MetabolitePulse className={className} />;
+  const loading = <DepictLoading className={className} />;
   const resetKey = `${smiles}|${alignToSmiles ?? ""}`;
 
   return (
-    <ClientOnly fallback={pulse}>
+    <ClientOnly fallback={loading}>
       <MetaboliteDepictBoundary resetKey={resetKey} onError={onDepictError}>
-        <Suspense fallback={pulse}>
+        <Suspense fallback={loading}>
           <XpictLazyMetaboliteImgReady
             smiles={smiles}
             alt={alt}

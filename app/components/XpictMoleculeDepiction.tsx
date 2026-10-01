@@ -5,6 +5,7 @@ import {
   type ErrorInfo,
   type ReactNode,
 } from "react";
+import DepictLoading from "~/components/DepictLoading";
 import { ClientOnly } from "~/utils/clientOnly";
 import type { SelectionMode, SiteHit } from "~/utils/siteHitTest";
 import type { SomHighlight } from "~/utils/somOverlay";
@@ -33,33 +34,6 @@ export type XpictMoleculeDepictionProps = {
 const XpictMoleculeDepictionReady = lazy(
   () => import("~/components/XpictMoleculeDepictionReady.client"),
 );
-
-function DepictionPulse({
-  alt,
-  className,
-}: {
-  alt: string;
-  className?: string;
-}) {
-  return (
-    <div className={`interactive-molecule ${className || ""}`.trim()}>
-      <img
-        className="interactive-molecule__img sr-only"
-        alt={alt}
-        src={
-          "data:image/svg+xml;utf8," +
-          encodeURIComponent(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>`,
-          )
-        }
-      />
-      <div
-        className="h-[6.5rem] w-[8rem] animate-pulse bg-gray-50"
-        aria-hidden
-      />
-    </div>
-  );
-}
 
 function DepictErrorFallback({
   alt,
@@ -114,7 +88,7 @@ class DepictErrorBoundary extends Component<BoundaryProps, BoundaryState> {
 }
 
 /**
- * Client-side depiction via `@xenosite/xpict`.
+ * Client-side depiction via `@swamidasslab/xpict`.
  *
  * Remix pattern: ClientOnly (hydrate) → Suspense → `*.client` paint resource
  * (no useEffect). Coords from the render result.
@@ -124,7 +98,7 @@ class DepictErrorBoundary extends Component<BoundaryProps, BoundaryState> {
 export default function XpictMoleculeDepiction(
   props: XpictMoleculeDepictionProps,
 ) {
-  const pulse = <DepictionPulse alt={props.alt} className={props.className} />;
+  const loading = <DepictLoading className={props.className} />;
   const resetKey = [
     props.smiles,
     props.alignToSmiles ?? "",
@@ -134,14 +108,14 @@ export default function XpictMoleculeDepiction(
   ].join("|");
 
   return (
-    <ClientOnly fallback={pulse}>
+    <ClientOnly fallback={loading}>
       <DepictErrorBoundary
         resetKey={resetKey}
         fallback={
           <DepictErrorFallback alt={props.alt} className={props.className} />
         }
       >
-        <Suspense fallback={pulse}>
+        <Suspense fallback={loading}>
           <XpictMoleculeDepictionReady {...props} />
         </Suspense>
       </DepictErrorBoundary>
