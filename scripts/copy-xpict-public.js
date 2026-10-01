@@ -1,5 +1,5 @@
 /**
- * Copy @xenosite/xpict dist into public/ so the browser loads it as plain
+ * Copy @swamidasslab/xpict dist into public/ so the browser loads it as plain
  * ESM (not remixed/esbuild-bundled). That keeps Node-only paths (fs, RDKit npm)
  * out of the Remix client bundle and lets wasm resolve via import.meta.url.
  *
@@ -13,14 +13,14 @@ const src = path.join(
   __dirname,
   "..",
   "node_modules",
-  "@xenosite",
+  "@swamidasslab",
   "xpict",
   "dist",
 );
 const dest = path.join(__dirname, "..", "public", "xpict-pkg");
 
 if (!fs.existsSync(src)) {
-  console.warn("[copy-xpict-public] @xenosite/xpict not installed; skip");
+  console.warn("[copy-xpict-public] @swamidasslab/xpict not installed; skip");
   process.exit(0);
 }
 

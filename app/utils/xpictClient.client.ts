@@ -10,7 +10,7 @@ import type {
   Mol,
   MolRenderOptions,
   Rendered,
-} from "@xenosite/xpict";
+} from "@swamidasslab/xpict";
 import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
 import { XPICT_SCALE } from "~/utils/xpictShade";
 
