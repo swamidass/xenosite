@@ -91,8 +91,50 @@ export function parseDepictionMetadata(
 }
 
 /**
+ * How an SVG viewBox maps into a CSS content box under ``xMidYMid meet``
+ * (same as a typical ``<img src=".svg">`` shrink-to-fit).
+ */
+export type DisplayLayout = {
+  displayWidth: number;
+  displayHeight: number;
+  /** Uniform SVG-user → CSS-px scale. */
+  scale: number;
+  /** Letterbox inset inside the display box. */
+  offsetX: number;
+  offsetY: number;
+};
+
+/** Layout for ``preserveAspectRatio="xMidYMid meet"`` into ``displaySize``. */
+export function displayLayout(
+  displaySize: { width: number; height: number },
+  viewBox: SvgViewBox,
+): DisplayLayout {
+  const dw = displaySize.width;
+  const dh = displaySize.height;
+  const vw = viewBox.width;
+  const vh = viewBox.height;
+  if (!(dw > 0) || !(dh > 0) || !(vw > 0) || !(vh > 0)) {
+    return {
+      displayWidth: dw || 0,
+      displayHeight: dh || 0,
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+    };
+  }
+  const scale = Math.min(dw / vw, dh / vh);
+  return {
+    displayWidth: dw,
+    displayHeight: dh,
+    scale,
+    offsetX: (dw - vw * scale) / 2,
+    offsetY: (dh - vh * scale) / 2,
+  };
+}
+
+/**
  * Map a pointer position in the displayed image (CSS pixels relative to the img)
- * into SVG user-space coordinates using the depiction viewBox.
+ * into SVG user-space coordinates (``xMidYMid meet``).
  */
 export function displayPointToSvg(
   localX: number,
@@ -100,10 +142,23 @@ export function displayPointToSvg(
   displaySize: { width: number; height: number },
   viewBox: SvgViewBox,
 ): { x: number; y: number } {
-  const dw = displaySize.width || 1;
-  const dh = displaySize.height || 1;
+  const layout = displayLayout(displaySize, viewBox);
+  const s = layout.scale || 1;
   return {
-    x: viewBox.x + (localX / dw) * viewBox.width,
-    y: viewBox.y + (localY / dh) * viewBox.height,
+    x: viewBox.x + (localX - layout.offsetX) / s,
+    y: viewBox.y + (localY - layout.offsetY) / s,
+  };
+}
+
+/** Map SVG user-space → CSS pixels inside the display box. */
+export function svgPointToDisplay(
+  x: number,
+  y: number,
+  viewBox: SvgViewBox,
+  layout: DisplayLayout,
+): { x: number; y: number } {
+  return {
+    x: layout.offsetX + (x - viewBox.x) * layout.scale,
+    y: layout.offsetY + (y - viewBox.y) * layout.scale,
   };
 }

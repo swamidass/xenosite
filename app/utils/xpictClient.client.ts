@@ -12,10 +12,7 @@ import type {
   Rendered,
 } from "@swamidasslab/xpict";
 import { starLabelsFromCxsmiles } from "~/utils/cxsmiles";
-import {
-  applyCoordShift,
-  shadeCoordShift,
-} from "~/utils/xpictCoordShift";
+import { applyCoordFit, shadeCoordFit } from "~/utils/xpictCoordShift";
 import { withFixedShadeWindow, XPICT_SCALE } from "~/utils/xpictShade";
 
 export type XpictPaintOptions = Pick<
@@ -142,13 +139,18 @@ export async function paintSmiles(
     ...(cxStars ? { star_labels: cxStars } : {}),
   });
   const svg = xpict.toSvg(rendered.scene);
-  // xpict svg_coords omit Rust label pad; nudge from painted shade disks.
+  // xpict svg_coords omit Rust label pad; fit shade disks → (xscale,xshift,
+  // yscale,yshift). Targets include bond midpoints (ndealk bond shade).
   const rawCoords = coordsFromRendered(rendered);
-  const coords = applyCoordShift(rawCoords, shadeCoordShift(svg, rawCoords));
+  const bondsIdx = bondsFromRendered(rendered);
+  const coords = applyCoordFit(
+    rawCoords,
+    shadeCoordFit(svg, rawCoords, bondsIdx),
+  );
   return {
     svg,
     coords,
-    bondsIdx: bondsFromRendered(rendered),
+    bondsIdx,
     width: rendered.width,
     height: rendered.height,
     scale: XPICT_SCALE,

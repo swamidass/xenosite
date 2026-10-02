@@ -1,5 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { displayPointToSvg } from "~/utils/moleculeSvg";
+import {
+  displayPointToSvg,
+  svgPointToDisplay,
+  type SvgViewBox,
+} from "~/utils/moleculeSvg";
 import { resolveHit, type SiteHit } from "~/utils/siteHitTest";
 import {
   buildOverlayMarks,
@@ -10,6 +14,7 @@ import {
 } from "~/utils/somOverlay";
 import { shadeVector } from "~/utils/xpictShade";
 import { readXpictPaint } from "~/utils/xpictPaintResource.client";
+import { useImgDisplayLayout } from "~/utils/useImgDisplayLayout";
 import type { XpictMoleculeDepictionProps } from "~/components/XpictMoleculeDepiction";
 
 function hitToHighlight(hit: SiteHit | null): SomHighlight | null {
@@ -24,13 +29,16 @@ function OverlayMarks({
   marks,
   scale,
   tone,
+  displayScale,
 }: {
   marks: ReturnType<typeof buildOverlayMarks>;
   scale: number;
   tone: "selected" | "hover";
+  /** CSS shrink of the SVG (user units → display px). */
+  displayScale: number;
 }) {
   const strokes = somStrokeWidths(scale);
-  const r = somAtomRadius(scale);
+  const r = somAtomRadius(scale) * displayScale;
   return (
     <>
       {marks.map((m, i) => {
@@ -42,20 +50,31 @@ function OverlayMarks({
               cx={m.x}
               cy={m.y}
               r={r}
-              strokeWidth={strokes.black}
+              strokeWidth={strokes.black * displayScale}
             />
             <circle
               className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--white`}
               cx={m.x}
               cy={m.y}
               r={r}
-              strokeWidth={strokes.white}
+              strokeWidth={strokes.white * displayScale}
             />
           </g>
         );
       })}
     </>
   );
+}
+
+function marksToDisplay(
+  marks: ReturnType<typeof buildOverlayMarks>,
+  viewBox: SvgViewBox,
+  layout: NonNullable<ReturnType<typeof useImgDisplayLayout>>,
+) {
+  return marks.map((m) => {
+    const p = svgPointToDisplay(m.x, m.y, viewBox, layout);
+    return { ...m, x: p.x, y: p.y };
+  });
 }
 
 /**
@@ -94,9 +113,14 @@ export default function XpictMoleculeDepictionReady({
   const bonds = apiBonds.length ? apiBonds : paint.bondsIdx;
   const coords = paint.coords;
   const scale = paint.scale;
-  const viewBox = { x: 0, y: 0, width: paint.width, height: paint.height };
+  const viewBox = useMemo<SvgViewBox>(
+    () => ({ x: 0, y: 0, width: paint.width, height: paint.height }),
+    [paint.width, paint.height],
+  );
   const src =
     "data:image/svg+xml;charset=utf-8," + encodeURIComponent(paint.svg);
+
+  const layout = useImgDisplayLayout(imgRef, viewBox, src);
 
   const localPoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -149,6 +173,15 @@ export default function XpictMoleculeDepictionReady({
     return buildOverlayMarks(hoverSource, coords, bonds);
   }, [coords, hoverSource, bonds, selected]);
 
+  const selectedDisplay = useMemo(
+    () => (layout ? marksToDisplay(selectedMarks, viewBox, layout) : []),
+    [layout, selectedMarks, viewBox],
+  );
+  const hoverDisplay = useMemo(
+    () => (layout ? marksToDisplay(hoverMarks, viewBox, layout) : []),
+    [layout, hoverMarks, viewBox],
+  );
+
   const interactive = !!(onSelect || onHover);
 
   // Hit-test on the <img> (not an overlay rect) so right-click "Save image as…"
@@ -188,15 +221,27 @@ export default function XpictMoleculeDepictionReady({
             : undefined
         }
       />
-      <svg
-        className="som-overlay"
-        viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden
-      >
-        <OverlayMarks marks={selectedMarks} scale={scale} tone="selected" />
-        <OverlayMarks marks={hoverMarks} scale={scale} tone="hover" />
-      </svg>
+      {layout ? (
+        <svg
+          className="som-overlay"
+          width={layout.displayWidth}
+          height={layout.displayHeight}
+          aria-hidden
+        >
+          <OverlayMarks
+            marks={selectedDisplay}
+            scale={scale}
+            tone="selected"
+            displayScale={layout.scale}
+          />
+          <OverlayMarks
+            marks={hoverDisplay}
+            scale={scale}
+            tone="hover"
+            displayScale={layout.scale}
+          />
+        </svg>
+      ) : null}
     </div>
   );
 }

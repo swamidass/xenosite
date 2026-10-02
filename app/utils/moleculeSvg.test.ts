@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { displayPointToSvg, parseDepictionMetadata } from "./moleculeSvg";
+import {
+  displayLayout,
+  displayPointToSvg,
+  parseDepictionMetadata,
+  svgPointToDisplay,
+} from "./moleculeSvg";
 
 const SAMPLE_SVG = `<?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="80" viewBox="10 20 100 80">
@@ -67,8 +72,8 @@ describe("parseDepictionMetadata", () => {
     ]);
   });
 });
-describe("displayPointToSvg", () => {
-  it("maps display pixels into SVG user space", () => {
+describe("displayLayout / displayPointToSvg", () => {
+  it("maps display pixels into SVG user space when aspects match", () => {
     const pt = displayPointToSvg(
       50,
       40,
@@ -79,7 +84,7 @@ describe("displayPointToSvg", () => {
     expect(pt.y).toBeCloseTo(60);
   });
 
-  it("handles top-left corner", () => {
+  it("handles top-left corner when aspects match", () => {
     const pt = displayPointToSvg(
       0,
       0,
@@ -87,5 +92,23 @@ describe("displayPointToSvg", () => {
       { x: 5, y: 7, width: 40, height: 20 },
     );
     expect(pt).toEqual({ x: 5, y: 7 });
+  });
+
+  it("accounts for letterboxing under xMidYMid meet", () => {
+    // Display taller than viewBox aspect → horizontal bars top/bottom.
+    const vb = { x: 0, y: 0, width: 100, height: 50 };
+    const display = { width: 200, height: 200 };
+    const layout = displayLayout(display, vb);
+    expect(layout.scale).toBeCloseTo(2);
+    expect(layout.offsetX).toBeCloseTo(0);
+    expect(layout.offsetY).toBeCloseTo(50);
+
+    const mid = displayPointToSvg(100, 100, display, vb);
+    expect(mid.x).toBeCloseTo(50);
+    expect(mid.y).toBeCloseTo(25);
+
+    const back = svgPointToDisplay(50, 25, vb, layout);
+    expect(back.x).toBeCloseTo(100);
+    expect(back.y).toBeCloseTo(100);
   });
 });

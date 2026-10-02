@@ -2,7 +2,9 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import {
   displayPointToSvg,
   parseDepictionMetadata,
+  svgPointToDisplay,
   type DepictionMetadata,
+  type SvgViewBox,
 } from "~/utils/moleculeSvg";
 import {
   resolveHit,
@@ -16,6 +18,7 @@ import {
   somStrokeWidths,
   type SomHighlight,
 } from "~/utils/somOverlay";
+import { useImgDisplayLayout } from "~/utils/useImgDisplayLayout";
 
 export type InteractiveMoleculeDepictionProps = {
   svg: string;
@@ -43,13 +46,15 @@ function OverlayMarks({
   marks,
   scale,
   tone,
+  displayScale,
 }: {
   marks: ReturnType<typeof buildOverlayMarks>;
   scale: number;
   tone: "selected" | "hover";
+  displayScale: number;
 }) {
   const strokes = somStrokeWidths(scale);
-  const r = somAtomRadius(scale);
+  const r = somAtomRadius(scale) * displayScale;
   return (
     <>
       {marks.map((m, i) => {
@@ -61,20 +66,31 @@ function OverlayMarks({
               cx={m.x}
               cy={m.y}
               r={r}
-              strokeWidth={strokes.black}
+              strokeWidth={strokes.black * displayScale}
             />
             <circle
               className={`som-overlay__mark som-overlay__mark--${tone} som-overlay__mark--white`}
               cx={m.x}
               cy={m.y}
               r={r}
-              strokeWidth={strokes.white}
+              strokeWidth={strokes.white * displayScale}
             />
           </g>
         );
       })}
     </>
   );
+}
+
+function marksToDisplay(
+  marks: ReturnType<typeof buildOverlayMarks>,
+  viewBox: SvgViewBox,
+  layout: NonNullable<ReturnType<typeof useImgDisplayLayout>>,
+) {
+  return marks.map((m) => {
+    const p = svgPointToDisplay(m.x, m.y, viewBox, layout);
+    return { ...m, x: p.x, y: p.y };
+  });
 }
 
 /**
@@ -110,8 +126,7 @@ export default function InteractiveMoleculeDepiction({
     [svg],
   );
 
-  /** Overlay when we have coords — hit layer only if onSelect provided. */
-  const showOverlay = !!meta;
+  const layout = useImgDisplayLayout(imgRef, meta?.viewBox ?? null, src);
 
   const localPoint = useCallback(
     (clientX: number, clientY: number) => {
@@ -153,7 +168,6 @@ export default function InteractiveMoleculeDepiction({
     onSelect || onHover ? pointerHover || externalHover : externalHover;
   const hoverMarks = useMemo(() => {
     if (!meta || !hoverSource) return [];
-    // Avoid stacking a hover ring on top of the same selected site.
     if (
       selected &&
       selected.bondIdx === hoverSource.bondIdx &&
@@ -166,6 +180,15 @@ export default function InteractiveMoleculeDepiction({
   }, [meta, hoverSource, bonds, selected]);
 
   const vb = meta?.viewBox;
+  const selectedDisplay = useMemo(
+    () => (layout && vb ? marksToDisplay(selectedMarks, vb, layout) : []),
+    [layout, vb, selectedMarks],
+  );
+  const hoverDisplay = useMemo(
+    () => (layout && vb ? marksToDisplay(hoverMarks, vb, layout) : []),
+    [layout, vb, hoverMarks],
+  );
+
   const interactive = !!(onSelect || onHover);
 
   // Hit-test on the <img> so right-click "Save image as…" targets the SVG.
@@ -204,15 +227,25 @@ export default function InteractiveMoleculeDepiction({
             : undefined
         }
       />
-      {showOverlay && vb ? (
+      {meta && layout ? (
         <svg
           className="som-overlay"
-          viewBox={`${vb.x} ${vb.y} ${vb.width} ${vb.height}`}
-          preserveAspectRatio="xMidYMid meet"
+          width={layout.displayWidth}
+          height={layout.displayHeight}
           aria-hidden
         >
-          <OverlayMarks marks={selectedMarks} scale={meta!.scale} tone="selected" />
-          <OverlayMarks marks={hoverMarks} scale={meta!.scale} tone="hover" />
+          <OverlayMarks
+            marks={selectedDisplay}
+            scale={meta.scale}
+            tone="selected"
+            displayScale={layout.scale}
+          />
+          <OverlayMarks
+            marks={hoverDisplay}
+            scale={meta.scale}
+            tone="hover"
+            displayScale={layout.scale}
+          />
         </svg>
       ) : null}
     </div>

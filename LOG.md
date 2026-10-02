@@ -2,7 +2,7 @@
 
 ## 2026-10-01
 
-- SOM overlay rings sat above phenol atoms: xpict JS `svg_coords` omit Rust heteroatom label pad. Workaround in xenosite (not xpict): after paint, take one `class="shade"` disk vs nearest atom → uniform `(dx, dy)` applied to overlay/hit coords until xpict frames labels.
+- SOM overlay rings sat above phenol atoms: xpict JS `svg_coords` omit Rust heteroatom label pad. Workaround in xenosite (not xpict): after paint, fit shade disks → `(xscale,xshift,yscale,yshift)` on overlay/hit coords (identity / translation / full fit by how many pairs; never hard-fail). Match atoms **and** bond midpoints so ndealk bond-shade does not invent a ½-bond shift. Overlay/hit map through measured img display size (`ResizeObserver`, `xMidYMid meet`) so CSS-shrunk wide SVGs stay aligned.
 
 ## 2026-09-30
 
