@@ -473,10 +473,18 @@ export function GenerationView({
 
   const showIdentity = depth > 0 || !identityInShell;
   const hopSmiles = hopSmilesEarly;
+  // Prefer API-canonical SMILES for bare structure (URL stubs may be names).
+  const structureSmiles = String(
+    resolved_query?.smiles || hopSmiles || "",
+  ).trim();
   // Dummy-atom adducts (* mols) cannot be predicted — structure only, no model tabs.
   const starMol = starMolEarly;
+  // Need scored heads before switching off the plain structure. Unselected `_`
+  // (canonize) and empty results still show the molecule.
   const predictionReady =
-    !starMol && (depth === 0 || hasPredictionModel(model));
+    !starMol &&
+    results.length > 0 &&
+    (depth === 0 || hasPredictionModel(model));
 
   const predictionBlock = predictionReady ? (
     <div
@@ -545,10 +553,10 @@ export function GenerationView({
   ) : null;
 
   const plainStructure =
-    !predictionReady && hopSmiles ? (
+    !predictionReady && structureSmiles ? (
       <div className="w-fit max-w-full mx-auto relative px-2 py-3 sm:px-4">
         <XpictMoleculeDepiction
-          smiles={hopSmiles}
+          smiles={structureSmiles}
           alt={moleculeName}
           alignToSmiles={parentAlignToSmiles}
         />

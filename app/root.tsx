@@ -56,10 +56,22 @@ export const headers: HeadersFunction = ({
   return HEADERS;
 };
 
+/** Same WASM URL RDKit MinimalLib loads via locateFile (see public/xpict-pkg/rdkit-loader.js). */
+export const RDKIT_MINIMAL_WASM =
+  "https://unpkg.com/@rdkit/rdkit@2026.3.6/dist/RDKit_minimal.wasm";
+
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
   { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
   { rel: "icon", type: "image/png", href: "/favicon.png" },
+  // Warm the RDKit WASM cache before first xpict paint (CORS-matched to fetch).
+  {
+    rel: "prefetch",
+    as: "fetch",
+    type: "application/wasm",
+    crossOrigin: "anonymous",
+    href: RDKIT_MINIMAL_WASM,
+  },
 ];
 
 export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {

@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from "@remix-run/node";
 import HEADERS from "~/loaders/headers";
-import { headers, links, loader, meta, shouldRevalidate } from "~/root";
+import {
+  headers,
+  links,
+  loader,
+  meta,
+  RDKIT_MINIMAL_WASM,
+  shouldRevalidate,
+} from "~/root";
 
 describe("root headers / links / meta", () => {
   it("reuses the shared cache headers and emits icons", () => {
@@ -12,6 +19,20 @@ describe("root headers / links / meta", () => {
     expect(rels).toContain("stylesheet");
     expect(rels).toContain("icon");
   });
+
+  it("prefetches the RDKit MinimalLib WASM used by client xpict", () => {
+    const wasm = links().find(
+      (l) => "href" in l && l.href === RDKIT_MINIMAL_WASM,
+    );
+    expect(wasm).toMatchObject({
+      rel: "prefetch",
+      as: "fetch",
+      type: "application/wasm",
+      crossOrigin: "anonymous",
+      href: RDKIT_MINIMAL_WASM,
+    });
+  });
+
 
   it("sets charset and viewport", () => {
     expect(meta({} as Parameters<typeof meta>[0])).toEqual([

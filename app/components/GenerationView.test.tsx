@@ -109,7 +109,7 @@ describe("GenerationView", () => {
       />,
     );
     expect(html).toContain("hydrolysis");
-    expect(html).toContain("animate-pulse");
+    expect(html).toContain("animate-ping");
     expect(html).toContain("Metabolites");
   });
 
@@ -130,7 +130,27 @@ describe("GenerationView", () => {
     expect(html).toContain("Ethanol");
     expect(html).toContain("hydrolysis");
     expect(html).toContain("0.42");
-    expect(html).toContain("animate-pulse");
+    expect(html).toContain("animate-ping");
+    expect(html).toContain("Loading structure");
+  });
+
+  it("shows a plain structure at depth 0 before a model is selected", () => {
+    const html = renderToStaticMarkup(
+      <GenerationView
+        depth={0}
+        resolved_query={{
+          smiles: "CC(=O)Oc1ccccc1C(=O)O",
+          name: { name: "aspirin" },
+        }}
+        model="_"
+        generations={[{ model: "_", query: "aspirin" }]}
+        identityInShell
+        nestOutlet={false}
+      />,
+    );
+    expect(html).toContain("animate-ping");
+    expect(html).toContain("Loading structure");
+    expect(html).not.toContain("Metabolites");
   });
 });
 
