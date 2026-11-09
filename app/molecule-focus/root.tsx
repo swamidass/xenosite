@@ -93,6 +93,12 @@ export function shouldRevalidateRootMolecule(
   );
 }
 
+/** True for the bare `/{model}/{query}` page with no search params. */
+export function isIndexableMoleculePath(pathname: string, search = ""): boolean {
+  if (search && search !== "?") return false;
+  return pathname.split("/").filter(Boolean).length <= 2;
+}
+
 export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
   const queryData = data as RootMoleculeLoaderData | undefined;
   const parsed = parseMoleculeFocusPath(location.pathname);
@@ -148,6 +154,12 @@ export const meta: MetaFunction = ({ params, data, location }: MetaArgs) => {
       image: imageUrl,
       imageWidth: MOLECULE_OG_IMAGE_WIDTH,
       imageHeight: MOLECULE_OG_IMAGE_HEIGHT,
+      // Only /{model}/{query} is indexable. Metabolite hops, SOM stubs and
+      // query-string variants are a near-infinite, uncacheable URL space that
+      // crawlers burn serverless compute on.
+      robots: isIndexableMoleculePath(location.pathname, location.search)
+        ? "index, follow"
+        : "noindex, nofollow",
     }),
   ];
 

@@ -1,3 +1,14 @@
 User-agent: *
+# Only /{model}/{query} pages are worth crawling. Deeper metabolite-hop URLs
+# and query-string variants are effectively infinite and each one costs a
+# serverless render.
+Allow: /build/
+Allow: /xpict/
+Allow: /xpict-pkg/
+Allow: /sitemap/
+Disallow: /*/*/
+Disallow: /*?
+Disallow: /og/
 Crawl-delay: 10
+
 Sitemap: https://xenosite.org/sitemap/sitemap_index.xml

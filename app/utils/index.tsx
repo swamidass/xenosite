@@ -284,6 +284,8 @@ export type PageMetaOptions = {
   image?: string;
   imageWidth?: number;
   imageHeight?: number;
+  /** Robots directive; defaults to "index, follow". */
+  robots?: string;
 };
 
 /**
@@ -306,7 +308,7 @@ export function commonMetaValues(options: PageMetaOptions = {}) {
     },
     {
       name: "robots",
-      content: "index, follow",
+      content: options.robots ?? "index, follow",
     },
     {
       tagName: "link" as const,

@@ -244,6 +244,7 @@ export default function MetabolitePanel({
                 <li key={cardKey} className="mx-2">
                   <Link
                     to={href}
+                    rel="nofollow"
                     preventScrollReset
                     className={classNames(
                       "block text-center rounded px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 hover:bg-gray-50",
